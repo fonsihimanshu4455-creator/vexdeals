@@ -15,7 +15,7 @@ const loadRazorpay = () =>
     document.body.appendChild(s);
   });
 
-const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
+const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_ScK3dNgaS5pEmr';
 
 const paymentMethods = [
   { id: 'razorpay', label: 'Pay Online',        Icon: Smartphone,   desc: 'UPI · Card · Net Banking · Wallets' },
