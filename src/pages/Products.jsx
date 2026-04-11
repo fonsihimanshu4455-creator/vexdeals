@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, Grid3X3, List, X, ChevronDown } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { products, categories } from '../data/products';
+import { products } from '../data/products';
+import { useCategories } from '../context/CategoryContext';
 
 const sortOptions = [
   { value: 'featured', label: 'Featured' },
@@ -14,6 +15,10 @@ const sortOptions = [
 ];
 
 export default function Products() {
+  const { activeCategories } = useCategories();
+  // Build the categories list: ['All', ...active category names]
+  const categories = ['All', ...activeCategories.map(c => c.name)];
+
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'All';
   const initialSearch = searchParams.get('search') || '';

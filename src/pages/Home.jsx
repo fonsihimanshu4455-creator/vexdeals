@@ -3,51 +3,46 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Truck, RotateCcw, Shield, Headphones, ChevronLeft, ChevronRight, Zap, Star } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { products } from '../data/products';
+import { useCategories } from '../context/CategoryContext';
 
 const slides = [
   {
     id: 1,
-    title: 'Best Deals on Electronics',
-    subtitle: 'Up to 40% OFF on top brands',
-    bg: 'from-primary-700 to-primary-500',
-    cta: 'Shop Electronics',
-    link: '/products?category=Electronics',
-    img: 'https://picsum.photos/seed/heroelectronics/700/500',
+    title: 'Premium Watches Collection',
+    subtitle: 'Up to 40% OFF on luxury timepieces',
+    bg: 'from-primary-900 to-primary-700',
+    cta: 'Shop Watches',
+    link: '/products?category=Watches',
+    img: 'https://picsum.photos/seed/watchcollection/700/500',
+    badge: 'New Season',
   },
   {
     id: 2,
-    title: 'Fashion Sale is Live!',
-    subtitle: 'Trending styles at unbeatable prices',
-    bg: 'from-pink-700 to-rose-500',
-    cta: 'Explore Fashion',
-    link: '/products?category=Fashion',
-    img: 'https://picsum.photos/seed/herofashion/700/500',
+    title: 'Designer Eyewear Sale',
+    subtitle: 'Sunglasses & Frames starting ₹999',
+    bg: 'from-navy-900 to-primary-800',
+    cta: 'Explore Eyewear',
+    link: '/products?category=Eyewear',
+    img: 'https://picsum.photos/seed/eyewearsale/700/500',
+    badge: 'Up to 50% Off',
   },
   {
     id: 3,
-    title: 'Home & Living Essentials',
-    subtitle: 'Make your home smarter & cozier',
-    bg: 'from-emerald-700 to-teal-500',
-    cta: 'Shop Now',
-    link: '/products?category=Home+%26+Living',
-    img: 'https://picsum.photos/seed/herohome/700/500',
+    title: 'VexDeals Flash Sale',
+    subtitle: 'Exclusive deals on top brands',
+    bg: 'from-primary-800 to-primary-600',
+    cta: 'See All Deals',
+    link: '/products',
+    img: 'https://picsum.photos/seed/flashsale/700/500',
+    badge: 'Limited Time',
   },
 ];
 
-const categoryCards = [
-  { name: 'Electronics', icon: '💻', color: 'bg-blue-50 hover:bg-blue-100', link: '/products?category=Electronics', count: 5 },
-  { name: 'Fashion', icon: '👗', color: 'bg-pink-50 hover:bg-pink-100', link: '/products?category=Fashion', count: 3 },
-  { name: 'Home & Living', icon: '🏠', color: 'bg-emerald-50 hover:bg-emerald-100', link: '/products?category=Home+%26+Living', count: 2 },
-  { name: 'Sports', icon: '🏋️', color: 'bg-orange-50 hover:bg-orange-100', link: '/products?category=Sports', count: 2 },
-  { name: 'Beauty', icon: '✨', color: 'bg-purple-50 hover:bg-purple-100', link: '/products?category=Beauty', count: 1 },
-  { name: 'All Deals', icon: '⚡', color: 'bg-primary-50 hover:bg-primary-100', link: '/products', count: 12 },
-];
-
 const trustBadges = [
-  { Icon: Truck, title: 'Free Delivery', desc: 'On orders above ₹500' },
-  { Icon: RotateCcw, title: 'Easy Returns', desc: '7-day hassle-free returns' },
-  { Icon: Shield, title: '100% Secure', desc: 'Safe & encrypted payments' },
-  { Icon: Headphones, title: '24/7 Support', desc: 'Round the clock assistance' },
+  { Icon: Truck,       title: 'Free Delivery',  desc: 'On orders above ₹500'         },
+  { Icon: RotateCcw,   title: 'Easy Returns',   desc: '7-day hassle-free returns'     },
+  { Icon: Shield,      title: '100% Authentic', desc: 'Genuine premium products'      },
+  { Icon: Headphones,  title: '24/7 Support',   desc: 'Round the clock assistance'    },
 ];
 
 function CountdownTimer() {
@@ -70,7 +65,7 @@ function CountdownTimer() {
     <div className="flex items-center gap-2">
       {[time.h, time.m, time.s].map((val, i) => (
         <span key={i} className="flex items-center gap-2">
-          <span className="bg-white text-gray-900 font-bold text-lg sm:text-2xl px-3 py-1 rounded-lg min-w-[48px] text-center shadow">
+          <span className="bg-white text-primary-800 font-black text-lg sm:text-2xl px-3 py-1 rounded-lg min-w-[48px] text-center shadow">
             {pad(val)}
           </span>
           {i < 2 && <span className="text-white font-bold text-xl">:</span>}
@@ -82,6 +77,7 @@ function CountdownTimer() {
 
 export default function Home() {
   const [slide, setSlide] = useState(0);
+  const { activeCategories } = useCategories();
 
   useEffect(() => {
     const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 5000);
@@ -89,29 +85,32 @@ export default function Home() {
   }, []);
 
   const featuredProducts = products.filter(p => p.featured);
-  const bestsellers = products.filter(p => p.isBestseller).slice(0, 4);
-  const newArrivals = products.filter(p => p.isNew).slice(0, 4);
+  const bestsellers      = products.filter(p => p.isBestseller).slice(0, 4);
+  const newArrivals      = products.filter(p => p.isNew).slice(0, 4);
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
+
+  // Map category name → product count from data
+  const countForCat = (name) => products.filter(p => p.category === name).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Slider */}
       <section className="relative overflow-hidden">
-        <div
-          className={`bg-gradient-to-r ${slides[slide].bg} transition-all duration-700`}
-        >
+        <div className={`bg-gradient-to-r ${slides[slide].bg} transition-all duration-700`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="flex-1 text-white space-y-4">
-                <p className="text-sm font-semibold uppercase tracking-widest opacity-80">VexDeals Special</p>
+                <span className="inline-block bg-accent-500 text-primary-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                  {slides[slide].badge}
+                </span>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">
                   {slides[slide].title}
                 </h1>
-                <p className="text-lg sm:text-xl opacity-90">{slides[slide].subtitle}</p>
+                <p className="text-lg sm:text-xl text-white/85">{slides[slide].subtitle}</p>
                 <Link
                   to={slides[slide].link}
-                  className="inline-flex items-center gap-2 bg-white text-primary-700 font-bold px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
+                  className="inline-flex items-center gap-2 bg-accent-500 text-primary-900 font-bold px-6 py-3 rounded-xl hover:bg-accent-400 transition-colors shadow-lg"
                 >
                   {slides[slide].cta} <ArrowRight size={18} />
                 </Link>
@@ -127,7 +126,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Slider controls */}
         <button
           onClick={() => setSlide(s => (s - 1 + slides.length) % slides.length)}
           className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow transition-colors"
@@ -141,13 +139,12 @@ export default function Home() {
           <ChevronRight size={20} />
         </button>
 
-        {/* Dots */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => setSlide(i)}
-              className={`w-2 h-2 rounded-full transition-all ${i === slide ? 'bg-white w-6' : 'bg-white/50'}`}
+              className={`h-2 rounded-full transition-all ${i === slide ? 'bg-accent-400 w-6' : 'bg-white/50 w-2'}`}
             />
           ))}
         </div>
@@ -172,7 +169,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
+      {/* Dynamic Categories — from admin */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Shop by Category</h2>
@@ -180,40 +177,54 @@ export default function Home() {
             View All <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-          {categoryCards.map(cat => (
+        {activeCategories.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-8">No categories available</p>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            {activeCategories.map(cat => (
+              <Link
+                key={cat.id}
+                to={`/products?category=${encodeURIComponent(cat.name)}`}
+                className={`${cat.color} rounded-2xl p-4 text-center transition-all hover:scale-105 hover:shadow-md`}
+              >
+                <div className="text-3xl mb-2">{cat.icon}</div>
+                <p className="text-xs sm:text-sm font-semibold text-gray-800">{cat.name}</p>
+                <p className="text-xs text-gray-500">{countForCat(cat.name) || '—'} items</p>
+              </Link>
+            ))}
             <Link
-              key={cat.name}
-              to={cat.link}
-              className={`${cat.color} rounded-2xl p-4 text-center transition-all hover:scale-105 hover:shadow-md`}
+              to="/products"
+              className="bg-primary-50 hover:bg-primary-100 rounded-2xl p-4 text-center transition-all hover:scale-105 hover:shadow-md border-2 border-dashed border-primary-200"
             >
-              <div className="text-3xl mb-2">{cat.icon}</div>
-              <p className="text-xs sm:text-sm font-semibold text-gray-800">{cat.name}</p>
-              <p className="text-xs text-gray-500">{cat.count} items</p>
+              <div className="text-3xl mb-2">⚡</div>
+              <p className="text-xs sm:text-sm font-semibold text-primary-700">All Deals</p>
+              <p className="text-xs text-primary-500">{products.length} items</p>
             </Link>
-          ))}
-        </div>
+          </div>
+        )}
       </section>
 
       {/* Flash Sale */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
-        <div className="bg-gradient-to-r from-red-600 to-orange-500 rounded-3xl p-6 sm:p-8">
+        <div className="bg-gradient-to-r from-primary-900 to-primary-700 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+          {/* Gold accent line */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-500 to-accent-400" />
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 rounded-xl p-2">
-                <Zap size={24} className="text-white" fill="white" />
+              <div className="bg-accent-500/20 rounded-xl p-2">
+                <Zap size={24} className="text-accent-400" fill="currentColor" />
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-white">Flash Sale</h2>
-                <p className="text-white/80 text-sm">Deals end soon!</p>
+                <p className="text-white/70 text-sm">Exclusive deals — limited stock!</p>
               </div>
             </div>
             <div className="text-white">
-              <p className="text-xs uppercase tracking-widest mb-2 opacity-75">Ends in</p>
+              <p className="text-xs uppercase tracking-widest mb-2 text-accent-400 font-semibold">Ends in</p>
               <CountdownTimer />
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {products.filter(p => p.discount >= 20).slice(0, 4).map(product => (
               <Link
                 key={product.id}
@@ -226,7 +237,7 @@ export default function Home() {
                 <div className="p-3">
                   <p className="text-xs font-semibold text-gray-800 line-clamp-1">{product.name}</p>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-sm font-bold text-gray-900">{formatPrice(product.price)}</span>
+                    <span className="text-sm font-bold text-primary-800">{formatPrice(product.price)}</span>
                     <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">-{product.discount}%</span>
                   </div>
                 </div>
@@ -255,7 +266,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Star size={22} className="text-amber-400 fill-amber-400" />
+            <Star size={22} className="text-accent-500 fill-accent-500" />
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Bestsellers</h2>
           </div>
           <Link to="/products" className="text-primary-600 text-sm font-semibold hover:underline flex items-center gap-1">
@@ -289,16 +300,21 @@ export default function Home() {
 
       {/* Promo Banner */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-3xl p-8 sm:p-12 text-center text-white">
-          <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">Get 10% Off Your First Order!</h2>
-          <p className="text-white/80 mb-6 text-sm sm:text-base">
-            Sign up and use code <span className="bg-white text-primary-600 font-bold px-2 py-0.5 rounded">VEXFIRST</span> at checkout
+        <div className="bg-gradient-to-r from-primary-800 to-primary-900 rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent-500/10 to-transparent pointer-events-none" />
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-3 relative">
+            Get 10% Off Your First Order!
+          </h2>
+          <p className="text-white/70 mb-6 text-sm sm:text-base relative">
+            Use code{' '}
+            <span className="bg-accent-500 text-primary-900 font-bold px-2 py-0.5 rounded">VEXFIRST</span>{' '}
+            at checkout
           </p>
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 bg-white text-primary-700 font-bold px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
+            className="relative inline-flex items-center gap-2 bg-accent-500 text-primary-900 font-bold px-8 py-3 rounded-xl hover:bg-accent-400 transition-colors shadow-lg"
           >
-            Create Account <ArrowRight size={18} />
+            Sign Up Now <ArrowRight size={18} />
           </Link>
         </div>
       </section>
