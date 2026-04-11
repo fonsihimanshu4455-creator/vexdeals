@@ -22,7 +22,13 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  const login = (email, password) => {
+  const login = (email, password, preVerifiedUser = null) => {
+    // Firebase OTP pre-verified user — skip password check
+    if (preVerifiedUser) {
+      setUser(preVerifiedUser);
+      localStorage.setItem('vexdeals_user', JSON.stringify(preVerifiedUser));
+      return { success: true, user: preVerifiedUser };
+    }
     // Check static users (admin + customers)
     const found = staticUsers.find(u => u.email === email && u.password === password);
     if (found) {

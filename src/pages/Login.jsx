@@ -1,58 +1,188 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, Smartphone } from 'lucide-react';
+import { Smartphone, ArrowRight, RefreshCw, CheckCircle, PhoneCall } from 'lucide-react';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { VexLogoFull, VexLogoMark } from '../components/Logo';
+import { VexLogoFull } from '../components/Logo';
 
-// Detect mobile device by user-agent OR narrow viewport
-const detectMobile = () => {
+// ── Mobile detection ────────────────────────────────────────────────────────
+const isMobileDevice = () => {
   const ua = navigator.userAgent || '';
-  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-  const isNarrow = window.innerWidth < 768;
-  return isMobileUA || isNarrow;
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
+    window.innerWidth < 768
+  );
+};
+
+// ── Map Firebase phone → our user record ────────────────────────────────────
+// Returns a safe user object (no password) or null
+const findUserByPhone = async (phone) => {
+  const { users } = await import('../data/users');
+  // Normalize: strip spaces, dashes; compare last 10 digits
+  const digits = (p) => p.replace(/\D/g, '').slice(-10);
+  const found = users.find(
+    (u) => u.role === 'customer' && digits(u.phone) === digits(phone)
+  );
+  if (!found) return null;
+  const { password: _, ...safeUser } = found;
+  return safeUser;
 };
 
 export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail]     = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw]   = useState(false);
-  const [error, setError]     = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(true);
 
+  const [isMobile, setIsMobile]       = useState(true);
+  const [step, setStep]               = useState('phone'); // 'phone' | 'otp' | 'success'
+  const [phone, setPhone]             = useState('');
+  const [otp, setOtp]                 = useState(['', '', '', '', '', '']);
+  const [error, setError]             = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+
+  const recaptchaRef  = useRef(null);
+  const recaptchaInit = useRef(false);
+  const otpInputs     = useRef([]);
+
+  // ── Redirect if already logged in ────────────────────────────────────────
   useEffect(() => {
-    setIsMobile(detectMobile());
-    const onResize = () => setIsMobile(detectMobile());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    if (user) navigate(user.role === 'customer' ? '/' : '/admin');
+  }, [user, navigate]);
+
+  // ── Mobile check ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+    const handler = () => setIsMobile(isMobileDevice());
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
   }, []);
 
-  if (user) {
-    navigate(user.role === 'customer' ? '/' : '/admin');
-    return null;
-  }
+  // ── Countdown timer for resend ─────────────────────────────────────────
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const id = setInterval(() => setResendTimer((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [resendTimer]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const result = login(email, password);
-    setLoading(false);
-    if (result.success) {
-      if (result.user.role !== 'customer') {
-        setError('Admin/staff login is available at the Admin Portal only.');
-        return;
-      }
-      navigate('/');
-    } else {
-      setError(result.message);
+  // ── Init reCAPTCHA (invisible) ────────────────────────────────────────
+  const initRecaptcha = () => {
+    if (recaptchaInit.current) return;
+    recaptchaInit.current = true;
+    try {
+      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {},
+        'expired-callback': () => { recaptchaInit.current = false; },
+      });
+    } catch (e) {
+      console.error('reCAPTCHA init failed', e);
     }
   };
 
-  // ── Desktop block screen ────────────────────────────────────────────────────
+  // ── Send OTP ─────────────────────────────────────────────────────────────
+  const handleSendOTP = async () => {
+    setError('');
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length < 10) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+    const fullPhone = cleaned.startsWith('91') ? `+${cleaned}` : `+91${cleaned}`;
+
+    setLoading(true);
+    try {
+      initRecaptcha();
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaRef.current);
+      setConfirmationResult(result);
+      setStep('otp');
+      setResendTimer(30);
+    } catch (err) {
+      console.error(err);
+      recaptchaInit.current = false;
+      if (err.code === 'auth/invalid-phone-number') {
+        setError('Invalid phone number. Use format: 9876543210');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please try after some time.');
+      } else {
+        setError(err.message || 'Failed to send OTP. Check your Firebase config.');
+      }
+    }
+    setLoading(false);
+  };
+
+  // ── OTP digit input handler ───────────────────────────────────────────────
+  const handleOtpChange = (index, value) => {
+    if (!/^\d?$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5) otpInputs.current[index + 1]?.focus();
+    if (!value && index > 0) otpInputs.current[index - 1]?.focus();
+  };
+
+  const handleOtpPaste = (e) => {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      setOtp(pasted.split(''));
+      otpInputs.current[5]?.focus();
+    }
+  };
+
+  // ── Verify OTP ────────────────────────────────────────────────────────────
+  const handleVerifyOTP = async () => {
+    setError('');
+    const code = otp.join('');
+    if (code.length < 6) {
+      setError('Enter the complete 6-digit OTP');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const credential = await confirmationResult.confirm(code);
+      const firebasePhone = credential.user.phoneNumber;
+
+      // Map Firebase phone → our user record
+      const foundUser = await findUserByPhone(firebasePhone);
+      if (foundUser) {
+        // Directly set the user in AuthContext
+        login(foundUser.email, null, foundUser); // pass pre-verified user
+        setStep('success');
+        setTimeout(() => navigate('/'), 1500);
+      } else {
+        // Phone not registered — auto-create guest customer
+        const guestUser = {
+          id: Date.now(),
+          name: `Customer ${firebasePhone.slice(-4)}`,
+          email: `${firebasePhone.replace('+', '')}@phone.vexdeals.com`,
+          phone: firebasePhone,
+          role: 'customer',
+          avatar: `https://picsum.photos/seed/${Date.now()}/100/100`,
+          joinDate: new Date().toISOString().split('T')[0],
+          totalOrders: 0,
+          totalSpent: 0,
+          status: 'Active',
+        };
+        login(guestUser.email, null, guestUser);
+        setStep('success');
+        setTimeout(() => navigate('/'), 1500);
+      }
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/invalid-verification-code') {
+        setError('Incorrect OTP. Please check and try again.');
+      } else if (err.code === 'auth/code-expired') {
+        setError('OTP expired. Please request a new one.');
+      } else {
+        setError('Verification failed. Please try again.');
+      }
+    }
+    setLoading(false);
+  };
+
+  // ── Desktop block ─────────────────────────────────────────────────────────
   if (!isMobile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-navy-900 flex items-center justify-center px-4">
@@ -62,21 +192,14 @@ export default function Login() {
           </div>
           <h2 className="text-2xl font-extrabold text-white mb-3">Mobile Only</h2>
           <p className="text-primary-200 text-sm leading-relaxed mb-6">
-            Customer login is available exclusively on mobile devices.<br />
-            Please open this page on your smartphone to sign in.
+            Customer login is available exclusively on mobile devices.
+            Please open this page on your smartphone.
           </p>
-          <div className="bg-white/10 border border-white/20 rounded-2xl p-4 text-left space-y-2 mb-8">
-            <p className="text-accent-400 text-xs font-semibold uppercase tracking-widest">Why mobile only?</p>
-            <p className="text-white/70 text-xs">We keep your shopping experience secure and optimised for mobile. Scan QR or type URL on your phone.</p>
-          </div>
-          <Link
-            to="/"
-            className="block w-full bg-accent-500 text-primary-900 py-3 rounded-xl font-bold hover:bg-accent-400 transition-colors"
-          >
+          <Link to="/" className="block w-full bg-accent-500 text-primary-900 py-3 rounded-xl font-bold hover:bg-accent-400 transition-colors">
             Back to Home
           </Link>
           <p className="text-primary-400 text-xs mt-4">
-            Are you staff?{' '}
+            Staff?{' '}
             <Link to="/admin-login" className="text-accent-400 underline font-medium">Admin Portal →</Link>
           </p>
         </div>
@@ -84,96 +207,169 @@ export default function Login() {
     );
   }
 
-  // ── Mobile login form ───────────────────────────────────────────────────────
+  // ── Success screen ────────────────────────────────────────────────────────
+  if (step === 'success') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex items-center justify-center">
+        <div className="text-center px-8">
+          <CheckCircle size={64} className="text-emerald-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Logged In!</h2>
+          <p className="text-primary-300 text-sm">Taking you to the store…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── PHONE STEP ────────────────────────────────────────────────────────────
+  if (step === 'phone') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex flex-col">
+        <div className="text-center pt-12 pb-6 px-4">
+          <Link to="/" className="inline-block mb-2">
+            <VexLogoFull />
+          </Link>
+          <h1 className="text-xl font-bold text-white mt-4">Welcome Back</h1>
+          <p className="text-primary-300 text-sm mt-1">Enter your mobile number to continue</p>
+        </div>
+
+        <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-10">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-5">
+              {error}
+            </div>
+          )}
+
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-primary-800 mb-2">
+              Mobile Number
+            </label>
+            <div className="flex border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-primary-600 transition-colors">
+              <div className="flex items-center gap-1 px-3 bg-gray-50 border-r border-gray-200 shrink-0">
+                <span className="text-base">🇮🇳</span>
+                <span className="text-sm font-semibold text-gray-600">+91</span>
+              </div>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="9876543210"
+                className="flex-1 px-4 py-3 text-lg font-semibold outline-none tracking-widest bg-white"
+                autoFocus
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5">We'll send a 6-digit OTP to verify</p>
+          </div>
+
+          <button
+            onClick={handleSendOTP}
+            disabled={loading || phone.replace(/\D/g, '').length < 10}
+            className="w-full bg-primary-700 text-white py-4 rounded-xl font-bold text-base hover:bg-primary-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <RefreshCw size={20} className="animate-spin" />
+            ) : (
+              <><PhoneCall size={18} /> Get OTP</>
+            )}
+          </button>
+
+          {/* Invisible reCAPTCHA container */}
+          <div id="recaptcha-container" />
+
+          <p className="text-center text-xs text-gray-400 mt-6 leading-relaxed">
+            By continuing you agree to VexDeals{' '}
+            <a href="#" className="text-primary-600 underline">Terms</a>{' '}
+            &amp;{' '}
+            <a href="#" className="text-primary-600 underline">Privacy Policy</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── OTP STEP ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex flex-col">
-      {/* Header */}
       <div className="text-center pt-12 pb-6 px-4">
         <Link to="/" className="inline-block mb-2">
           <VexLogoFull />
         </Link>
-        <h1 className="text-xl font-bold text-white mt-4">Welcome Back</h1>
-        <p className="text-primary-300 text-sm mt-1">Sign in to your account</p>
       </div>
 
-      {/* Card */}
       <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-10">
+        <button
+          onClick={() => { setStep('phone'); setOtp(['','','','','','']); setError(''); }}
+          className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-sm mb-6"
+        >
+          ← Change number
+        </button>
+
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <PhoneCall size={24} className="text-primary-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Verify OTP</h2>
+          <p className="text-gray-500 text-sm mt-1">
+            OTP sent to <span className="font-bold text-gray-800">+91 {phone}</span>
+          </p>
+        </div>
+
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-5">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-primary-800 mb-1.5">Email Address</label>
+        {/* 6-digit OTP boxes */}
+        <div className="flex gap-2 justify-center mb-6" onPaste={handleOtpPaste}>
+          {otp.map((digit, i) => (
             <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600 transition-colors"
+              key={i}
+              ref={(el) => (otpInputs.current[i] = el)}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handleOtpChange(i, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace' && !digit && i > 0) {
+                  otpInputs.current[i - 1]?.focus();
+                }
+              }}
+              className={`w-11 h-14 text-center text-2xl font-black border-2 rounded-xl outline-none transition-colors ${
+                digit ? 'border-primary-600 bg-primary-50 text-primary-800' : 'border-gray-200 text-gray-900'
+              } focus:border-primary-600`}
             />
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1.5">
-              <label className="text-sm font-semibold text-primary-800">Password</label>
-              <a href="#" className="text-xs text-accent-600 hover:underline font-medium">Forgot?</a>
-            </div>
-            <div className="relative">
-              <input
-                type={showPw ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm outline-none focus:border-primary-600 transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary-600 text-white py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 mt-2"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <><LogIn size={18} /> Sign In</>
-            )}
-          </button>
-        </form>
-
-        {/* Demo customer */}
-        <div className="mt-6">
-          <div className="relative flex items-center">
-            <div className="flex-1 border-t border-gray-200" />
-            <span className="px-3 text-xs text-gray-400">Try Demo</span>
-            <div className="flex-1 border-t border-gray-200" />
-          </div>
-          <button
-            onClick={() => { setEmail('rahul@example.com'); setPassword('rahul123'); }}
-            className="mt-4 w-full text-sm bg-primary-50 text-primary-700 border border-primary-200 rounded-xl px-4 py-3 hover:bg-primary-100 transition-colors font-medium text-left"
-          >
-            <span className="font-bold block">Customer Demo Account</span>
-            <span className="text-primary-500 font-normal text-xs">rahul@example.com · rahul123</span>
-          </button>
+          ))}
         </div>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Don't have an account?{' '}
-          <a href="#" className="text-primary-600 font-bold hover:underline">Sign up</a>
-        </p>
+        <button
+          onClick={handleVerifyOTP}
+          disabled={loading || otp.join('').length < 6}
+          className="w-full bg-primary-700 text-white py-4 rounded-xl font-bold text-base hover:bg-primary-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <RefreshCw size={20} className="animate-spin" />
+          ) : (
+            <><CheckCircle size={18} /> Verify & Login</>
+          )}
+        </button>
+
+        {/* Resend OTP */}
+        <div className="text-center mt-5">
+          {resendTimer > 0 ? (
+            <p className="text-sm text-gray-400">
+              Resend OTP in <span className="font-bold text-primary-700">{resendTimer}s</span>
+            </p>
+          ) : (
+            <button
+              onClick={() => { setOtp(['','','','','','']); setError(''); setStep('phone'); }}
+              className="text-sm text-primary-600 font-semibold hover:underline"
+            >
+              Resend OTP →
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
