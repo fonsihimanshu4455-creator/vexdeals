@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, Image, Tag, Calendar, Percent, IndianRupee, X, Check, Copy, Eye } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Image, Tag, Calendar, Percent, IndianRupee, X, Check, Copy, Eye, Edit2, Upload } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const getPosters = () => {
@@ -10,36 +10,46 @@ const getPromoCodes = () => {
   try { return JSON.parse(localStorage.getItem('vexdeals_promos') || '[]'); }
   catch { return []; }
 };
-const savePosters  = (d) => localStorage.setItem('vexdeals_posters', JSON.stringify(d));
-const savePromos   = (d) => localStorage.setItem('vexdeals_promos', JSON.stringify(d));
+const savePosters = (d) => localStorage.setItem('vexdeals_posters', JSON.stringify(d));
+const savePromos  = (d) => localStorage.setItem('vexdeals_promos', JSON.stringify(d));
 
 const generateCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return 'VEX' + Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 };
 
+const BLANK_POSTER = { title: '', imageUrl: '', caption: '', startDate: '', endDate: '' };
+
 export default function AdminMarketing() {
   const { canManageMarketing } = useAuth();
-  const [tab, setTab]           = useState('posters'); // 'posters' | 'promos'
+  const [tab, setTab]           = useState('posters');
   const [posters, setPosters]   = useState(getPosters);
   const [promos, setPromos]     = useState(getPromoCodes);
 
-  const [showPoster, setShowPoster] = useState(false);
-  const [showPromo, setShowPromo]   = useState(false);
-  const [deletePosterId, setDeletePosterId] = useState(null);
-  const [deletePromoId, setDeletePromoId]   = useState(null);
-  const [copiedCode, setCopiedCode] = useState(null);
-  const [previewPoster, setPreviewPoster] = useState(null);
+  // poster modal state
+  const [showPoster, setShowPoster]       = useState(false);
+  const [editPosterId, setEditPosterId]   = useState(null); // null = add new, else edit
+  const [posterForm, setPosterForm]       = useState(BLANK_POSTER);
+  const [posterImgMode, setPosterImgMode] = useState('url'); // 'url' | 'upload'
+  const [posterImgPreview, setPosterImgPreview] = useState('');
+  const [posterError, setPosterError]     = useState('');
+  const posterFileRef = useRef();
 
-  const [posterForm, setPosterForm] = useState({ title: '', imageUrl: '', caption: '', startDate: '', endDate: '' });
+  // promo state
+  const [showPromo, setShowPromo]   = useState(false);
+  const [deletePromoId, setDeletePromoId] = useState(null);
   const [promoForm, setPromoForm]   = useState({
     code: generateCode(), type: 'percent', value: '', minOrder: '', maxUses: '', expiry: '', description: '',
   });
-  const [posterError, setPosterError] = useState('');
-  const [promoError, setPromoError]   = useState('');
+  const [promoError, setPromoError] = useState('');
 
-  useEffect(() => { savePosters(posters);  }, [posters]);
-  useEffect(() => { savePromos(promos);    }, [promos]);
+  // misc
+  const [deletePosterId, setDeletePosterId] = useState(null);
+  const [copiedCode, setCopiedCode]         = useState(null);
+  const [previewPoster, setPreviewPoster]   = useState(null);
+
+  useEffect(() => { savePosters(posters); }, [posters]);
+  useEffect(() => { savePromos(promos);   }, [promos]);
 
   if (!canManageMarketing) {
     return (
@@ -50,29 +60,64 @@ export default function AdminMarketing() {
     );
   }
 
-  // ── POSTERS ──────────────────────────────────────────────────────────────────
+  // ── Poster helpers ────────────────────────────────────────────────────────
+  const openAddPoster = () => {
+    setEditPosterId(null);
+    setPosterForm(BLANK_POSTER);
+    setPosterImgMode('url');
+    setPosterImgPreview('');
+    setPosterError('');
+    setShowPoster(true);
+  };
 
-  const handleAddPoster = () => {
-    if (!posterForm.title.trim() || !posterForm.imageUrl.trim()) {
-      setPosterError('Title and image URL are required');
+  const openEditPoster = (poster) => {
+    setEditPosterId(poster.id);
+    setPosterForm({ title: poster.title, imageUrl: poster.imageUrl, caption: poster.caption || '', startDate: poster.startDate || '', endDate: poster.endDate || '' });
+    const isBase64 = poster.imageUrl?.startsWith('data:');
+    setPosterImgMode(isBase64 ? 'upload' : 'url');
+    setPosterImgPreview(poster.imageUrl || '');
+    setPosterError('');
+    setShowPoster(true);
+  };
+
+  const handlePosterImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setPosterError('Image too large. Max 2 MB.');
       return;
     }
-    setPosters(prev => [...prev, {
-      id: Date.now(),
-      ...posterForm,
-      title: posterForm.title.trim(),
-      active: true,
-      createdAt: new Date().toISOString().split('T')[0],
-    }]);
-    setPosterForm({ title: '', imageUrl: '', caption: '', startDate: '', endDate: '' });
-    setPosterError('');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setPosterImgPreview(ev.target.result);
+      setPosterForm(f => ({ ...f, imageUrl: ev.target.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSavePoster = () => {
+    if (!posterForm.title.trim() || !posterForm.imageUrl.trim()) {
+      setPosterError('Title and image are required');
+      return;
+    }
+    if (editPosterId) {
+      setPosters(prev => prev.map(p => p.id === editPosterId ? { ...p, ...posterForm, title: posterForm.title.trim() } : p));
+    } else {
+      setPosters(prev => [...prev, {
+        id: Date.now(),
+        ...posterForm,
+        title: posterForm.title.trim(),
+        active: true,
+        createdAt: new Date().toISOString().split('T')[0],
+      }]);
+    }
     setShowPoster(false);
+    setPosterError('');
   };
 
   const togglePoster = (id) => setPosters(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
 
-  // ── PROMO CODES ───────────────────────────────────────────────────────────────
-
+  // ── Promo helpers ─────────────────────────────────────────────────────────
   const handleAddPromo = () => {
     if (!promoForm.code.trim() || !promoForm.value) {
       setPromoError('Code and discount value are required');
@@ -82,8 +127,7 @@ export default function AdminMarketing() {
       setPromoError('Enter a valid discount value');
       return;
     }
-    const exists = promos.find(p => p.code.toUpperCase() === promoForm.code.toUpperCase());
-    if (exists) {
+    if (promos.find(p => p.code.toUpperCase() === promoForm.code.toUpperCase())) {
       setPromoError('This promo code already exists');
       return;
     }
@@ -105,7 +149,8 @@ export default function AdminMarketing() {
     setShowPromo(false);
   };
 
-  const togglePromo = (id) => setPromos(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+  const togglePromo  = (id) => setPromos(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+  const isExpired    = (expiry) => expiry && new Date(expiry) < new Date();
 
   const copyCode = (code) => {
     navigator.clipboard.writeText(code).catch(() => {});
@@ -113,8 +158,7 @@ export default function AdminMarketing() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const isExpired = (expiry) => expiry && new Date(expiry) < new Date();
-
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -124,7 +168,7 @@ export default function AdminMarketing() {
           <p className="text-gray-500 text-sm mt-0.5">{posters.length} posters · {promos.length} promo codes</p>
         </div>
         <button
-          onClick={() => tab === 'posters' ? setShowPoster(true) : setShowPromo(true)}
+          onClick={() => tab === 'posters' ? openAddPoster() : setShowPromo(true)}
           className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-primary-700 transition-colors text-sm"
         >
           <Plus size={18} /> {tab === 'posters' ? 'Add Poster' : 'New Promo Code'}
@@ -134,10 +178,10 @@ export default function AdminMarketing() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total Posters',   value: posters.length,                    color: 'text-primary-700' },
-          { label: 'Active Posters',  value: posters.filter(p => p.active).length, color: 'text-emerald-600' },
-          { label: 'Total Codes',     value: promos.length,                     color: 'text-primary-700' },
-          { label: 'Active Codes',    value: promos.filter(p => p.active && !isExpired(p.expiry)).length, color: 'text-emerald-600' },
+          { label: 'Total Posters',  value: posters.length,                                              color: 'text-primary-700' },
+          { label: 'Active Posters', value: posters.filter(p => p.active).length,                       color: 'text-emerald-600' },
+          { label: 'Total Codes',    value: promos.length,                                               color: 'text-primary-700' },
+          { label: 'Active Codes',   value: promos.filter(p => p.active && !isExpired(p.expiry)).length, color: 'text-emerald-600' },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
@@ -172,7 +216,7 @@ export default function AdminMarketing() {
               <Image size={48} className="text-gray-200 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 mb-2">No marketing posters yet</h3>
               <p className="text-gray-400 text-sm mb-6">Add daily promotional banners to feature on your site</p>
-              <button onClick={() => setShowPoster(true)} className="bg-primary-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-700 inline-flex items-center gap-2">
+              <button onClick={openAddPoster} className="bg-primary-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-700 inline-flex items-center gap-2">
                 <Plus size={18} /> Add First Poster
               </button>
             </div>
@@ -187,8 +231,8 @@ export default function AdminMarketing() {
                       className="w-full h-full object-cover"
                       onError={e => { e.target.src = `https://picsum.photos/seed/${poster.id}/400/225`; }}
                     />
-                    <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
-                      <Eye size={24} className="text-white opacity-0 hover:opacity-100" />
+                    <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <Eye size={24} className="text-white drop-shadow opacity-0 group-hover:opacity-100" />
                     </div>
                     <span className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full ${
                       poster.active ? 'bg-emerald-500 text-white' : 'bg-gray-400 text-white'
@@ -215,8 +259,16 @@ export default function AdminMarketing() {
                         {poster.active ? 'Hide' : 'Activate'}
                       </button>
                       <button
+                        onClick={() => openEditPoster(poster)}
+                        className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
                         onClick={() => setDeletePosterId(poster.id)}
                         className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"
+                        title="Delete"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -285,8 +337,7 @@ export default function AdminMarketing() {
                           <td className="px-5 py-4 text-sm">
                             {promo.expiry ? (
                               <span className={expired ? 'text-red-500 font-semibold' : 'text-gray-600'}>
-                                {promo.expiry}
-                                {expired && <span className="ml-1 text-xs">(expired)</span>}
+                                {promo.expiry}{expired && <span className="ml-1 text-xs">(expired)</span>}
                               </span>
                             ) : <span className="text-gray-400">Never</span>}
                           </td>
@@ -303,10 +354,7 @@ export default function AdminMarketing() {
                             </button>
                           </td>
                           <td className="px-5 py-4 text-right">
-                            <button
-                              onClick={() => setDeletePromoId(promo.id)}
-                              className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"
-                            >
+                            <button onClick={() => setDeletePromoId(promo.id)} className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100">
                               <Trash2 size={16} />
                             </button>
                           </td>
@@ -321,54 +369,124 @@ export default function AdminMarketing() {
         </div>
       )}
 
-      {/* ── ADD POSTER MODAL ─────────────────────────────────────────────────── */}
+      {/* ── ADD / EDIT POSTER MODAL ──────────────────────────────────────────── */}
       {showPoster && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-gray-900">Add Marketing Poster</h3>
-              <button onClick={() => { setShowPoster(false); setPosterError(''); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              <h3 className="text-lg font-bold text-gray-900">{editPosterId ? 'Edit Poster' : 'Add Marketing Poster'}</h3>
+              <button onClick={() => setShowPoster(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
             {posterError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-4">{posterError}</div>}
+
             <div className="space-y-4">
+              {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Poster Title *</label>
-                <input type="text" value={posterForm.title} onChange={e => setPosterForm(f => ({...f, title: e.target.value}))}
-                  placeholder="Summer Watch Sale 2026" className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600" />
+                <input
+                  type="text"
+                  value={posterForm.title}
+                  onChange={e => setPosterForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Summer Watch Sale 2026"
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600"
+                />
               </div>
+
+              {/* Image — URL or Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Image URL *</label>
-                <input type="url" value={posterForm.imageUrl} onChange={e => setPosterForm(f => ({...f, imageUrl: e.target.value}))}
-                  placeholder="https://example.com/poster.jpg" className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600" />
-                {posterForm.imageUrl && (
+                <label className="block text-sm font-medium text-gray-700 mb-2">Poster Image *</label>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setPosterImgMode('url')}
+                    className={`flex-1 py-2 rounded-xl text-sm font-medium border-2 transition-colors ${posterImgMode === 'url' ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-500'}`}
+                  >
+                    Paste URL
+                  </button>
+                  <button
+                    onClick={() => { setPosterImgMode('upload'); setTimeout(() => posterFileRef.current?.click(), 50); }}
+                    className={`flex-1 py-2 rounded-xl text-sm font-medium border-2 transition-colors flex items-center justify-center gap-1.5 ${posterImgMode === 'upload' ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-500'}`}
+                  >
+                    <Upload size={14} /> Upload File
+                  </button>
+                  <input
+                    ref={posterFileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePosterImageUpload}
+                  />
+                </div>
+
+                {posterImgMode === 'url' ? (
+                  <input
+                    type="url"
+                    value={posterForm.imageUrl.startsWith('data:') ? '' : posterForm.imageUrl}
+                    onChange={e => { setPosterForm(f => ({ ...f, imageUrl: e.target.value })); setPosterImgPreview(e.target.value); }}
+                    placeholder="https://example.com/poster.jpg"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600"
+                  />
+                ) : (
+                  <div
+                    onClick={() => posterFileRef.current?.click()}
+                    className="border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors"
+                  >
+                    {posterImgPreview ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <img src={posterImgPreview} alt="preview" className="w-full max-h-36 object-cover rounded-xl border" />
+                        <p className="text-xs text-primary-600 font-medium">Click to change</p>
+                      </div>
+                    ) : (
+                      <div className="py-4">
+                        <Upload size={28} className="text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">Click to upload poster image</p>
+                        <p className="text-xs text-gray-400 mt-1">JPG / PNG / WebP · Max 2 MB</p>
+                        <p className="text-xs text-gray-400">Recommended: <strong>1200×630 px</strong> (landscape)</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Preview for URL mode */}
+                {posterImgMode === 'url' && posterImgPreview && !posterImgPreview.startsWith('data:') && (
                   <div className="mt-2 rounded-xl overflow-hidden aspect-video bg-gray-100">
-                    <img src={posterForm.imageUrl} alt="preview" className="w-full h-full object-cover"
+                    <img src={posterImgPreview} alt="preview" className="w-full h-full object-cover"
                       onError={e => { e.target.src = `https://picsum.photos/seed/poster/400/225`; }} />
                   </div>
                 )}
               </div>
+
+              {/* Caption */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Caption</label>
-                <textarea value={posterForm.caption} onChange={e => setPosterForm(f => ({...f, caption: e.target.value}))}
-                  placeholder="Up to 50% off on premium watches this season…" rows={2}
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600 resize-none" />
+                <textarea
+                  value={posterForm.caption}
+                  onChange={e => setPosterForm(f => ({ ...f, caption: e.target.value }))}
+                  placeholder="Up to 50% off on premium watches this season…"
+                  rows={2}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600 resize-none"
+                />
               </div>
+
+              {/* Dates */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date</label>
-                  <input type="date" value={posterForm.startDate} onChange={e => setPosterForm(f => ({...f, startDate: e.target.value}))}
+                  <input type="date" value={posterForm.startDate} onChange={e => setPosterForm(f => ({ ...f, startDate: e.target.value }))}
                     className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-600" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date</label>
-                  <input type="date" value={posterForm.endDate} onChange={e => setPosterForm(f => ({...f, endDate: e.target.value}))}
+                  <input type="date" value={posterForm.endDate} onChange={e => setPosterForm(f => ({ ...f, endDate: e.target.value }))}
                     className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-600" />
                 </div>
               </div>
             </div>
+
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setShowPoster(false); setPosterError(''); }} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">Cancel</button>
-              <button onClick={handleAddPoster} className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700">Add Poster</button>
+              <button onClick={() => setShowPoster(false)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">Cancel</button>
+              <button onClick={handleSavePoster} className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700">
+                {editPosterId ? 'Save Changes' : 'Add Poster'}
+              </button>
             </div>
           </div>
         </div>
@@ -387,9 +505,9 @@ export default function AdminMarketing() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Promo Code *</label>
                 <div className="flex gap-2">
-                  <input type="text" value={promoForm.code} onChange={e => setPromoForm(f => ({...f, code: e.target.value.toUpperCase()}))}
+                  <input type="text" value={promoForm.code} onChange={e => setPromoForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
                     placeholder="VEXSALE25" className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600 font-mono font-bold uppercase" />
-                  <button type="button" onClick={() => setPromoForm(f => ({...f, code: generateCode()}))}
+                  <button type="button" onClick={() => setPromoForm(f => ({ ...f, code: generateCode() }))}
                     className="bg-gray-100 text-gray-600 px-3 py-2 rounded-xl hover:bg-gray-200 text-xs font-semibold whitespace-nowrap">
                     Random
                   </button>
@@ -405,7 +523,7 @@ export default function AdminMarketing() {
                     <label key={value} className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-colors ${
                       promoForm.type === value ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'
                     }`}>
-                      <input type="radio" name="type" value={value} checked={promoForm.type === value} onChange={() => setPromoForm(f => ({...f, type: value}))} className="hidden" />
+                      <input type="radio" name="type" value={value} checked={promoForm.type === value} onChange={() => setPromoForm(f => ({ ...f, type: value }))} className="hidden" />
                       <Icon size={16} className={promoForm.type === value ? 'text-primary-600' : 'text-gray-400'} />
                       <span className="text-sm font-semibold text-gray-800">{label}</span>
                     </label>
@@ -416,32 +534,32 @@ export default function AdminMarketing() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Discount Value * {promoForm.type === 'percent' ? '(%)' : '(₹)'}
                 </label>
-                <input type="number" value={promoForm.value} onChange={e => setPromoForm(f => ({...f, value: e.target.value}))}
+                <input type="number" value={promoForm.value} onChange={e => setPromoForm(f => ({ ...f, value: e.target.value }))}
                   placeholder={promoForm.type === 'percent' ? '10' : '100'} min="1"
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Min Order (₹)</label>
-                  <input type="number" value={promoForm.minOrder} onChange={e => setPromoForm(f => ({...f, minOrder: e.target.value}))}
+                  <input type="number" value={promoForm.minOrder} onChange={e => setPromoForm(f => ({ ...f, minOrder: e.target.value }))}
                     placeholder="500" min="0"
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Max Uses</label>
-                  <input type="number" value={promoForm.maxUses} onChange={e => setPromoForm(f => ({...f, maxUses: e.target.value}))}
+                  <input type="number" value={promoForm.maxUses} onChange={e => setPromoForm(f => ({ ...f, maxUses: e.target.value }))}
                     placeholder="Unlimited" min="1"
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Expiry Date</label>
-                <input type="date" value={promoForm.expiry} onChange={e => setPromoForm(f => ({...f, expiry: e.target.value}))}
+                <input type="date" value={promoForm.expiry} onChange={e => setPromoForm(f => ({ ...f, expiry: e.target.value }))}
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Description (internal)</label>
-                <input type="text" value={promoForm.description} onChange={e => setPromoForm(f => ({...f, description: e.target.value}))}
+                <input type="text" value={promoForm.description} onChange={e => setPromoForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Summer launch campaign - June 2026"
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600" />
               </div>
@@ -481,7 +599,8 @@ export default function AdminMarketing() {
             <p className="text-gray-500 text-sm mb-5">This cannot be undone.</p>
             <div className="flex gap-3">
               <button onClick={() => setDeletePosterId(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl hover:bg-gray-50">Cancel</button>
-              <button onClick={() => { setPosters(prev => prev.filter(p => p.id !== deletePosterId)); setDeletePosterId(null); }} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Delete</button>
+              <button onClick={() => { setPosters(prev => prev.filter(p => p.id !== deletePosterId)); setDeletePosterId(null); }}
+                className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Delete</button>
             </div>
           </div>
         </div>
@@ -498,7 +617,8 @@ export default function AdminMarketing() {
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeletePromoId(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl hover:bg-gray-50">Cancel</button>
-              <button onClick={() => { setPromos(prev => prev.filter(p => p.id !== deletePromoId)); setDeletePromoId(null); }} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Delete</button>
+              <button onClick={() => { setPromos(prev => prev.filter(p => p.id !== deletePromoId)); setDeletePromoId(null); }}
+                className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Delete</button>
             </div>
           </div>
         </div>
