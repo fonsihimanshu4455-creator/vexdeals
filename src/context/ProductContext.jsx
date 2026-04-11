@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { products as seedProducts } from '../data/products';
 
 const ProductContext = createContext();
@@ -82,11 +82,65 @@ const readStoredProducts = () => {
 
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState(() => readStoredProducts());
+  const channelRef = useRef(null);
+  const lastSnapshotRef = useRef(JSON.stringify(products));
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+
+    const snapshot = JSON.stringify(products);
+    if (snapshot === lastSnapshotRef.current) return;
+
+    lastSnapshotRef.current = snapshot;
+    localStorage.setItem(STORAGE_KEY, snapshot);
+    channelRef.current?.postMessage(snapshot);
   }, [products]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    channelRef.current = 'BroadcastChannel' in window ? new BroadcastChannel(STORAGE_KEY) : null;
+
+    const syncProducts = (nextProducts) => {
+      const snapshot = JSON.stringify(nextProducts);
+      if (snapshot === lastSnapshotRef.current) return;
+      lastSnapshotRef.current = snapshot;
+      setProducts(nextProducts);
+    };
+
+    const handleStorage = (event) => {
+      if (event.key && event.key !== STORAGE_KEY) return;
+      syncProducts(readStoredProducts());
+    };
+
+    const handleFocus = () => {
+      syncProducts(readStoredProducts());
+    };
+
+    const handleMessage = (event) => {
+      try {
+        syncProducts(normalizeProductList(JSON.parse(event.data)));
+      } catch {
+        syncProducts(readStoredProducts());
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    channelRef.current?.addEventListener('message', handleMessage);
+    const pollId = window.setInterval(handleFocus, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.clearInterval(pollId);
+      channelRef.current?.removeEventListener('message', handleMessage);
+      channelRef.current?.close();
+      channelRef.current = null;
+    };
+  }, []);
 
   const addProduct = (draftProduct) => {
     setProducts((currentProducts) => {

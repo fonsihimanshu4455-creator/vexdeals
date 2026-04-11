@@ -51,7 +51,7 @@ export default function Products() {
     }
 
     return result;
-  }, [category, search, sort, maxPrice]);
+  }, [products, category, search, sort, maxPrice]);
 
   const handleCategoryChange = (cat) => {
     setCategory(cat);

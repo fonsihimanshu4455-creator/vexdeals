@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 const DEFAULT_CATEGORIES = [
   { id: 1, name: 'Watches',      icon: '⌚', color: 'bg-blue-50 hover:bg-blue-100',    active: true  },
@@ -12,19 +12,79 @@ const DEFAULT_CATEGORIES = [
 
 const CategoryContext = createContext();
 
+const readStoredCategories = () => {
+  if (typeof window === 'undefined') {
+    return DEFAULT_CATEGORIES;
+  }
+
+  try {
+    const saved = localStorage.getItem('vexdeals_categories');
+    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
+  } catch {
+    localStorage.removeItem('vexdeals_categories');
+    return DEFAULT_CATEGORIES;
+  }
+};
+
 export function CategoryProvider({ children }) {
-  const [categories, setCategories] = useState(() => {
-    try {
-      const saved = localStorage.getItem('vexdeals_categories');
-      return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
-    } catch {
-      return DEFAULT_CATEGORIES;
-    }
-  });
+  const [categories, setCategories] = useState(() => readStoredCategories());
+  const channelRef = useRef(null);
+  const lastSnapshotRef = useRef(JSON.stringify(categories));
 
   useEffect(() => {
-    localStorage.setItem('vexdeals_categories', JSON.stringify(categories));
+    const snapshot = JSON.stringify(categories);
+    if (snapshot === lastSnapshotRef.current) return;
+
+    lastSnapshotRef.current = snapshot;
+    localStorage.setItem('vexdeals_categories', snapshot);
+    channelRef.current?.postMessage(snapshot);
   }, [categories]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    channelRef.current = 'BroadcastChannel' in window ? new BroadcastChannel('vexdeals_categories') : null;
+
+    const syncCategories = (nextCategories) => {
+      const snapshot = JSON.stringify(nextCategories);
+      if (snapshot === lastSnapshotRef.current) return;
+      lastSnapshotRef.current = snapshot;
+      setCategories(nextCategories);
+    };
+
+    const handleStorage = (event) => {
+      if (event.key && event.key !== 'vexdeals_categories') return;
+      syncCategories(readStoredCategories());
+    };
+
+    const handleFocus = () => {
+      syncCategories(readStoredCategories());
+    };
+
+    const handleMessage = (event) => {
+      try {
+        syncCategories(JSON.parse(event.data));
+      } catch {
+        syncCategories(readStoredCategories());
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    channelRef.current?.addEventListener('message', handleMessage);
+    const pollId = window.setInterval(handleFocus, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.clearInterval(pollId);
+      channelRef.current?.removeEventListener('message', handleMessage);
+      channelRef.current?.close();
+      channelRef.current = null;
+    };
+  }, []);
 
   const activeCategories = categories.filter(c => c.active);
 
