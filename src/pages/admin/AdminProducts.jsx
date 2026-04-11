@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Search, Plus, Edit2, Trash2, Star, Package, X, Check, Upload, Image as ImageIcon } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
+import { useCategories } from '../../context/CategoryContext';
 
-const EMPTY_FORM = {
+const createEmptyForm = (defaultCategory = 'Electronics') => ({
   name: '',
-  category: 'Electronics',
+  category: defaultCategory,
   price: '',
   originalPrice: '',
   stock: '',
@@ -13,7 +14,7 @@ const EMPTY_FORM = {
   featured: true,
   isNew: false,
   isBestseller: false,
-};
+});
 
 const MAX_IMAGE_SIZE_BYTES = 500 * 1024;
 const RECOMMENDED_IMAGE_SIZE = '1000 x 1000 px';
@@ -43,19 +44,35 @@ const getImageDimensions = (src) =>
 
 export default function AdminProducts() {
   const { products: productList, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { categories: adminCategories } = useCategories();
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('All');
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
   const [deleteId, setDeleteId] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState('');
   const [imageDetails, setImageDetails] = useState(null);
   const fileInputRef = useRef(null);
 
   const formatPrice = (price) => `₹${Number(price).toLocaleString('en-IN')}`;
+  const categoryChoices = useMemo(() => {
+    const map = new Map();
+    adminCategories.forEach((category) => {
+      const name = String(category?.name || '').trim();
+      if (name && !map.has(name)) {
+        map.set(name, { name, active: Boolean(category.active) });
+      }
+    });
+    return [...map.values()];
+  }, [adminCategories]);
+  const defaultCategory = categoryChoices.find((category) => category.active)?.name || categoryChoices[0]?.name || 'Electronics';
+  const [addForm, setAddForm] = useState(() => createEmptyForm(defaultCategory));
   const categories = ['All', ...new Set(productList.map((product) => product.category))];
+  const editableCategoryNames = useMemo(() => {
+    const productCategories = productList.map((product) => String(product.category || '').trim()).filter(Boolean);
+    return [...new Set([...categoryChoices.map((category) => category.name), ...productCategories])];
+  }, [categoryChoices, productList]);
 
   const filtered = productList.filter((product) => {
     const matchCat = filterCat === 'All' || product.category === filterCat;
@@ -92,7 +109,7 @@ export default function AdminProducts() {
 
   const openAddModal = () => {
     setAddOpen(true);
-    setAddForm(EMPTY_FORM);
+    setAddForm(createEmptyForm(defaultCategory));
     setFormError('');
     setImageDetails(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -100,7 +117,7 @@ export default function AdminProducts() {
 
   const closeAddModal = () => {
     setAddOpen(false);
-    setAddForm(EMPTY_FORM);
+    setAddForm(createEmptyForm(defaultCategory));
     setFormError('');
     setImageDetails(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -280,11 +297,17 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-4 py-3">
                     {editId === product.id ? (
-                      <input
+                      <select
                         value={editData.category}
                         onChange={(e) => setEditData((current) => ({ ...current, category: e.target.value }))}
-                        className="border border-primary-400 rounded-lg px-2 py-1 text-xs w-28 outline-none"
-                      />
+                        className="border border-primary-400 rounded-lg px-2 py-1 text-xs w-36 outline-none bg-white"
+                      >
+                        {editableCategoryNames.map((categoryName) => (
+                          <option key={categoryName} value={categoryName}>
+                            {categoryName}
+                          </option>
+                        ))}
+                      </select>
                     ) : (
                       <span className="text-xs bg-primary-50 text-primary-700 font-medium px-2 py-1 rounded-full">
                         {product.category}
@@ -412,12 +435,20 @@ export default function AdminProducts() {
 
               <label className="text-sm text-gray-700">
                 <span className="block mb-1 font-medium">Category</span>
-                <input
+                <select
                   value={addForm.category}
                   onChange={(e) => setAddForm((current) => ({ ...current, category: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500"
-                  placeholder="Electronics"
-                />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500 bg-white"
+                >
+                  {categoryChoices.map((category) => (
+                    <option key={category.name} value={category.name}>
+                      {category.name}{category.active ? '' : ' (Hidden on site)'}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs text-gray-500">
+                  Existing admin categories only. Manage them from Admin Categories.
+                </span>
               </label>
 
               <label className="text-sm text-gray-700">
