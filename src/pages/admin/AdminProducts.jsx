@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Star, Package, X, Check } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Search, Plus, Edit2, Trash2, Star, Package, X, Check, Upload, Image as ImageIcon } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 
 const EMPTY_FORM = {
@@ -15,6 +15,32 @@ const EMPTY_FORM = {
   isBestseller: false,
 };
 
+const MAX_IMAGE_SIZE_BYTES = 500 * 1024;
+const RECOMMENDED_IMAGE_SIZE = '1000 x 1000 px';
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const formatFileSize = (sizeInBytes) => {
+  if (!Number.isFinite(sizeInBytes) || sizeInBytes <= 0) return '0 KB';
+  if (sizeInBytes >= 1024 * 1024) return `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`;
+  return `${Math.max(1, Math.round(sizeInBytes / 1024))} KB`;
+};
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Unable to read the selected file.'));
+    reader.readAsDataURL(file);
+  });
+
+const getImageDimensions = (src) =>
+  new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve({ width: image.width, height: image.height });
+    image.onerror = () => reject(new Error('Unable to read image dimensions.'));
+    image.src = src;
+  });
+
 export default function AdminProducts() {
   const { products: productList, addProduct, updateProduct, deleteProduct } = useProducts();
   const [search, setSearch] = useState('');
@@ -25,6 +51,8 @@ export default function AdminProducts() {
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState('');
+  const [imageDetails, setImageDetails] = useState(null);
+  const fileInputRef = useRef(null);
 
   const formatPrice = (price) => `₹${Number(price).toLocaleString('en-IN')}`;
   const categories = ['All', ...new Set(productList.map((product) => product.category))];
@@ -66,12 +94,59 @@ export default function AdminProducts() {
     setAddOpen(true);
     setAddForm(EMPTY_FORM);
     setFormError('');
+    setImageDetails(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const closeAddModal = () => {
     setAddOpen(false);
     setAddForm(EMPTY_FORM);
     setFormError('');
+    setImageDetails(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      setFormError('Please upload a JPG, PNG, or WEBP image.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setFormError(`Image is too large. Keep it under ${formatFileSize(MAX_IMAGE_SIZE_BYTES)} for reliable saving.`);
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const { width, height } = await getImageDimensions(dataUrl);
+
+      setAddForm((current) => ({ ...current, image: dataUrl }));
+      setImageDetails({
+        name: file.name,
+        type: file.type.replace('image/', '').toUpperCase(),
+        sizeLabel: formatFileSize(file.size),
+        width,
+        height,
+      });
+      setFormError('');
+    } catch (error) {
+      setFormError(error.message || 'Could not process the selected image.');
+      event.target.value = '';
+    }
+  };
+
+  const handleImageUrlChange = (value) => {
+    setAddForm((current) => ({ ...current, image: value }));
+    if (value.trim()) {
+      setImageDetails(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleAddProduct = () => {
@@ -382,11 +457,76 @@ export default function AdminProducts() {
                 <span className="block mb-1 font-medium">Image URL</span>
                 <input
                   value={addForm.image}
-                  onChange={(e) => setAddForm((current) => ({ ...current, image: e.target.value }))}
+                  onChange={(e) => handleImageUrlChange(e.target.value)}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500"
                   placeholder="https://..."
                 />
               </label>
+
+              <div className="sm:col-span-2 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-xl bg-white p-2 text-primary-600 shadow-sm">
+                    <Upload size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900">Upload Product Image</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Recommended: {RECOMMENDED_IMAGE_SIZE}, square image, JPG/PNG/WEBP, max {formatFileSize(MAX_IMAGE_SIZE_BYTES)}.
+                    </p>
+                    <p className="mt-1 text-xs text-amber-700">
+                      Current setup stores products locally, so smaller images save more reliably.
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageUpload}
+                      className="mt-3 block w-full text-sm text-gray-600 file:mr-3 file:rounded-xl file:border-0 file:bg-primary-600 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-white hover:file:bg-primary-700"
+                    />
+                  </div>
+                </div>
+
+                {(imageDetails || addForm.image) && (
+                  <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-3 shadow-sm sm:flex-row sm:items-start">
+                    <div className="h-24 w-24 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                      {addForm.image ? (
+                        <img src={addForm.image} alt="Preview" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-gray-400">
+                          <ImageIcon size={20} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-gray-900">Selected image</p>
+                      {imageDetails ? (
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-600 sm:grid-cols-4">
+                          <div>
+                            <p className="text-gray-400">File</p>
+                            <p className="truncate font-medium text-gray-800">{imageDetails.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400">Type</p>
+                            <p className="font-medium text-gray-800">{imageDetails.type}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400">Size</p>
+                            <p className="font-medium text-gray-800">{imageDetails.sizeLabel}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400">Resolution</p>
+                            <p className="font-medium text-gray-800">{imageDetails.width} x {imageDetails.height}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-gray-500">
+                          Using image from URL. Upload a file if you want automatic size details here.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <label className="sm:col-span-2 text-sm text-gray-700">
                 <span className="block mb-1 font-medium">Description</span>
