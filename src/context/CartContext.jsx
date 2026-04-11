@@ -2,6 +2,32 @@ import { createContext, useContext, useReducer, useEffect } from 'react';
 
 const CartContext = createContext();
 
+const normalizeCartItems = (items) => {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => {
+      const id = Number(item.id);
+      const price = Number(item.price);
+      const stock = Number(item.stock);
+      const qty = Number(item.qty);
+
+      if (!Number.isFinite(id) || !Number.isFinite(price)) {
+        return null;
+      }
+
+      return {
+        ...item,
+        id,
+        price,
+        stock: Number.isFinite(stock) ? stock : 0,
+        qty: Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 1,
+      };
+    })
+    .filter(Boolean);
+};
+
 const cartReducer = (state, action) => {
   switch (action.type) {
     case 'ADD_ITEM': {
@@ -43,8 +69,17 @@ export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
 
   useEffect(() => {
-    const saved = localStorage.getItem('vexdeals_cart');
-    if (saved) dispatch({ type: 'LOAD_CART', payload: JSON.parse(saved) });
+    try {
+      const saved = localStorage.getItem('vexdeals_cart');
+      if (!saved) return;
+
+      const normalizedItems = normalizeCartItems(JSON.parse(saved));
+      dispatch({ type: 'LOAD_CART', payload: normalizedItems });
+      localStorage.setItem('vexdeals_cart', JSON.stringify(normalizedItems));
+    } catch {
+      localStorage.removeItem('vexdeals_cart');
+      dispatch({ type: 'LOAD_CART', payload: [] });
+    }
   }, []);
 
   useEffect(() => {

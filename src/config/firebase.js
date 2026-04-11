@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
 // All values come from environment variables — set them in Vercel dashboard
@@ -12,5 +12,12 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app  = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+export const firebaseConfigReady = Object.values(firebaseConfig).every(
+  (value) => typeof value === 'string' && value.trim().length > 0
+);
+
+const app = firebaseConfigReady
+  ? (getApps().length ? getApp() : initializeApp(firebaseConfig))
+  : null;
+
+export const auth = app ? getAuth(app) : null;
