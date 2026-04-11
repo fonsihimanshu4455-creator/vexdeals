@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap } from 'lucide-react';
-import { products } from '../data/products';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
+import { useProducts } from '../context/ProductContext';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const { products } = useProducts();
   const product = products.find(p => p.id === Number(id));
   const { dispatch, items } = useCart();
 

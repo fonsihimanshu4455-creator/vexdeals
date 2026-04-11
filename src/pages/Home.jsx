@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Truck, RotateCcw, Shield, Headphones, ChevronLeft, ChevronRight, Zap, Star } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { products } from '../data/products';
 import { useCategories } from '../context/CategoryContext';
+import { useProducts } from '../context/ProductContext';
 
 const slides = [
   {
@@ -78,6 +78,7 @@ function CountdownTimer() {
 export default function Home() {
   const [slide, setSlide] = useState(0);
   const { activeCategories } = useCategories();
+  const { products } = useProducts();
 
   useEffect(() => {
     const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 5000);
