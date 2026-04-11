@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Smartphone, ArrowRight, RefreshCw, CheckCircle, PhoneCall } from 'lucide-react';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { auth, firebaseConfigReady } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
 
@@ -84,6 +84,10 @@ export default function Login() {
   // ── Send OTP ─────────────────────────────────────────────────────────────
   const handleSendOTP = async () => {
     setError('');
+    if (!firebaseConfigReady) {
+      setError('OTP login is not configured yet. Please contact support.');
+      return;
+    }
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length < 10) {
       setError('Please enter a valid 10-digit mobile number');

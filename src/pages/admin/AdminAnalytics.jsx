@@ -1,150 +1,219 @@
-import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
-import { orders } from '../../data/orders';
-import { users } from '../../data/users';
+import { BarChart3, ShoppingBag, Users, Package, TrendingUp, IndianRupee } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 
-const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
+const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
 
-const monthlyData = [
-  { month: 'Jan', revenue: 280000, orders: 18 },
-  { month: 'Feb', revenue: 310000, orders: 22 },
-  { month: 'Mar', revenue: 420000, orders: 31 },
-  { month: 'Apr', revenue: 546856, orders: 8 },
-];
+// Read live orders from localStorage (placed via checkout)
+const getLiveOrders = () => {
+  try { return JSON.parse(localStorage.getItem('vexdeals_orders') || '[]'); }
+  catch { return []; }
+};
+
+// Read live customers (OTP-logged-in users stored in localStorage history)
+const getLiveCustomers = () => {
+  try { return JSON.parse(localStorage.getItem('vexdeals_customers') || '[]'); }
+  catch { return []; }
+};
 
 export default function AdminAnalytics() {
   const { products } = useProducts();
-  const totalRevenue = orders.filter(o => o.status === 'Delivered').reduce((a, o) => a + o.total, 0);
-  const avgOrderValue = totalRevenue / orders.filter(o => o.status === 'Delivered').length || 0;
+  const liveOrders   = getLiveOrders();
+  const customers    = getLiveCustomers();
 
-  const categoryRevenue = ['Electronics', 'Fashion', 'Home & Living', 'Sports', 'Beauty'].map(cat => {
-    const catProducts = products.filter(p => p.category === cat);
-    const revenue = catProducts.reduce((a, p) => a + p.price, 0);
-    return { cat, revenue, count: catProducts.length };
+  // ── KPI calculations ──────────────────────────────────────────────────────
+  const deliveredOrders  = liveOrders.filter(o => o.status === 'Delivered');
+  const totalRevenue     = deliveredOrders.reduce((a, o) => a + (o.total || 0), 0);
+  const pendingOrders    = liveOrders.filter(o => o.status === 'Pending').length;
+  const avgOrder         = liveOrders.length ? Math.round(liveOrders.reduce((a, o) => a + (o.total || 0), 0) / liveOrders.length) : 0;
+  const lowStockCount    = products.filter(p => p.stock > 0 && p.stock < 10).length;
+  const outOfStockCount  = products.filter(p => p.stock === 0).length;
+
+  // ── Order status breakdown ────────────────────────────────────────────────
+  const statuses = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+  const statusColors = {
+    Pending:    'bg-gray-400',
+    Processing: 'bg-amber-500',
+    Shipped:    'bg-blue-500',
+    Delivered:  'bg-emerald-500',
+  };
+  const maxStatusCount = Math.max(...statuses.map(s => liveOrders.filter(o => o.status === s).length), 1);
+
+  // ── Category breakdown ────────────────────────────────────────────────────
+  const catMap = {};
+  products.forEach(p => {
+    catMap[p.category] = (catMap[p.category] || 0) + 1;
   });
-  const maxCatRevenue = Math.max(...categoryRevenue.map(c => c.revenue));
+  const catEntries = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+  const maxCatCount = Math.max(...catEntries.map(([, c]) => c), 1);
 
-  const maxMonthly = Math.max(...monthlyData.map(d => d.revenue));
+  // ── Recent orders ─────────────────────────────────────────────────────────
+  const recentOrders = [...liveOrders].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, 5);
+
+  const isEmpty = liveOrders.length === 0 && products.length === 0;
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
-        <p className="text-gray-500 text-sm mt-0.5">Sales performance and insights</p>
+        <p className="text-gray-500 text-sm mt-0.5">Live store performance — updates as orders come in</p>
       </div>
 
-      {/* KPIs */}
+      {/* ── KPI Cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Delivered Revenue', value: formatPrice(totalRevenue), trend: '+12%', up: true },
-          { label: 'Total Orders', value: orders.length, trend: '+8%', up: true },
-          { label: 'Avg Order Value', value: formatPrice(Math.round(avgOrderValue)), trend: '+5%', up: true },
-          { label: 'Total Customers', value: users.filter(u => u.role === 'customer').length, trend: '+3 new', up: true },
-        ].map(({ label, value, trend, up }) => (
+          { label: 'Total Revenue',    value: formatPrice(totalRevenue),    Icon: IndianRupee,  color: 'text-primary-600',  bg: 'bg-primary-50'  },
+          { label: 'Total Orders',     value: liveOrders.length,            Icon: ShoppingBag,  color: 'text-blue-600',     bg: 'bg-blue-50'     },
+          { label: 'Avg Order Value',  value: formatPrice(avgOrder),        Icon: TrendingUp,   color: 'text-emerald-600',  bg: 'bg-emerald-50'  },
+          { label: 'Total Customers',  value: customers.length,             Icon: Users,        color: 'text-purple-600',   bg: 'bg-purple-50'   },
+        ].map(({ label, value, Icon, color, bg }) => (
           <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-3`}>
+              <Icon size={18} className={color} />
+            </div>
             <p className="text-2xl font-bold text-gray-900">{value}</p>
             <p className="text-sm text-gray-500 mt-0.5">{label}</p>
-            <div className={`flex items-center gap-1 mt-2 text-xs font-semibold ${up ? 'text-emerald-600' : 'text-red-500'}`}>
-              {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-              {trend}
-            </div>
           </div>
         ))}
       </div>
 
-      {/* Monthly revenue chart */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <BarChart3 size={20} className="text-primary-600" />
-          <h3 className="font-bold text-gray-900">Monthly Revenue (2026)</h3>
+      {isEmpty ? (
+        /* ── Empty state ─────────────────────────────────────────────────── */
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <BarChart3 size={36} className="text-gray-300" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-700 mb-2">No data yet</h3>
+          <p className="text-gray-400 text-sm max-w-sm mx-auto">
+            Analytics will appear here once you add products and customers start placing orders.
+          </p>
         </div>
-        <div className="flex items-end gap-4 h-48">
-          {monthlyData.map(({ month, revenue, orders: orderCount }) => (
-            <div key={month} className="flex-1 flex flex-col items-center gap-2">
-              <div className="text-center">
-                <p className="text-xs font-bold text-gray-700">{formatPrice(revenue)}</p>
-                <p className="text-xs text-gray-400">{orderCount} orders</p>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* ── Order Status ────────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
+              <ShoppingBag size={18} className="text-primary-600" /> Order Status
+            </h3>
+            {liveOrders.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-8">No orders yet</p>
+            ) : (
+              <div className="space-y-4">
+                {statuses.map(status => {
+                  const count = liveOrders.filter(o => o.status === status).length;
+                  const pct   = Math.round((count / liveOrders.length) * 100);
+                  return (
+                    <div key={status} className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${statusColors[status]} shrink-0`} />
+                      <span className="text-sm text-gray-600 w-24 shrink-0">{status}</span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${statusColors[status]}`}
+                          style={{ width: `${(count / maxStatusCount) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-bold text-gray-800 w-20 text-right">{count} ({pct}%)</span>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="w-full bg-gray-100 rounded-xl overflow-hidden" style={{ height: '140px' }}>
-                <div
-                  className="w-full bg-gradient-to-t from-primary-700 to-primary-400 rounded-xl"
-                  style={{ height: `${(revenue / maxMonthly) * 140}px`, marginTop: `${140 - (revenue / maxMonthly) * 140}px` }}
-                />
+            )}
+          </div>
+
+          {/* ── Products by Category ─────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
+              <Package size={18} className="text-primary-600" /> Products by Category
+            </h3>
+            {catEntries.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-8">No products added yet</p>
+            ) : (
+              <div className="space-y-4">
+                {catEntries.map(([cat, count]) => (
+                  <div key={cat}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-medium text-gray-700">{cat}</span>
+                      <span className="text-sm font-bold text-gray-900">{count} products</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full bg-gradient-to-r from-primary-600 to-primary-400"
+                        style={{ width: `${(count / maxCatCount) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p className="text-sm font-semibold text-gray-600">{month}</p>
+            )}
+          </div>
+
+          {/* ── Inventory Alerts ─────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
+              <Package size={18} className="text-amber-500" /> Inventory Alerts
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center bg-amber-50 rounded-2xl p-4">
+                <p className="text-3xl font-bold text-amber-600">{lowStockCount}</p>
+                <p className="text-xs text-amber-700 mt-1 font-medium">Low Stock (&lt;10 units)</p>
+              </div>
+              <div className="text-center bg-red-50 rounded-2xl p-4">
+                <p className="text-3xl font-bold text-red-600">{outOfStockCount}</p>
+                <p className="text-xs text-red-700 mt-1 font-medium">Out of Stock</p>
+              </div>
+              <div className="text-center bg-emerald-50 rounded-2xl p-4">
+                <p className="text-3xl font-bold text-emerald-600">{products.filter(p => p.stock >= 10).length}</p>
+                <p className="text-xs text-emerald-700 mt-1 font-medium">Healthy Stock</p>
+              </div>
+              <div className="text-center bg-primary-50 rounded-2xl p-4">
+                <p className="text-3xl font-bold text-primary-600">{products.length}</p>
+                <p className="text-xs text-primary-700 mt-1 font-medium">Total Products</p>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Category performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 className="font-bold text-gray-900 mb-5">Revenue by Category</h3>
-          <div className="space-y-4">
-            {categoryRevenue.sort((a, b) => b.revenue - a.revenue).map(({ cat, revenue, count }) => (
-              <div key={cat}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-gray-700">{cat}</span>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-gray-900">{formatPrice(revenue)}</span>
-                    <span className="text-xs text-gray-400 ml-2">({count} products)</span>
+          {/* ── Recent Orders ─────────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
+              <ShoppingBag size={18} className="text-primary-600" /> Recent Orders
+            </h3>
+            {recentOrders.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-8">No orders yet</p>
+            ) : (
+              <div className="space-y-3">
+                {recentOrders.map(order => (
+                  <div key={order.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{order.id}</p>
+                      <p className="text-xs text-gray-400">{order.userName || 'Customer'} · {order.date || '—'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900">{formatPrice(order.total)}</p>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        order.status === 'Delivered'  ? 'bg-emerald-100 text-emerald-700' :
+                        order.status === 'Shipped'    ? 'bg-blue-100 text-blue-700' :
+                        order.status === 'Processing' ? 'bg-amber-100 text-amber-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>{order.status}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full bg-gradient-to-r from-primary-600 to-primary-400"
-                    style={{ width: `${(revenue / maxCatRevenue) * 100}%` }}
-                  />
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Order status pie equivalent */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 className="font-bold text-gray-900 mb-5">Order Distribution</h3>
-          <div className="space-y-3">
-            {['Delivered', 'Shipped', 'Processing', 'Pending'].map(status => {
-              const count = orders.filter(o => o.status === status).length;
-              const pct = Math.round((count / orders.length) * 100);
-              const colors = {
-                Delivered: 'bg-emerald-500',
-                Shipped: 'bg-blue-500',
-                Processing: 'bg-amber-500',
-                Pending: 'bg-gray-400',
-              };
-              return (
-                <div key={status} className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${colors[status]} shrink-0`} />
-                  <span className="text-sm text-gray-600 flex-1">{status}</span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-2">
-                    <div className={`h-2 rounded-full ${colors[status]}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-sm font-bold text-gray-800 w-16 text-right">{count} ({pct}%)</span>
-                </div>
-              );
-            })}
+            )}
           </div>
 
-          {/* Top customers */}
-          <div className="mt-6">
-            <h4 className="font-semibold text-gray-800 text-sm mb-3">Top Customers</h4>
-            {users.filter(u => u.role === 'customer').sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 3).map((user, i) => (
-              <div key={user.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                <span className="text-sm font-bold text-gray-400 w-5">#{i + 1}</span>
-                <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.totalOrders} orders</p>
-                </div>
-                <p className="text-sm font-bold text-gray-900">{formatPrice(user.totalSpent)}</p>
-              </div>
-            ))}
-          </div>
         </div>
-      </div>
+      )}
+
+      {/* Pending orders alert */}
+      {pendingOrders > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+          <ShoppingBag size={20} className="text-amber-600 shrink-0" />
+          <p className="text-sm font-semibold text-amber-800">
+            {pendingOrders} order{pendingOrders > 1 ? 's' : ''} pending — check Orders page to process them
+          </p>
+        </div>
+      )}
     </div>
   );
 }
