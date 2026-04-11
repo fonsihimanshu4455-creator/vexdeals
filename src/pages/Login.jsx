@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, Smartphone, Watch } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Smartphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { VexLogoFull, VexLogoMark } from '../components/Logo';
 
 // Detect mobile device by user-agent OR narrow viewport
 const detectMobile = () => {
@@ -57,7 +58,7 @@ export default function Login() {
       <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-navy-900 flex items-center justify-center px-4">
         <div className="text-center max-w-sm">
           <div className="w-24 h-24 bg-accent-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-accent-500/40">
-            <Smartphone size={40} className="text-accent-400" />
+            <Smartphone size={36} className="text-accent-400" />
           </div>
           <h2 className="text-2xl font-extrabold text-white mb-3">Mobile Only</h2>
           <p className="text-primary-200 text-sm leading-relaxed mb-6">
@@ -88,15 +89,8 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex flex-col">
       {/* Header */}
       <div className="text-center pt-12 pb-6 px-4">
-        <Link to="/" className="inline-flex flex-col items-center gap-2 mb-4">
-          <div className="flex items-center gap-1">
-            <Watch size={28} className="text-accent-400" />
-          </div>
-          <div className="leading-none">
-            <span className="text-3xl font-black text-white tracking-tight">VEX</span>
-            <span className="block text-xl font-black text-accent-500 tracking-widest -mt-1">DEALS</span>
-          </div>
-          <span className="text-[10px] text-primary-300 tracking-[0.3em] uppercase">Premium Watches & Eyewear</span>
+        <Link to="/" className="inline-block mb-2">
+          <VexLogoFull />
         </Link>
         <h1 className="text-xl font-bold text-white mt-4">Welcome Back</h1>
         <p className="text-primary-300 text-sm mt-1">Sign in to your account</p>

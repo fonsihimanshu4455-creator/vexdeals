@@ -1,45 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, User, Menu, X, LogOut, LayoutDashboard, Watch } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCategories } from '../context/CategoryContext';
-
-// VexDeals logo mark matching the shield/watch/glasses brand identity
-function VexLogo({ size = 'md' }) {
-  const small = size === 'sm';
-  return (
-    <div className={`flex items-center gap-${small ? '1.5' : '2'}`}>
-      {/* Shield + Watch icon */}
-      <div className={`relative flex items-center justify-center ${small ? 'w-8 h-8' : 'w-10 h-10'}`}>
-        <svg viewBox="0 0 40 44" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-          {/* Shield */}
-          <path d="M20 2L4 9v12c0 10.5 6.9 20.3 16 22.8C29.1 41.3 36 31.5 36 21V9L20 2z" fill="#1e3a8a"/>
-          <path d="M20 2L4 9v12c0 10.5 6.9 20.3 16 22.8C29.1 41.3 36 31.5 36 21V9L20 2z" fill="url(#shieldGrad)" fillOpacity="0.3"/>
-          {/* Watch circle */}
-          <circle cx="20" cy="22" r="9" fill="white" stroke="#c9a83c" strokeWidth="2"/>
-          <circle cx="20" cy="22" r="6.5" fill="white" stroke="#1e3a8a" strokeWidth="1"/>
-          {/* Watch hands */}
-          <line x1="20" y1="22" x2="20" y2="17" stroke="#1e3a8a" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="20" y1="22" x2="23" y2="24" stroke="#c9a83c" strokeWidth="1.2" strokeLinecap="round"/>
-          {/* Crown */}
-          <rect x="18.5" y="12.5" width="3" height="1.5" rx="0.5" fill="#c9a83c"/>
-          <defs>
-            <linearGradient id="shieldGrad" x1="20" y1="2" x2="20" y2="44" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#4d78de"/>
-              <stop offset="1" stopColor="#1e3a8a"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      {/* Text mark */}
-      <div className="leading-none">
-        <div className={`font-black tracking-tight text-primary-800 ${small ? 'text-lg' : 'text-xl'}`}>VEX</div>
-        <div className={`font-black tracking-widest text-accent-500 ${small ? 'text-[10px]' : 'text-[11px]'} -mt-0.5`}>DEALS</div>
-      </div>
-    </div>
-  );
-}
+import { VexLogoInline } from './Logo';
 
 export default function Navbar() {
   const { totalItems } = useCart();
@@ -77,7 +42,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link to="/" className="shrink-0">
-            <VexLogo size="md" />
+            <VexLogoInline size="md" />
           </Link>
 
           {/* Search bar — desktop */}

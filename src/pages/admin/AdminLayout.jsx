@@ -3,9 +3,10 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, LogOut,
   Menu, X, Bell, ChevronRight, BarChart3, Tag, Shield,
-  Megaphone, Watch,
+  Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { VexLogoInline } from '../../components/Logo';
 
 // Full nav for main admin
 const adminNavItems = [
@@ -30,17 +31,6 @@ const marketingNavItems = [
 ];
 
 // VexDeals admin logo
-function AdminLogo() {
-  return (
-    <div className="flex items-center gap-2">
-      <Watch size={22} className="text-accent-400" />
-      <div className="leading-none">
-        <div className="text-base font-black tracking-tight text-white">VEX</div>
-        <div className="text-[9px] font-black tracking-widest text-accent-500 -mt-0.5">DEALS</div>
-      </div>
-    </div>
-  );
-}
 
 export default function AdminLayout() {
   const { user, logout, isAdmin, isSubAdmin, isStaff } = useAuth();
@@ -85,7 +75,7 @@ export default function AdminLayout() {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-primary-800">
           <Link to="/">
-            <AdminLogo />
+            <VexLogoInline size="sm" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white">
             <X size={20} />

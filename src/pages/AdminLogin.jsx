@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, Shield, Watch } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { VexLogoFull } from '../components/Logo';
 
 export default function AdminLogin() {
   const { login, user } = useAuth();
@@ -40,15 +41,8 @@ export default function AdminLogin() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex flex-col items-center gap-1 mb-5">
-            <div className="flex items-center gap-2">
-              <Watch size={32} className="text-accent-400" />
-            </div>
-            <div className="leading-none">
-              <span className="text-4xl font-black text-white tracking-tight">VEX</span>
-              <span className="block text-2xl font-black text-accent-500 tracking-widest -mt-1">DEALS</span>
-            </div>
-            <span className="text-[10px] text-primary-300 tracking-[0.3em] uppercase mt-1">Premium Watches & Eyewear</span>
+          <Link to="/" className="inline-block mb-4">
+            <VexLogoFull />
           </Link>
 
           <div className="inline-flex items-center gap-2 bg-accent-500/20 border border-accent-500/40 text-accent-400 rounded-full px-4 py-1.5 text-xs font-semibold mb-4">
