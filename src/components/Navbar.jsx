@@ -30,6 +30,10 @@ export default function Navbar() {
     navigate('/');
   };
 
+  const displayName = user?.name || user?.fullName || 'Account';
+  const firstName = displayName.split(' ')[0];
+  const avatar = user?.avatar || 'https://picsum.photos/seed/vexdeals-user/100/100';
+
   return (
     <header className="sticky top-0 z-50 bg-white shadow-md">
       {/* Top announcement banner */}
@@ -80,13 +84,13 @@ export default function Navbar() {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover border-2 border-primary-200" />
-                  <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-24 truncate">{user.name.split(' ')[0]}</span>
+                  <img src={avatar} alt={displayName} className="w-7 h-7 rounded-full object-cover border-2 border-primary-200" />
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-24 truncate">{firstName}</span>
                 </button>
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
                     <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-xs font-bold text-gray-800 truncate">{user.name}</p>
+                      <p className="text-xs font-bold text-gray-800 truncate">{displayName}</p>
                       <p className="text-[11px] text-gray-400 truncate">{user.email}</p>
                     </div>
                     {isStaff && (

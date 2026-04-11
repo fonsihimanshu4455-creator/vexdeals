@@ -1,7 +1,7 @@
 import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
-import { products } from '../../data/products';
 import { orders } from '../../data/orders';
 import { users } from '../../data/users';
+import { useProducts } from '../../context/ProductContext';
 
 const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
 
@@ -13,6 +13,7 @@ const monthlyData = [
 ];
 
 export default function AdminAnalytics() {
+  const { products } = useProducts();
   const totalRevenue = orders.filter(o => o.status === 'Delivered').reduce((a, o) => a + o.total, 0);
   const avgOrderValue = totalRevenue / orders.filter(o => o.status === 'Delivered').length || 0;
 

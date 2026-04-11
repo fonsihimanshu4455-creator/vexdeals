@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { TrendingUp, Package, ShoppingBag, Users, ArrowUpRight, ArrowRight, IndianRupee, Clock } from 'lucide-react';
-import { products } from '../../data/products';
 import { orders } from '../../data/orders';
 import { users } from '../../data/users';
+import { useProducts } from '../../context/ProductContext';
 
 const statusColors = {
   Delivered: 'bg-emerald-100 text-emerald-700',
@@ -13,6 +13,7 @@ const statusColors = {
 };
 
 export default function Dashboard() {
+  const { products } = useProducts();
   const totalRevenue = orders.filter(o => o.status === 'Delivered').reduce((a, o) => a + o.total, 0);
   const pendingOrders = orders.filter(o => ['Pending', 'Processing'].includes(o.status)).length;
   const totalCustomers = users.filter(u => u.role === 'customer').length;
