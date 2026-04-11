@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, LogOut,
   Menu, X, Bell, ChevronRight, BarChart3, Tag, Shield,
-  Megaphone,
+  Megaphone, Watch,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { VexLogoInline } from '../../components/Logo';
@@ -75,7 +75,7 @@ export default function AdminLayout() {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-primary-800">
           <Link to="/">
-            <VexLogoInline size="sm" />
+            <VexLogoInline size="sm" variant="dark" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white">
             <X size={20} />

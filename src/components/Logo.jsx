@@ -105,15 +105,20 @@ export function VexLogoMark({ size = 40 }) {
   );
 }
 
-/** Full stacked logo for hero/splash screens */
-export function VexLogoFull({ className = '' }) {
+/** Full stacked logo for hero/splash/login screens
+ *  variant='light' → dark text (default, white bg)
+ *  variant='dark'  → white text (dark/navy bg)
+ */
+export function VexLogoFull({ className = '', variant = 'dark' }) {
+  const vexColor      = variant === 'dark' ? 'text-white'      : 'text-primary-800';
+  const taglineColor  = variant === 'dark' ? 'text-primary-300' : 'text-gray-400';
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
       <VexLogoMark size={80} />
       <div className="text-center leading-none mt-1">
-        <div className="text-4xl font-black text-primary-800 tracking-tight">VEX</div>
+        <div className={`text-4xl font-black ${vexColor} tracking-tight`}>VEX</div>
         <div className="text-2xl font-black text-accent-500 tracking-[0.25em] -mt-1">DEALS</div>
-        <div className="text-[9px] font-semibold tracking-[0.3em] text-gray-400 uppercase mt-1">
+        <div className={`text-[9px] font-semibold tracking-[0.3em] ${taglineColor} uppercase mt-1`}>
           · Premium Watches & Eyewear ·
         </div>
       </div>
@@ -121,17 +126,22 @@ export function VexLogoFull({ className = '' }) {
   );
 }
 
-/** Compact inline logo for navbar */
-export function VexLogoInline({ size = 'md' }) {
+/** Compact inline logo for navbar
+ *  variant='light' → dark text on white background (default, navbar)
+ *  variant='dark'  → white text on dark background (admin sidebar)
+ */
+export function VexLogoInline({ size = 'md', variant = 'light' }) {
   const logoSize = size === 'sm' ? 32 : 40;
+  const vexColor  = variant === 'dark' ? 'text-white'      : 'text-primary-800';
+  const dealsColor = variant === 'dark' ? 'text-accent-400' : 'text-accent-500';
   return (
     <div className="flex items-center gap-2">
       <VexLogoMark size={logoSize} />
       <div className="leading-none">
-        <div className={`font-black tracking-tight text-primary-800 ${size === 'sm' ? 'text-base' : 'text-xl'}`}>
+        <div className={`font-black tracking-tight ${vexColor} ${size === 'sm' ? 'text-base' : 'text-xl'}`}>
           VEX
         </div>
-        <div className={`font-black tracking-[0.2em] text-accent-500 ${size === 'sm' ? 'text-[9px]' : 'text-[11px]'} -mt-0.5`}>
+        <div className={`font-black tracking-[0.2em] ${dealsColor} ${size === 'sm' ? 'text-[9px]' : 'text-[11px]'} -mt-0.5`}>
           DEALS
         </div>
       </div>
