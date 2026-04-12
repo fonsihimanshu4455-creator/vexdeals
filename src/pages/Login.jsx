@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { RefreshCw, CheckCircle, ArrowLeft, Shield, Phone } from 'lucide-react';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { RefreshCw, CheckCircle } from 'lucide-react';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
+
+const googleProvider = new GoogleAuthProvider();
 
 const saveCustomer = (user) => {
   try {
@@ -26,116 +28,52 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep]     = useState('phone'); // 'phone' | 'otp' | 'success'
-  const [phone, setPhone]   = useState('');
-  const [otp, setOtp]       = useState('');
-  const [timer, setTimer]   = useState(0);
-  const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
-  const [confirmation, setConfirmation] = useState(null);
-
-  const recaptchaRef     = useRef(null);
-  const recaptchaReady   = useRef(false);
+  const [error, setError]     = useState('');
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (user) navigate(user.role === 'customer' ? '/' : '/admin');
   }, [user, navigate]);
 
-  useEffect(() => {
-    if (timer <= 0) return;
-    const id = setInterval(() => setTimer(t => t - 1), 1000);
-    return () => clearInterval(id);
-  }, [timer]);
-
-  const setupRecaptcha = () => {
-    if (!auth || recaptchaReady.current) return;
-    recaptchaReady.current = true;
-    recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      size: 'invisible',
-      callback: () => {},
-      'expired-callback': () => { recaptchaReady.current = false; },
-    });
-  };
-
-  // ── Send OTP (Firebase SMS) ───────────────────────────────────────────────
-  const handleSendOtp = async () => {
-    const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length !== 10) {
-      setError('Enter a valid 10-digit mobile number.');
-      return;
-    }
+  const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
     try {
-      setupRecaptcha();
-      const fullPhone = `+91${cleaned}`;
-      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaRef.current);
-      setConfirmation(result);
-      setOtp('');
-      setTimer(30);
-      setStep('otp');
-    } catch (err) {
-      recaptchaReady.current = false;
-      if (err.code === 'auth/invalid-phone-number')
-        setError('Invalid phone number. Try again.');
-      else if (err.code === 'auth/too-many-requests')
-        setError('Too many attempts. Please wait a few minutes.');
-      else if (err.code === 'auth/operation-not-allowed')
-        setError('Phone sign-in not enabled in Firebase yet.');
-      else
-        setError('Could not send OTP. Please try again.');
-    }
-    setLoading(false);
-  };
-
-  // ── Verify OTP ────────────────────────────────────────────────────────────
-  const handleVerifyOtp = async () => {
-    if (otp.replace(/\D/g, '').length !== 6) {
-      setError('Enter the 6-digit OTP.');
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      const cred     = await confirmation.confirm(otp);
-      const fbPhone  = cred.user.phoneNumber; // e.g. +919876543210
-      const cleaned  = fbPhone.replace(/\D/g, '').slice(-10);
-
-      const existing = JSON.parse(localStorage.getItem('vexdeals_customers') || '[]')
-        .find(c => c.id === `phone_${cleaned}`);
+      const result   = await signInWithPopup(auth, googleProvider);
+      const gUser    = result.user;
 
       const customer = {
-        id:          `phone_${cleaned}`,
-        name:        existing?.name || `Customer ${cleaned.slice(-4)}`,
-        email:       existing?.email || '',
-        phone:       fbPhone,
+        id:          gUser.uid,
+        name:        gUser.displayName || 'Customer',
+        email:       gUser.email || '',
+        phone:       gUser.phoneNumber || '',
         role:        'customer',
-        avatar:      existing?.avatar ||
-          `https://ui-avatars.com/api/?name=${cleaned.slice(-4)}&background=1e3a8a&color=fff`,
-        joinDate:    existing?.joinDate || new Date().toISOString().split('T')[0],
-        totalOrders: existing?.totalOrders || 0,
-        totalSpent:  existing?.totalSpent  || 0,
+        avatar:      gUser.photoURL ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(gUser.displayName || 'User')}&background=1e3a8a&color=fff`,
+        joinDate:    new Date().toISOString().split('T')[0],
+        totalOrders: 0,
+        totalSpent:  0,
         status:      'Active',
-        provider:    'phone',
+        provider:    'google',
       };
 
       saveCustomer(customer);
-      login(customer.email || customer.phone, null, customer);
-      setStep('success');
-      setTimeout(() => navigate('/'), 1200);
+      login(customer.email, null, customer);
+      setSuccess(true);
+      setTimeout(() => navigate('/'), 1000);
     } catch (err) {
-      if (err.code === 'auth/invalid-verification-code')
-        setError('Wrong OTP. Please check and try again.');
-      else if (err.code === 'auth/code-expired')
-        setError('OTP expired. Please request a new one.');
+      if (err.code === 'auth/popup-closed-by-user')
+        setError('Sign-in cancelled. Please try again.');
+      else if (err.code === 'auth/popup-blocked')
+        setError('Popup blocked. Please allow popups for this site.');
       else
-        setError('Verification failed. Please try again.');
+        setError('Sign-in failed. Please try again.');
     }
     setLoading(false);
   };
 
-  // ── Success ───────────────────────────────────────────────────────────────
-  if (step === 'success') {
+  if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex items-center justify-center">
         <div className="text-center px-8">
@@ -147,74 +85,6 @@ export default function Login() {
     );
   }
 
-  // ── OTP entry ─────────────────────────────────────────────────────────────
-  if (step === 'otp') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex flex-col">
-        <div className="text-center pt-12 pb-6 px-4">
-          <Link to="/" className="inline-block mb-2"><VexLogoFull /></Link>
-        </div>
-        <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-10">
-          <button onClick={() => { setStep('phone'); setError(''); }}
-            className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-sm mb-6">
-            <ArrowLeft size={16} /> Change number
-          </button>
-
-          <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-5">
-            <Shield size={28} className="text-blue-600" />
-          </div>
-
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Enter OTP</h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Sent via SMS to <span className="font-semibold text-gray-800">+91 {phone}</span>
-          </p>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-4">
-              {error}
-            </div>
-          )}
-
-          <input
-            type="tel"
-            inputMode="numeric"
-            value={otp}
-            onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()}
-            placeholder="• • • • • •"
-            className="w-full border-2 border-gray-200 focus:border-primary-600 rounded-xl px-5 py-4 text-3xl font-bold tracking-[0.5em] text-center outline-none transition-colors mb-5"
-            autoFocus
-          />
-
-          <button
-            onClick={handleVerifyOtp}
-            disabled={loading || otp.length !== 6}
-            className="w-full bg-primary-600 text-white py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mb-4"
-          >
-            {loading
-              ? <><RefreshCw size={20} className="animate-spin" /> Verifying…</>
-              : <><Shield size={20} /> Verify & Login</>}
-          </button>
-
-          {timer > 0 ? (
-            <p className="text-center text-sm text-gray-400">
-              Resend in <span className="font-semibold text-gray-700">{timer}s</span>
-            </p>
-          ) : (
-            <button onClick={handleSendOtp} disabled={loading}
-              className="w-full text-primary-600 font-semibold text-sm py-2 hover:text-primary-700 disabled:opacity-50">
-              Resend OTP
-            </button>
-          )}
-
-          {/* Invisible reCAPTCHA anchor */}
-          <div id="recaptcha-container" />
-        </div>
-      </div>
-    );
-  }
-
-  // ── Phone entry ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex flex-col">
       <div className="text-center pt-14 pb-8 px-4">
@@ -225,52 +95,37 @@ export default function Login() {
 
       <div className="flex-1 bg-white rounded-t-3xl px-6 pt-10 pb-12">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-5">
+          <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-6">
             {error}
           </div>
         )}
 
-        <div className="w-14 h-14 bg-primary-100 rounded-2xl flex items-center justify-center mb-5 mx-auto">
-          <Phone size={28} className="text-primary-600" />
-        </div>
-
-        <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Login with Mobile</h2>
-        <p className="text-sm text-gray-500 text-center mb-6">
-          Enter your number — we'll send an OTP via SMS
-        </p>
-
-        <div className="flex border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-primary-600 transition-colors mb-5">
-          <div className="flex items-center gap-1 px-3 bg-gray-50 border-r border-gray-200 shrink-0">
-            <span className="text-base">🇮🇳</span>
-            <span className="text-sm font-semibold text-gray-600">+91</span>
-          </div>
-          <input
-            type="tel"
-            inputMode="numeric"
-            value={phone}
-            onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-            onKeyDown={e => e.key === 'Enter' && handleSendOtp()}
-            placeholder="9876543210"
-            className="flex-1 px-4 py-3.5 text-xl font-semibold outline-none tracking-widest bg-white"
-            autoFocus
-          />
-        </div>
-
+        {/* Google Sign-In */}
         <button
-          onClick={handleSendOtp}
-          disabled={loading || phone.replace(/\D/g, '').length !== 10}
-          className="w-full bg-primary-600 text-white py-4 rounded-xl font-bold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-base mb-6 shadow-sm"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-2xl py-4 px-5 hover:border-primary-400 hover:bg-primary-50 transition-all font-semibold text-gray-700 text-base disabled:opacity-60 disabled:cursor-not-allowed shadow-sm mb-6"
         >
-          {loading
-            ? <><RefreshCw size={20} className="animate-spin" /> Sending…</>
-            : <><Phone size={20} /> Send OTP</>}
+          {loading ? (
+            <RefreshCw size={22} className="animate-spin text-primary-600" />
+          ) : (
+            <>
+              <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </>
+          )}
         </button>
 
         <div className="space-y-3 mb-8">
           {[
+            { icon: '🔒', text: 'Secure Google login — no password needed' },
             { icon: '📦', text: 'Track all your orders in one place' },
             { icon: '🎁', text: 'Get exclusive deals and promo codes' },
-            { icon: '🔒', text: 'Safe & secure — no password needed' },
           ].map(({ icon, text }) => (
             <div key={text} className="flex items-center gap-3">
               <span className="text-xl">{icon}</span>
@@ -290,9 +145,6 @@ export default function Login() {
           Staff?{' '}
           <Link to="/admin-login" className="text-primary-600 font-semibold underline">Admin Portal →</Link>
         </p>
-
-        {/* Invisible reCAPTCHA anchor */}
-        <div id="recaptcha-container" />
       </div>
     </div>
   );
