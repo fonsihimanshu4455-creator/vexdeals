@@ -16,7 +16,7 @@ const loadRazorpay = () =>
     document.body.appendChild(s);
   });
 
-const RAZORPAY_KEY = 'rzp_live_ScXgUdoUvOk0Vj';
+const FALLBACK_RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
 
 const paymentMethods = [
   { id: 'razorpay', label: 'Pay Online', Icon: Smartphone, desc: 'UPI · Card · Net Banking · Wallets' },
@@ -184,9 +184,14 @@ export default function Checkout() {
         throw new Error(orderData.error || 'Order creation failed');
       }
 
+      const razorpayKey = String(orderData.keyId || FALLBACK_RAZORPAY_KEY || '').trim();
+      if (!razorpayKey) {
+        throw new Error('Payment gateway key is not configured. Add matching Razorpay keys in Vercel project settings.');
+      }
+
       // 2️⃣ Open Razorpay checkout
       const options = {
-        key:         RAZORPAY_KEY,
+        key:         razorpayKey,
         amount:      orderData.amount,
         currency:    orderData.currency || 'INR',
         name:        'VexDeals',
@@ -235,7 +240,12 @@ export default function Checkout() {
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', (resp) => {
-        setPayError(`Payment failed: ${resp.error.description}`);
+        const description = resp?.error?.description || 'Payment could not be completed.';
+        if (description.toLowerCase().includes('authentication failed')) {
+          setPayError('Razorpay authentication failed. Make sure Vercel has the correct matching RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET values.');
+        } else {
+          setPayError(`Payment failed: ${description}`);
+        }
         setPaying(false);
       });
       rzp.open();
