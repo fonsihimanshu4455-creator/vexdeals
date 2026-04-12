@@ -139,14 +139,14 @@ const getPromoValidation = (code, subtotal, catalog) => {
   return { valid: true, promo };
 };
 
-const getPromoDiscount = (promo, subtotal) => {
-  if (!promo || subtotal <= 0) return 0;
+const getPromoDiscount = (promo, cartTotal) => {
+  if (!promo || cartTotal <= 0) return 0;
 
   const rawDiscount = promo.type === 'flat'
     ? promo.value
-    : subtotal * (promo.value / 100);
+    : cartTotal * (promo.value / 100);
 
-  return Math.min(subtotal, Math.max(0, Math.round(rawDiscount)));
+  return Math.min(cartTotal, Math.max(0, Math.round(rawDiscount)));
 };
 
 const cartReducer = (state, action) => {
@@ -263,8 +263,8 @@ export function CartProvider({ children }) {
   const shipping = subtotal > 0 && subtotal < 500 ? 99 : 0;
   const promoValidation = getPromoValidation(state.promoCode, subtotal, promoCatalog);
   const appliedPromo = promoValidation.valid ? promoValidation.promo : null;
-  const discount = appliedPromo ? getPromoDiscount(appliedPromo, subtotal) : 0;
-  const total = Math.max(0, subtotal - discount + shipping);
+  const discount = appliedPromo ? getPromoDiscount(appliedPromo, subtotal + shipping) : 0;
+  const total = Math.max(0, subtotal + shipping - discount);
 
   const applyPromoCode = (rawCode) => {
     const code = String(rawCode || '').trim().toUpperCase();
@@ -276,14 +276,14 @@ export function CartProvider({ children }) {
     dispatch({ type: 'APPLY_PROMO', payload: code });
 
     const promo = validation.promo;
-    const discountValue = getPromoDiscount(promo, subtotal);
+    const discountValue = getPromoDiscount(promo, subtotal + shipping);
     const savingsLabel = promo.type === 'percent'
       ? `${promo.value}%`
       : `Rs ${promo.value.toLocaleString('en-IN')}`;
 
     return {
       success: true,
-      message: `${code} applied. You saved ${discountValue.toLocaleString('en-IN')} (${savingsLabel}).`,
+      message: `${code} applied. You saved ₹${discountValue.toLocaleString('en-IN')} (${savingsLabel} on total).`,
     };
   };
 
