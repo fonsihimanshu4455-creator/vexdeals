@@ -1,49 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Truck, RotateCcw, Shield, Headphones, ChevronLeft, ChevronRight, Zap, Star } from 'lucide-react';
+import { ArrowRight, Zap, Star } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
-
-const slides = [
-  {
-    id: 1,
-    title: 'Premium Watches Collection',
-    subtitle: 'Up to 40% OFF on luxury timepieces',
-    bg: 'from-primary-900 to-primary-700',
-    cta: 'Shop Watches',
-    link: '/products?category=Watches',
-    img: 'https://picsum.photos/seed/watchcollection/700/500',
-    badge: 'New Season',
-  },
-  {
-    id: 2,
-    title: 'Designer Eyewear Sale',
-    subtitle: 'Sunglasses & Frames starting ₹999',
-    bg: 'from-navy-900 to-primary-800',
-    cta: 'Explore Eyewear',
-    link: '/products?category=Eyewear',
-    img: 'https://picsum.photos/seed/eyewearsale/700/500',
-    badge: 'Up to 50% Off',
-  },
-  {
-    id: 3,
-    title: 'VexDeals Flash Sale',
-    subtitle: 'Exclusive deals on top brands',
-    bg: 'from-primary-800 to-primary-600',
-    cta: 'See All Deals',
-    link: '/products',
-    img: 'https://picsum.photos/seed/flashsale/700/500',
-    badge: 'Limited Time',
-  },
-];
-
-const trustBadges = [
-  { Icon: Truck,       title: 'Free Delivery',  desc: 'On orders above ₹500'         },
-  { Icon: RotateCcw,   title: 'Easy Returns',   desc: '7-day hassle-free returns'     },
-  { Icon: Shield,      title: '100% Authentic', desc: 'Genuine premium products'      },
-  { Icon: Headphones,  title: '24/7 Support',   desc: 'Round the clock assistance'    },
-];
 
 function CountdownTimer() {
   const [time, setTime] = useState({ h: 5, m: 42, s: 30 });
@@ -76,14 +36,8 @@ function CountdownTimer() {
 }
 
 export default function Home() {
-  const [slide, setSlide] = useState(0);
   const { activeCategories } = useCategories();
   const { products } = useProducts();
-
-  useEffect(() => {
-    const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 5000);
-    return () => clearInterval(t);
-  }, []);
 
   const featuredProducts = products.filter(p => p.featured);
   const bestsellers      = products.filter(p => p.isBestseller).slice(0, 4);
@@ -96,80 +50,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Slider */}
-      <section className="relative overflow-hidden">
-        <div className={`bg-gradient-to-r ${slides[slide].bg} transition-all duration-700`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="flex-1 text-white space-y-4">
-                <span className="inline-block bg-accent-500 text-primary-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-                  {slides[slide].badge}
-                </span>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">
-                  {slides[slide].title}
-                </h1>
-                <p className="text-lg sm:text-xl text-white/85">{slides[slide].subtitle}</p>
-                <Link
-                  to={slides[slide].link}
-                  className="inline-flex items-center gap-2 bg-accent-500 text-primary-900 font-bold px-6 py-3 rounded-xl hover:bg-accent-400 transition-colors shadow-lg"
-                >
-                  {slides[slide].cta} <ArrowRight size={18} />
-                </Link>
-              </div>
-              <div className="flex-1 max-w-sm md:max-w-md">
-                <img
-                  src={slides[slide].img}
-                  alt={slides[slide].title}
-                  className="w-full rounded-2xl shadow-2xl object-cover aspect-video"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setSlide(s => (s - 1 + slides.length) % slides.length)}
-          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow transition-colors"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <button
-          onClick={() => setSlide(s => (s + 1) % slides.length)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow transition-colors"
-        >
-          <ChevronRight size={20} />
-        </button>
-
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setSlide(i)}
-              className={`h-2 rounded-full transition-all ${i === slide ? 'bg-accent-400 w-6' : 'bg-white/50 w-2'}`}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Trust Badges */}
-      <section className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {trustBadges.map(({ Icon, title, desc }) => (
-              <div key={title} className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
-                  <Icon size={20} className="text-primary-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">{title}</p>
-                  <p className="text-xs text-gray-500">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Dynamic Categories — from admin */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex items-center justify-between mb-6">
