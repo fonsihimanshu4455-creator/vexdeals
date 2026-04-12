@@ -18,12 +18,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid amount' });
   }
 
-  const keyId     = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-
-  if (!keyId || !keySecret) {
-    return res.status(500).json({ error: 'Razorpay credentials not configured' });
-  }
+  const keyId     = 'rzp_live_ScXgUdoUvOk0Vj';
+  const keySecret = 'w0C0Y84Qiw0hauP6kFECAWhH';
 
   try {
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');

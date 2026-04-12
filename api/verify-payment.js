@@ -19,10 +19,7 @@ export default function handler(req, res) {
     return res.status(400).json({ success: false, error: 'Missing payment fields' });
   }
 
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'w0C0Y84Qiw0hauP6kFECAWhH';
-  if (!keySecret) {
-    return res.status(500).json({ success: false, error: 'Server misconfigured' });
-  }
+  const keySecret = 'w0C0Y84Qiw0hauP6kFECAWhH';
 
   const payload  = `${razorpay_order_id}|${razorpay_payment_id}`;
   const expected = createHmac('sha256', keySecret)
