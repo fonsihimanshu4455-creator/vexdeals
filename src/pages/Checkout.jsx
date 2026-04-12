@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Banknote, Smartphone, RefreshCw, AlertTriangle, MapPin, Tag } from 'lucide-react';
+import { Check, Smartphone, RefreshCw, AlertTriangle, MapPin, Tag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCustomerData } from '../context/CustomerDataContext';
@@ -19,8 +19,7 @@ const loadRazorpay = () =>
 const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_ScXgUdoUvOk0Vj';
 
 const paymentMethods = [
-  { id: 'razorpay', label: 'Pay Online',        Icon: Smartphone,   desc: 'UPI · Card · Net Banking · Wallets' },
-  { id: 'cod',      label: 'Cash on Delivery',  Icon: Banknote,     desc: 'Pay when delivered'                 },
+  { id: 'razorpay', label: 'Pay Online', Icon: Smartphone, desc: 'UPI · Card · Net Banking · Wallets' },
 ];
 
 export default function Checkout() {
@@ -59,6 +58,13 @@ export default function Checkout() {
   const [errors, setErrors] = useState({});
 
   const fmt = (p) => `₹${p.toLocaleString('en-IN')}`;
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { replace: true, state: { from: '/checkout' } });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     setPromoInput(promoCode);
@@ -240,11 +246,7 @@ export default function Checkout() {
   };
 
   const handlePay = () => {
-    if (payment === 'cod') {
-      placeOrder('Cash on Delivery');
-    } else {
-      handleRazorpay();
-    }
+    handleRazorpay();
   };
 
   // ── Empty cart ──────────────────────────────────────────────────────────
@@ -504,7 +506,7 @@ export default function Checkout() {
                   {paying ? (
                     <><RefreshCw size={20} className="animate-spin" /> Processing…</>
                   ) : (
-                    <><Check size={20} /> {payment === 'cod' ? 'Place Order' : 'Pay'} · {fmt(total)}</>
+                    <><Check size={20} /> Pay · {fmt(total)}</>
                   )}
                 </button>
                 <p className="text-xs text-center text-gray-400 mt-3">
