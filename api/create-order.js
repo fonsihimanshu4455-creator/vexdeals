@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid amount' });
   }
 
-  const keyId     = process.env.RAZORPAY_KEY_ID     || 'rzp_live_ScXgUdoUvOk0Vj';
+  const keyId     = 'rzp_live_ScXgUdoUvOk0Vj';
   const keySecret = process.env.RAZORPAY_KEY_SECRET || 'w0C0Y84Qiw0hauP6kFECAWhH';
 
   if (!keyId || !keySecret) {
