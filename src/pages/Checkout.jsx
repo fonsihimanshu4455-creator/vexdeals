@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Banknote, Smartphone, RefreshCw, AlertTriangle, MapPin } from 'lucide-react';
+import { Check, Banknote, Smartphone, RefreshCw, AlertTriangle, MapPin, Tag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCustomerData } from '../context/CustomerDataContext';
@@ -16,7 +16,7 @@ const loadRazorpay = () =>
     document.body.appendChild(s);
   });
 
-const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_ScXgUdoUvOk0Vj';
+const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 const paymentMethods = [
   { id: 'razorpay', label: 'Pay Online',        Icon: Smartphone,   desc: 'UPI · Card · Net Banking · Wallets' },
@@ -24,7 +24,19 @@ const paymentMethods = [
 ];
 
 export default function Checkout() {
-  const { items, subtotal, shipping, total, dispatch } = useCart();
+  const {
+    items,
+    subtotal,
+    shipping,
+    discount,
+    total,
+    promoCode,
+    appliedPromo,
+    dispatch,
+    clearCart,
+    applyPromoCode,
+    removePromoCode,
+  } = useCart();
   const { user, isCustomer } = useAuth();
   const { defaultAddress, placeCustomerOrder } = useCustomerData();
   const navigate = useNavigate();
@@ -38,6 +50,8 @@ export default function Checkout() {
   const [paying, setPaying]   = useState(false);
   const [payError, setPayError] = useState('');
   const [hasAppliedDefaultAddress, setHasAppliedDefaultAddress] = useState(false);
+  const [promoInput, setPromoInput] = useState(promoCode);
+  const [promoFeedback, setPromoFeedback] = useState({ type: '', message: '' });
   const [form, setForm] = useState({
     name: user?.name || '', email: user?.email || '',
     phone: user?.phone || '', address: '', city: '', state: '', pincode: '',
@@ -45,6 +59,10 @@ export default function Checkout() {
   const [errors, setErrors] = useState({});
 
   const fmt = (p) => `₹${p.toLocaleString('en-IN')}`;
+
+  useEffect(() => {
+    setPromoInput(promoCode);
+  }, [promoCode]);
 
   const applySavedAddress = (address) => {
     if (!address) return;
@@ -115,10 +133,24 @@ export default function Checkout() {
 
     setPlacedOrder(savedOrder);
     setCompletedCheckout({ subtotal, shipping, total });
-    setPayInfo({ method, paymentId });
+    setPayInfo({ method, paymentId, promoCode, discount });
     setOrdered(true);
-    dispatch({ type: 'CLEAR_CART' });
+    clearCart();
     setTimeout(() => navigate(savedOrder ? '/account/orders' : '/'), 4000);
+  };
+
+  const handleApplyPromo = () => {
+    const result = applyPromoCode(promoInput);
+    setPromoFeedback({
+      type: result.success ? 'success' : 'error',
+      message: result.message,
+    });
+  };
+
+  const handleRemovePromo = () => {
+    removePromoCode();
+    setPromoInput('');
+    setPromoFeedback({ type: 'success', message: 'Promo code removed.' });
   };
 
   // ── Razorpay online payment ──────────────────────────────────────────────
@@ -250,6 +282,14 @@ export default function Checkout() {
               <span className="text-gray-500">Order Total</span>
               <span className="font-bold text-gray-900">{fmt(successTotal)}</span>
             </div>
+            {payInfo?.discount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Discount</span>
+                <span className="font-semibold text-emerald-600">
+                  - {fmt(payInfo.discount)} {payInfo.promoCode ? `(${payInfo.promoCode})` : ''}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Payment</span>
               <span className="font-medium text-gray-700">{payInfo?.method}</span>
@@ -489,12 +529,52 @@ export default function Checkout() {
                 </div>
               ))}
             </div>
+            <div className="mb-4 rounded-2xl border border-gray-100 bg-gray-50 p-3">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+                <Tag size={16} className="text-primary-600" /> Promo / Reward Code
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoInput}
+                  onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
+                  placeholder="Enter promo code"
+                  className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500"
+                />
+                <button
+                  onClick={handleApplyPromo}
+                  className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                >
+                  Apply
+                </button>
+              </div>
+              {appliedPromo && (
+                <div className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  <span><span className="font-bold">{appliedPromo.code}</span> applied.</span>
+                  <button onClick={handleRemovePromo} className="font-semibold text-emerald-800 hover:text-emerald-900">
+                    Remove
+                  </button>
+                </div>
+              )}
+              {promoFeedback.message && (
+                <p className={`mt-2 text-xs ${promoFeedback.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {promoFeedback.message}
+                </p>
+              )}
+              <p className="mt-2 text-xs text-gray-400">Try: VEXFIRST for 10% off</p>
+            </div>
             <div className="border-t border-gray-100 pt-3 space-y-2 text-sm">
               <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
                 <span className={shipping === 0 ? 'text-emerald-600 font-medium' : ''}>{shipping === 0 ? 'FREE' : fmt(shipping)}</span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>Discount {promoCode ? `(${promoCode})` : ''}</span>
+                  <span className="font-medium">- {fmt(discount)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-2 text-base">
                 <span>Total</span><span>{fmt(total)}</span>
               </div>

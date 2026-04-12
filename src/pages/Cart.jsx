@@ -1,12 +1,44 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Tag, Truck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function Cart() {
-  const { items, subtotal, shipping, total, dispatch } = useCart();
+  const {
+    items,
+    subtotal,
+    shipping,
+    discount,
+    total,
+    dispatch,
+    promoCode,
+    appliedPromo,
+    applyPromoCode,
+    removePromoCode,
+  } = useCart();
   const navigate = useNavigate();
+  const [couponInput, setCouponInput] = useState(promoCode);
+  const [promoMessage, setPromoMessage] = useState({ type: '', text: '' });
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
+
+  useEffect(() => {
+    setCouponInput(promoCode);
+  }, [promoCode]);
+
+  const handleApplyCoupon = () => {
+    const result = applyPromoCode(couponInput);
+    setPromoMessage({
+      type: result.success ? 'success' : 'error',
+      text: result.message,
+    });
+  };
+
+  const handleRemoveCoupon = () => {
+    removePromoCode();
+    setCouponInput('');
+    setPromoMessage({ type: 'success', text: 'Promo code removed.' });
+  };
 
   if (items.length === 0) {
     return (
@@ -106,19 +138,43 @@ export default function Cart() {
             {/* Coupon */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Tag size={16} className="text-primary-600" /> Apply Coupon
+                <Tag size={16} className="text-primary-600" /> Apply Promo / Reward Code
               </h3>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Enter coupon code"
-                  defaultValue=""
+                  placeholder="Enter promo code"
+                  value={couponInput}
+                  onChange={(event) => setCouponInput(event.target.value.toUpperCase())}
                   className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500"
                 />
-                <button className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">
+                <button
+                  onClick={handleApplyCoupon}
+                  className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+                >
                   Apply
                 </button>
               </div>
+              {appliedPromo && (
+                <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>
+                      <span className="font-bold">{appliedPromo.code}</span> applied successfully.
+                    </span>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="font-semibold text-emerald-800 hover:text-emerald-900"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+              {promoMessage.text && (
+                <p className={`mt-2 text-xs ${promoMessage.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {promoMessage.text}
+                </p>
+              )}
               <p className="text-xs text-gray-400 mt-2">Try: VEXFIRST for 10% off</p>
             </div>
 
@@ -143,6 +199,14 @@ export default function Cart() {
                   <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg p-2">
                     🎉 You're eligible for free delivery!
                   </p>
+                )}
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>
+                      Discount {promoCode ? `(${promoCode})` : ''}
+                    </span>
+                    <span className="font-medium">- {formatPrice(discount)}</span>
+                  </div>
                 )}
                 <div className="border-t border-gray-100 pt-3">
                   <div className="flex justify-between">

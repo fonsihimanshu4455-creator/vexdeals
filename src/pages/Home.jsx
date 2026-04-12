@@ -179,26 +179,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Promo Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="bg-gradient-to-r from-primary-800 to-primary-900 rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent-500/10 to-transparent pointer-events-none" />
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-3 relative">
-            Get 10% Off Your First Order!
-          </h2>
-          <p className="text-white/70 mb-6 text-sm sm:text-base relative">
-            Use code{' '}
-            <span className="bg-accent-500 text-primary-900 font-bold px-2 py-0.5 rounded">VEXFIRST</span>{' '}
-            at checkout
-          </p>
-          <Link
-            to="/login"
-            className="relative inline-flex items-center gap-2 bg-accent-500 text-primary-900 font-bold px-8 py-3 rounded-xl hover:bg-accent-400 transition-colors shadow-lg"
-          >
-            Sign Up Now <ArrowRight size={18} />
-          </Link>
-        </div>
-      </section>
     </div>
   );
 }
