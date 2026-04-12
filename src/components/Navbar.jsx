@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, User, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, X, LogOut, LayoutDashboard, CreditCard, MapPin, Package } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCategories } from '../context/CategoryContext';
@@ -8,7 +8,7 @@ import { VexLogoInline } from './Logo';
 
 export default function Navbar() {
   const { totalItems } = useCart();
-  const { user, logout, isStaff } = useAuth();
+  const { user, logout, isStaff, isCustomer } = useAuth();
   const { activeCategories } = useCategories();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen]       = useState(false);
@@ -101,6 +101,31 @@ export default function Navbar() {
                       >
                         <LayoutDashboard size={16} /> Admin Panel
                       </Link>
+                    )}
+                    {isCustomer && (
+                      <>
+                        <Link
+                          to="/account/orders"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-700"
+                        >
+                          <Package size={16} /> My Orders
+                        </Link>
+                        <Link
+                          to="/account/transactions"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-700"
+                        >
+                          <CreditCard size={16} /> Transaction History
+                        </Link>
+                        <Link
+                          to="/account/addresses"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-700"
+                        >
+                          <MapPin size={16} /> Saved Addresses
+                        </Link>
+                      </>
                     )}
                     <button
                       onClick={handleLogout}

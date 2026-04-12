@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, CreditCard, Banknote, Package, Smartphone, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Check, Banknote, Smartphone, RefreshCw, AlertTriangle, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useCustomerData } from '../context/CustomerDataContext';
 
 // ── Load Razorpay script dynamically ────────────────────────────────────────
 const loadRazorpay = () =>
@@ -15,7 +16,7 @@ const loadRazorpay = () =>
     document.body.appendChild(s);
   });
 
-const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_ScK3dNgaS5pEmr';
+const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 const paymentMethods = [
   { id: 'razorpay', label: 'Pay Online',        Icon: Smartphone,   desc: 'UPI · Card · Net Banking · Wallets' },
@@ -24,15 +25,19 @@ const paymentMethods = [
 
 export default function Checkout() {
   const { items, subtotal, shipping, total, dispatch } = useCart();
-  const { user } = useAuth();
+  const { user, isCustomer } = useAuth();
+  const { defaultAddress, placeCustomerOrder } = useCustomerData();
   const navigate = useNavigate();
 
   const [step, setStep]       = useState(1);
   const [payment, setPayment] = useState('razorpay');
   const [ordered, setOrdered] = useState(false);
+  const [placedOrder, setPlacedOrder] = useState(null);
+  const [completedCheckout, setCompletedCheckout] = useState(null);
   const [payInfo, setPayInfo] = useState(null);  // { method, paymentId }
   const [paying, setPaying]   = useState(false);
   const [payError, setPayError] = useState('');
+  const [hasAppliedDefaultAddress, setHasAppliedDefaultAddress] = useState(false);
   const [form, setForm] = useState({
     name: user?.name || '', email: user?.email || '',
     phone: user?.phone || '', address: '', city: '', state: '', pincode: '',
@@ -41,11 +46,44 @@ export default function Checkout() {
 
   const fmt = (p) => `₹${p.toLocaleString('en-IN')}`;
 
+  const applySavedAddress = (address) => {
+    if (!address) return;
+
+    setForm((current) => ({
+      ...current,
+      name: address.fullName || current.name,
+      email: address.email || current.email,
+      phone: address.phone || current.phone,
+      address: address.address || '',
+      city: address.city || '',
+      state: address.state || '',
+      pincode: address.pincode || '',
+    }));
+    setErrors({});
+    setPayError('');
+  };
+
+  useEffect(() => {
+    if (!defaultAddress || hasAppliedDefaultAddress) return;
+
+    const hasManualShippingInput = [form.address, form.city, form.state, form.pincode].some((value) =>
+      String(value || '').trim()
+    );
+
+    if (hasManualShippingInput) {
+      setHasAppliedDefaultAddress(true);
+      return;
+    }
+
+    applySavedAddress(defaultAddress);
+    setHasAppliedDefaultAddress(true);
+  }, [defaultAddress, hasAppliedDefaultAddress, form.address, form.city, form.state, form.pincode]);
+
   const validate = () => {
     const e = {};
     if (!form.name.trim())           e.name    = 'Required';
     if (!form.email.includes('@'))   e.email   = 'Invalid email';
-    if (form.phone.replace(/\D/,'').length < 10) e.phone = 'Invalid phone';
+    if (form.phone.replace(/\D/g,'').length < 10) e.phone = 'Invalid phone';
     if (!form.address.trim())        e.address = 'Required';
     if (!form.city.trim())           e.city    = 'Required';
     if (!form.state.trim())          e.state   = 'Required';
@@ -55,10 +93,32 @@ export default function Checkout() {
   };
 
   const placeOrder = (method, paymentId = null) => {
+    const savedOrder = isCustomer
+      ? placeCustomerOrder({
+          cartItems: items,
+          subtotal,
+          shipping,
+          total,
+          shippingAddress: {
+            fullName: form.name,
+            email: form.email,
+            phone: form.phone,
+            address: form.address,
+            city: form.city,
+            state: form.state,
+            pincode: form.pincode,
+          },
+          paymentMethod: method,
+          paymentId,
+        })
+      : null;
+
+    setPlacedOrder(savedOrder);
+    setCompletedCheckout({ subtotal, shipping, total });
     setPayInfo({ method, paymentId });
     setOrdered(true);
     dispatch({ type: 'CLEAR_CART' });
-    setTimeout(() => navigate('/'), 4000);
+    setTimeout(() => navigate(savedOrder ? '/account/orders' : '/'), 4000);
   };
 
   // ── Razorpay online payment ──────────────────────────────────────────────
@@ -169,6 +229,8 @@ export default function Checkout() {
 
   // ── Order success screen ─────────────────────────────────────────────────
   if (ordered) {
+    const successTotal = placedOrder?.total ?? completedCheckout?.total ?? total;
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-lg p-10 max-w-md w-full text-center">
@@ -178,9 +240,15 @@ export default function Checkout() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Placed!</h2>
           <p className="text-gray-500 mb-4">Thank you for shopping with VexDeals!</p>
           <div className="bg-gray-50 rounded-2xl p-4 mb-6 text-left space-y-1">
+            {placedOrder?.id && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Order ID</span>
+                <span className="font-semibold text-gray-900">{placedOrder.id}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Order Total</span>
-              <span className="font-bold text-gray-900">{fmt(total)}</span>
+              <span className="font-bold text-gray-900">{fmt(successTotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Payment</span>
@@ -193,10 +261,24 @@ export default function Checkout() {
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-400 mb-4">Redirecting home shortly…</p>
-          <Link to="/" className="block w-full bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700">
-            Back to Home
-          </Link>
+          <p className="text-xs text-gray-400 mb-4">
+            {placedOrder ? 'Redirecting to My Orders shortly…' : 'Redirecting home shortly…'}
+          </p>
+          <div className="space-y-3">
+            {placedOrder && (
+              <>
+                <Link to="/account/orders" className="block w-full bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700">
+                  View My Orders
+                </Link>
+                <Link to="/account/transactions" className="block w-full rounded-xl border border-primary-200 py-3 font-semibold text-primary-700 hover:bg-primary-50">
+                  View Transaction History
+                </Link>
+              </>
+            )}
+            <Link to="/" className="block w-full rounded-xl border border-gray-200 py-3 font-medium text-gray-700 hover:bg-gray-50">
+              Back to Home
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -229,6 +311,44 @@ export default function Checkout() {
             {step === 1 && (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Shipping Details</h2>
+
+                <div className="mb-6 rounded-2xl border border-primary-100 bg-primary-50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-2xl bg-white p-2 text-primary-700 shadow-sm">
+                        <MapPin size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-primary-900">
+                          {defaultAddress ? 'Use your saved delivery address' : 'Save an address for faster checkout'}
+                        </p>
+                        <p className="mt-1 text-xs text-primary-700">
+                          {defaultAddress
+                            ? `${defaultAddress.fullName}, ${defaultAddress.address}, ${defaultAddress.city}, ${defaultAddress.state} - ${defaultAddress.pincode}`
+                            : 'Add address details once, then edit them anytime from your account.'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {defaultAddress && (
+                        <button
+                          type="button"
+                          onClick={() => applySavedAddress(defaultAddress)}
+                          className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                        >
+                          Use Saved Address
+                        </button>
+                      )}
+                      <Link
+                        to="/account/addresses"
+                        className="rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+                      >
+                        {defaultAddress ? 'Edit Saved Addresses' : 'Add Address Details'}
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
                     { key: 'name',    label: 'Full Name',       ph: 'Rahul Sharma',     type: 'text'  },
@@ -283,6 +403,23 @@ export default function Checkout() {
                   <p className="font-semibold text-primary-800 mb-1">Delivering to:</p>
                   <p>{form.name} · {form.phone}</p>
                   <p>{form.address}, {form.city}, {form.state} — {form.pincode}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {defaultAddress && (
+                      <button
+                        type="button"
+                        onClick={() => applySavedAddress(defaultAddress)}
+                        className="rounded-xl border border-primary-200 bg-white px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100"
+                      >
+                        Use Default Address
+                      </button>
+                    )}
+                    <Link
+                      to="/account/addresses"
+                      className="rounded-xl border border-primary-200 bg-white px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100"
+                    >
+                      {defaultAddress ? 'Edit Saved Addresses' : 'Add Address Details'}
+                    </Link>
+                  </div>
                 </div>
 
                 {/* Payment method cards */}
