@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { collection, doc, onSnapshot, orderBy, query, setDoc, where } from 'firebase/firestore';
 import { orders as seedOrders } from '../data/orders';
+import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
 
 const CustomerDataContext = createContext();
@@ -379,6 +381,11 @@ export function CustomerDataProvider({ children }) {
 
     setOrders((currentOrders) => [order, ...currentOrders]);
     setTransactions((currentTransactions) => [transaction, ...currentTransactions]);
+
+    // Save to Firestore so admin sees it in real-time
+    if (db && order) {
+      setDoc(doc(db, 'orders', order.id), order).catch(() => {});
+    }
 
     return order;
   };
