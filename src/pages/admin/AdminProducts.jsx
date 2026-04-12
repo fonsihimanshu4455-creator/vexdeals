@@ -9,6 +9,7 @@ const createEmptyForm = (defaultCategory = 'Electronics') => ({
   price: '',
   originalPrice: '',
   stock: '',
+  shippingCharge: 0,
   image: '',
   description: '',
   featured: true,
@@ -19,6 +20,11 @@ const createEmptyForm = (defaultCategory = 'Electronics') => ({
 const MAX_IMAGE_SIZE_BYTES = 500 * 1024;
 const RECOMMENDED_IMAGE_SIZE = '1000 x 1000 px';
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const normalizeShippingCharge = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.min(500, Math.max(0, Math.round(parsed)));
+};
 
 const formatFileSize = (sizeInBytes) => {
   if (!Number.isFinite(sizeInBytes) || sizeInBytes <= 0) return '0 KB';
@@ -88,15 +94,18 @@ export default function AdminProducts() {
       originalPrice: product.originalPrice,
       stock: product.stock,
       category: product.category,
+      shippingCharge: product.shippingCharge ?? 0,
     });
   };
 
   const saveEdit = () => {
+    const shippingCharge = normalizeShippingCharge(editData.shippingCharge);
     updateProduct(editId, {
       ...editData,
       price: Number(editData.price),
       originalPrice: Number(editData.originalPrice || editData.price),
       stock: Number(editData.stock),
+      shippingCharge,
     });
     setEditId(null);
     setEditData({});
@@ -172,6 +181,7 @@ export default function AdminProducts() {
     const price = Number(addForm.price);
     const originalPrice = Number(addForm.originalPrice || addForm.price);
     const stock = Number(addForm.stock);
+    const shippingCharge = normalizeShippingCharge(addForm.shippingCharge);
 
     if (!name) {
       setFormError('Product name is required.');
@@ -189,6 +199,10 @@ export default function AdminProducts() {
       setFormError('Enter a valid stock quantity.');
       return;
     }
+    if (!Number.isFinite(Number(addForm.shippingCharge)) || shippingCharge < 0 || shippingCharge > 500) {
+      setFormError('Shipping charge must be between 0 and 500.');
+      return;
+    }
 
     addProduct({
       ...addForm,
@@ -197,6 +211,7 @@ export default function AdminProducts() {
       price,
       originalPrice: Number.isFinite(originalPrice) && originalPrice > 0 ? originalPrice : price,
       stock,
+      shippingCharge,
       rating: 4.5,
       reviews: 0,
       specs: [],
@@ -284,6 +299,7 @@ export default function AdminProducts() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Product</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Price</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Shipping</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Stock</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rating</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Discount</th>
@@ -348,6 +364,29 @@ export default function AdminProducts() {
                       </div>
                     ) : (
                       formatPrice(product.price)
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {editId === product.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="500"
+                          value={editData.shippingCharge}
+                          onChange={(e) => setEditData((current) => ({ ...current, shippingCharge: e.target.value }))}
+                          className="border border-primary-400 rounded-lg px-2 py-1 text-xs w-20 outline-none"
+                        />
+                        <span className="text-[11px] text-gray-400">0-500</span>
+                      </div>
+                    ) : (
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                        Number(product.shippingCharge) > 0
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {Number(product.shippingCharge) > 0 ? formatPrice(product.shippingCharge) : 'Free'}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -497,6 +536,37 @@ export default function AdminProducts() {
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500"
                   placeholder="25"
                 />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                <span className="block mb-1 font-medium">Shipping Charge</span>
+                <div className="rounded-xl border border-gray-200 px-3 py-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="0"
+                      max="500"
+                      step="10"
+                      value={normalizeShippingCharge(addForm.shippingCharge)}
+                      onChange={(e) => setAddForm((current) => ({ ...current, shippingCharge: e.target.value }))}
+                      className="flex-1 accent-primary-600"
+                    />
+                    <div className="flex items-center gap-1 rounded-lg bg-primary-50 px-2 py-1 text-sm font-semibold text-primary-700">
+                      <span>₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="500"
+                        value={addForm.shippingCharge}
+                        onChange={(e) => setAddForm((current) => ({ ...current, shippingCharge: e.target.value }))}
+                        className="w-16 bg-transparent outline-none"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Set per-product shipping from 0 to 500. Use 0 for free delivery.
+                  </p>
+                </div>
               </label>
 
               <label className="text-sm text-gray-700">

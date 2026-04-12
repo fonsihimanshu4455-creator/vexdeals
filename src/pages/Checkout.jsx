@@ -526,6 +526,11 @@ export default function Checkout() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-800 line-clamp-1">{item.name}</p>
                     <p className="text-xs text-gray-500">Qty: {item.qty}</p>
+                    <p className={`text-[11px] ${Number(item.shippingCharge) > 0 ? 'text-blue-600' : 'text-emerald-600'}`}>
+                      {Number(item.shippingCharge) > 0
+                        ? `Shipping ${fmt(Number(item.shippingCharge) * item.qty)}`
+                        : 'Free shipping'}
+                    </p>
                     <p className="text-xs font-bold text-gray-900">{fmt(item.price * item.qty)}</p>
                   </div>
                 </div>

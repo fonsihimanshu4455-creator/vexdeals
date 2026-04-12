@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, useState } from 'react';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { useProducts } from './ProductContext';
 
 const CartContext = createContext();
 const CART_STORE_KEY = 'vexdeals_cart';
@@ -22,6 +23,12 @@ const DEFAULT_PROMOS = [
   },
 ];
 
+const normalizeShippingCharge = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.min(500, Math.max(0, Math.round(parsed)));
+};
+
 const normalizeCartItems = (items) => {
   if (!Array.isArray(items)) return [];
 
@@ -32,6 +39,7 @@ const normalizeCartItems = (items) => {
       const price = Number(item.price);
       const stock = Number(item.stock);
       const qty = Number(item.qty);
+      const shippingCharge = normalizeShippingCharge(item.shippingCharge);
 
       if (!Number.isFinite(id) || !Number.isFinite(price)) {
         return null;
@@ -43,6 +51,7 @@ const normalizeCartItems = (items) => {
         price,
         stock: Number.isFinite(stock) ? stock : 0,
         qty: Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 1,
+        shippingCharge,
       };
     })
     .filter(Boolean);
@@ -158,12 +167,27 @@ const cartReducer = (state, action) => {
           ...state,
           items: state.items.map(i =>
             i.id === action.payload.id
-              ? { ...i, qty: Math.min(i.qty + 1, action.payload.stock) }
+              ? {
+                ...i,
+                ...action.payload,
+                qty: Math.min(i.qty + 1, action.payload.stock),
+                shippingCharge: normalizeShippingCharge(action.payload.shippingCharge),
+              }
               : i
           ),
         };
       }
-      return { ...state, items: [...state.items, { ...action.payload, qty: 1 }] };
+      return {
+        ...state,
+        items: [
+          ...state.items,
+          {
+            ...action.payload,
+            qty: 1,
+            shippingCharge: normalizeShippingCharge(action.payload.shippingCharge),
+          },
+        ],
+      };
     }
     case 'REMOVE_ITEM':
       return { ...state, items: state.items.filter(i => i.id !== action.payload) };
@@ -193,6 +217,7 @@ const cartReducer = (state, action) => {
 };
 
 export function CartProvider({ children }) {
+  const { products } = useProducts();
   const [state, dispatch] = useReducer(cartReducer, { items: [], promoCode: '' });
   const [promoCatalog, setPromoCatalog] = useState(() => readLocalPromoCatalog());
 
@@ -250,6 +275,32 @@ export function CartProvider({ children }) {
   }, [state.items]);
 
   useEffect(() => {
+    if (!products.length || !state.items.length) return;
+
+    const productMap = new Map(products.map((product) => [product.id, product]));
+    const syncedItems = normalizeCartItems(
+      state.items.map((item) => {
+        const latestProduct = productMap.get(item.id);
+        if (!latestProduct) return item;
+
+        return {
+          ...item,
+          name: latestProduct.name,
+          category: latestProduct.category,
+          image: latestProduct.image,
+          price: latestProduct.price,
+          stock: latestProduct.stock,
+          shippingCharge: latestProduct.shippingCharge,
+        };
+      })
+    );
+
+    if (JSON.stringify(syncedItems) !== JSON.stringify(normalizeCartItems(state.items))) {
+      dispatch({ type: 'LOAD_CART', payload: syncedItems });
+    }
+  }, [products, state.items]);
+
+  useEffect(() => {
     if (state.promoCode) {
       localStorage.setItem(CART_PROMO_KEY, state.promoCode);
       return;
@@ -260,7 +311,10 @@ export function CartProvider({ children }) {
 
   const totalItems = state.items.reduce((acc, i) => acc + i.qty, 0);
   const subtotal = state.items.reduce((acc, i) => acc + i.price * i.qty, 0);
-  const shipping = subtotal > 0 && subtotal < 500 ? 99 : 0;
+  const shipping = state.items.reduce(
+    (acc, item) => acc + normalizeShippingCharge(item.shippingCharge) * item.qty,
+    0
+  );
   const promoValidation = getPromoValidation(state.promoCode, subtotal, promoCatalog);
   const appliedPromo = promoValidation.valid ? promoValidation.promo : null;
   const discount = appliedPromo ? getPromoDiscount(appliedPromo, subtotal + shipping) : 0;

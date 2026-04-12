@@ -12,6 +12,12 @@ const toNumber = (value, fallback) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const normalizeShippingCharge = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.min(500, Math.max(0, Math.round(parsed)));
+};
+
 const buildImageSeed = (value) =>
   encodeURIComponent(String(value || 'vexdeals-product').trim().toLowerCase().replace(/\s+/g, '-'));
 
@@ -54,6 +60,7 @@ const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
   const reviews = Math.max(0, Math.floor(toNumber(rawProduct.reviews, 0)));
   const stock = Math.max(0, Math.floor(toNumber(rawProduct.stock, 0)));
   const sortOrder = Math.max(1, Math.floor(toNumber(rawProduct.sortOrder, fallbackSortOrder ?? id)));
+  const shippingCharge = normalizeShippingCharge(rawProduct.shippingCharge);
 
   const defaultImage = `https://picsum.photos/seed/${buildImageSeed(name || id)}/500/500`;
   const image = String(rawProduct.image || defaultImage).trim() || defaultImage;
@@ -73,6 +80,7 @@ const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
     reviews,
     stock,
     sortOrder,
+    shippingCharge,
     image,
     images: images.length ? images : [image],
     description: String(rawProduct.description || `${name} is now available on VexDeals.`).trim(),

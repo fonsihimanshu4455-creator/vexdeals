@@ -118,6 +118,11 @@ export default function Cart() {
                       {item.qty > 1 && (
                         <p className="text-xs text-gray-500">{formatPrice(item.price)} each</p>
                       )}
+                      <p className={`text-xs ${Number(item.shippingCharge) > 0 ? 'text-blue-600' : 'text-emerald-600'}`}>
+                        {Number(item.shippingCharge) > 0
+                          ? `Shipping ${formatPrice(Number(item.shippingCharge))} each`
+                          : 'Free shipping'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -195,9 +200,14 @@ export default function Cart() {
                     {shipping === 0 ? 'FREE' : formatPrice(shipping)}
                   </span>
                 </div>
+                {shipping > 0 && (
+                  <p className="text-xs text-blue-600 bg-blue-50 rounded-lg p-2">
+                    Shipping total updates instantly from each product's admin shipping setting.
+                  </p>
+                )}
                 {shipping === 0 && subtotal > 0 && (
                   <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg p-2">
-                    🎉 You're eligible for free delivery!
+                    All products in your cart currently have free delivery.
                   </p>
                 )}
                 {discount > 0 && (
