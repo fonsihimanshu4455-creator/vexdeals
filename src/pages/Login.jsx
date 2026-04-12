@@ -1,118 +1,221 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { RefreshCw, CheckCircle, User, Phone } from 'lucide-react';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+import { Smartphone, ArrowRight, RefreshCw, CheckCircle, PhoneCall } from 'lucide-react';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth, firebaseConfigReady } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
 
-const googleProvider = new GoogleAuthProvider();
+// ── Mobile detection ────────────────────────────────────────────────────────
+const isMobileDevice = () => {
+  const ua = navigator.userAgent || '';
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
+    window.innerWidth < 768
+  );
+};
 
-// Track customer logins in localStorage and Firestore
-const saveCustomer = (user) => {
-  try {
-    // localStorage
-    const customers = JSON.parse(localStorage.getItem('vexdeals_customers') || '[]');
-    const idx = customers.findIndex(c => c.id === user.id);
-    if (idx === -1) {
-      customers.push({ ...user, firstLogin: new Date().toISOString() });
-    } else {
-      // update phone if it changed
-      customers[idx] = { ...customers[idx], ...user };
-    }
-    localStorage.setItem('vexdeals_customers', JSON.stringify(customers));
-
-    // Firestore (cross-device admin visibility)
-    if (db) {
-      setDoc(doc(db, 'users', String(user.id)), {
-        ...user,
-        updatedAt: new Date().toISOString(),
-      }, { merge: true }).catch(() => {});
-    }
-  } catch { /* ignore */ }
+// ── Map Firebase phone → our user record ────────────────────────────────────
+// Returns a safe user object (no password) or null
+const findUserByPhone = async (phone) => {
+  const { users } = await import('../data/users');
+  // Normalize: strip spaces, dashes; compare last 10 digits
+  const digits = (p) => p.replace(/\D/g, '').slice(-10);
+  const found = users.find(
+    (u) => u.role === 'customer' && digits(u.phone) === digits(phone)
+  );
+  if (!found) return null;
+  const { password: _, ...safeUser } = found;
+  return safeUser;
 };
 
 export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep]         = useState('main');   // 'main' | 'phone' | 'success'
-  const [phone, setPhone]       = useState('');
-  const [pendingUser, setPendingUser] = useState(null);
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [isMobile, setIsMobile]       = useState(true);
+  const [step, setStep]               = useState('phone'); // 'phone' | 'otp' | 'success'
+  const [phone, setPhone]             = useState('');
+  const [otp, setOtp]                 = useState(['', '', '', '', '', '']);
+  const [error, setError]             = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [confirmationResult, setConfirmationResult] = useState(null);
 
-  // Redirect if already logged in
+  const recaptchaRef  = useRef(null);
+  const recaptchaInit = useRef(false);
+  const otpInputs     = useRef([]);
+
+  // ── Redirect if already logged in ────────────────────────────────────────
   useEffect(() => {
     if (user) navigate(user.role === 'customer' ? '/' : '/admin');
   }, [user, navigate]);
 
-  // ── Google Sign-In ────────────────────────────────────────────────────────
-  const handleGoogleLogin = async () => {
+  // ── Mobile check ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+    const handler = () => setIsMobile(isMobileDevice());
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  // ── Countdown timer for resend ─────────────────────────────────────────
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const id = setInterval(() => setResendTimer((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [resendTimer]);
+
+  // ── Init reCAPTCHA (invisible) ────────────────────────────────────────
+  const initRecaptcha = () => {
+    if (!auth) return;
+    if (recaptchaInit.current) return;
+    recaptchaInit.current = true;
+    try {
+      if (import.meta.env.DEV) {
+        auth.settings.appVerificationDisabledForTesting = true;
+      }
+      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {},
+        'expired-callback': () => { recaptchaInit.current = false; },
+      });
+    } catch (e) {
+      console.error('reCAPTCHA init failed', e);
+    }
+  };
+
+  // ── Send OTP ─────────────────────────────────────────────────────────────
+  const handleSendOTP = async () => {
     setError('');
+    if (!firebaseConfigReady || !auth) {
+      setError('Phone OTP is not configured locally. Add Firebase VITE_* values in your .env file.');
+      return;
+    }
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length < 10) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+    const fullPhone = cleaned.startsWith('91') ? `+${cleaned}` : `+91${cleaned}`;
+
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const gUser  = result.user;
-
-      const customer = {
-        id:          gUser.uid,
-        name:        gUser.displayName || 'Customer',
-        email:       gUser.email || '',
-        phone:       gUser.phoneNumber || '',
-        role:        'customer',
-        avatar:      gUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(gUser.displayName || 'User')}&background=1e3a8a&color=fff`,
-        joinDate:    new Date().toISOString().split('T')[0],
-        totalOrders: 0,
-        totalSpent:  0,
-        status:      'Active',
-        provider:    'google',
-      };
-
-      // If phone not available, ask for it
-      if (!customer.phone) {
-        setPendingUser(customer);
-        setStep('phone');
-      } else {
-        saveCustomer(customer);
-        login(customer.email, null, customer);
-        setStep('success');
-        setTimeout(() => navigate('/'), 1200);
-      }
+      initRecaptcha();
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaRef.current);
+      setConfirmationResult(result);
+      setStep('otp');
+      setResendTimer(30);
     } catch (err) {
       console.error(err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in cancelled. Please try again.');
-      } else if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked. Please allow popups for this site.');
+      recaptchaInit.current = false;
+      if (err.code === 'auth/invalid-phone-number') {
+        setError('Invalid phone number. Use format: 9876543210');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Phone sign-in is not enabled in Firebase yet. Open Firebase Console -> Authentication -> Sign-in method -> Phone, enable it, then save. After that, add your fictional test phone number there as well.');
+      } else if (err.code === 'auth/configuration-not-found') {
+        setError('Firebase Phone Auth is not enabled yet. In Firebase Console, go to Authentication -> Get started -> Sign-in method -> Phone and enable it. Also add localhost in Authentication -> Settings -> Authorized domains.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please try after some time.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Firebase request failed. For local testing, first enable Phone sign-in in Firebase Console and use a fictional test number added under Authentication -> Sign-in method -> Phone.');
       } else {
-        setError('Google sign-in failed. Please try again.');
+        setError(err.message || 'Failed to send OTP. Check your Firebase config.');
       }
     }
     setLoading(false);
   };
 
-  // ── Phone number collection (optional step) ───────────────────────────────
-  const handlePhoneSave = () => {
-    const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length < 10) {
-      setError('Enter a valid 10-digit mobile number');
-      return;
-    }
-    const finalUser = { ...pendingUser, phone: `+91${cleaned}` };
-    saveCustomer(finalUser);
-    login(finalUser.email, null, finalUser);
-    setStep('success');
-    setTimeout(() => navigate('/'), 1200);
+  // ── OTP digit input handler ───────────────────────────────────────────────
+  const handleOtpChange = (index, value) => {
+    if (!/^\d?$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5) otpInputs.current[index + 1]?.focus();
+    if (!value && index > 0) otpInputs.current[index - 1]?.focus();
   };
 
-  const handleSkipPhone = () => {
-    saveCustomer(pendingUser);
-    login(pendingUser.email, null, pendingUser);
-    setStep('success');
-    setTimeout(() => navigate('/'), 1200);
+  const handleOtpPaste = (e) => {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      setOtp(pasted.split(''));
+      otpInputs.current[5]?.focus();
+    }
   };
+
+  // ── Verify OTP ────────────────────────────────────────────────────────────
+  const handleVerifyOTP = async () => {
+    setError('');
+    const code = otp.join('');
+    if (code.length < 6) {
+      setError('Enter the complete 6-digit OTP');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const credential = await confirmationResult.confirm(code);
+      const firebasePhone = credential.user.phoneNumber;
+
+      // Map Firebase phone → our user record
+      const foundUser = await findUserByPhone(firebasePhone);
+      if (foundUser) {
+        // Directly set the user in AuthContext
+        login(foundUser.email, null, foundUser); // pass pre-verified user
+        setStep('success');
+        setTimeout(() => navigate('/'), 1500);
+      } else {
+        // Phone not registered — auto-create guest customer
+        const guestUser = {
+          id: Date.now(),
+          name: `Customer ${firebasePhone.slice(-4)}`,
+          email: `${firebasePhone.replace('+', '')}@phone.vexdeals.com`,
+          phone: firebasePhone,
+          role: 'customer',
+          avatar: `https://picsum.photos/seed/${Date.now()}/100/100`,
+          joinDate: new Date().toISOString().split('T')[0],
+          totalOrders: 0,
+          totalSpent: 0,
+          status: 'Active',
+        };
+        login(guestUser.email, null, guestUser);
+        setStep('success');
+        setTimeout(() => navigate('/'), 1500);
+      }
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/invalid-verification-code') {
+        setError('Incorrect OTP. Please check and try again.');
+      } else if (err.code === 'auth/code-expired') {
+        setError('OTP expired. Please request a new one.');
+      } else {
+        setError('Verification failed. Please try again.');
+      }
+    }
+    setLoading(false);
+  };
+
+  // ── Desktop block ─────────────────────────────────────────────────────────
+  if (!isMobile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-navy-900 flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="w-24 h-24 bg-accent-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-accent-500/40">
+            <Smartphone size={36} className="text-accent-400" />
+          </div>
+          <h2 className="text-2xl font-extrabold text-white mb-3">Mobile Only</h2>
+          <p className="text-primary-200 text-sm leading-relaxed mb-6">
+            Customer login is available exclusively on mobile devices.
+            Please open this page on your smartphone.
+          </p>
+          <Link to="/" className="block w-full bg-accent-500 text-primary-900 py-3 rounded-xl font-bold hover:bg-accent-400 transition-colors">
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // ── Success screen ────────────────────────────────────────────────────────
   if (step === 'success') {
@@ -127,135 +230,159 @@ export default function Login() {
     );
   }
 
-  // ── Phone collection step ─────────────────────────────────────────────────
+  // ── PHONE STEP ────────────────────────────────────────────────────────────
   if (step === 'phone') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex flex-col">
         <div className="text-center pt-12 pb-6 px-4">
-          <Link to="/" className="inline-block mb-2"><VexLogoFull /></Link>
+          <Link to="/" className="inline-block mb-2">
+            <VexLogoFull />
+          </Link>
+          <h1 className="text-xl font-bold text-white mt-4">Welcome Back</h1>
+          <p className="text-primary-300 text-sm mt-1">Enter your mobile number to continue</p>
         </div>
-        <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-10">
-          <div className="flex items-center gap-3 mb-6">
-            {pendingUser?.avatar && (
-              <img src={pendingUser.avatar} alt="" className="w-12 h-12 rounded-full border-2 border-primary-200" />
+
+      <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-10">
+        {!firebaseConfigReady && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 text-sm mb-5">
+            Phone OTP is disabled on this local setup until Firebase keys are added in `.env`.
+          </div>
+        )}
+        {import.meta.env.DEV && firebaseConfigReady && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded-xl px-4 py-3 text-sm mb-5">
+            Local testing mode is on. Use a fictional Firebase test phone number configured in Authentication.
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-5">
+            {error}
+          </div>
+        )}
+
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-primary-800 mb-2">
+              Mobile Number
+            </label>
+            <div className="flex border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-primary-600 transition-colors">
+              <div className="flex items-center gap-1 px-3 bg-gray-50 border-r border-gray-200 shrink-0">
+                <span className="text-base">🇮🇳</span>
+                <span className="text-sm font-semibold text-gray-600">+91</span>
+              </div>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="9876543210"
+                className="flex-1 px-4 py-3 text-lg font-semibold outline-none tracking-widest bg-white"
+                autoFocus
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5">We'll send a 6-digit OTP to verify</p>
+          </div>
+
+          <button
+            onClick={handleSendOTP}
+            disabled={loading || phone.replace(/\D/g, '').length < 10}
+            className="w-full bg-primary-700 text-white py-4 rounded-xl font-bold text-base hover:bg-primary-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <RefreshCw size={20} className="animate-spin" />
+            ) : (
+              <><PhoneCall size={18} /> Get OTP</>
             )}
-            <div>
-              <p className="font-bold text-gray-900">{pendingUser?.name}</p>
-              <p className="text-xs text-gray-500">{pendingUser?.email}</p>
-            </div>
-          </div>
-
-          <h2 className="text-lg font-bold text-gray-900 mb-1">Add Mobile Number</h2>
-          <p className="text-sm text-gray-500 mb-5">For order updates and delivery contact</p>
-
-          {error && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-4">{error}</div>}
-
-          <div className="flex border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-primary-600 transition-colors mb-4">
-            <div className="flex items-center gap-1 px-3 bg-gray-50 border-r border-gray-200 shrink-0">
-              <span className="text-base">🇮🇳</span>
-              <span className="text-sm font-semibold text-gray-600">+91</span>
-            </div>
-            <input
-              type="tel"
-              inputMode="numeric"
-              value={phone}
-              onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-              placeholder="9876543210"
-              className="flex-1 px-4 py-3 text-lg font-semibold outline-none tracking-widest bg-white"
-              autoFocus
-            />
-          </div>
-
-          <button
-            onClick={handlePhoneSave}
-            disabled={phone.replace(/\D/g, '').length < 10}
-            className="w-full bg-primary-700 text-white py-3.5 rounded-xl font-bold hover:bg-primary-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mb-3"
-          >
-            <Phone size={18} /> Save & Continue
           </button>
-          <button
-            onClick={handleSkipPhone}
-            className="w-full text-gray-400 text-sm py-2 hover:text-gray-600"
-          >
-            Skip for now →
-          </button>
+
+          {/* Invisible reCAPTCHA container */}
+          <div id="recaptcha-container" />
         </div>
       </div>
     );
   }
 
-  // ── Main login screen ─────────────────────────────────────────────────────
+  // ── OTP STEP ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex flex-col">
-      {/* Header */}
-      <div className="text-center pt-14 pb-8 px-4">
-        <Link to="/" className="inline-block mb-4"><VexLogoFull /></Link>
-        <h1 className="text-2xl font-bold text-white mt-2">Welcome to VexDeals</h1>
-        <p className="text-primary-300 text-sm mt-1">Sign in to shop exclusive deals</p>
+      <div className="text-center pt-12 pb-6 px-4">
+        <Link to="/" className="inline-block mb-2">
+          <VexLogoFull />
+        </Link>
       </div>
 
-      {/* Card */}
-      <div className="flex-1 bg-white rounded-t-3xl px-6 pt-10 pb-12">
+      <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-10">
+        <button
+          onClick={() => { setStep('phone'); setOtp(['','','','','','']); setError(''); }}
+          className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-sm mb-6"
+        >
+          ← Change number
+        </button>
+
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <PhoneCall size={24} className="text-primary-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Verify OTP</h2>
+          <p className="text-gray-500 text-sm mt-1">
+            OTP sent to <span className="font-bold text-gray-800">+91 {phone}</span>
+          </p>
+        </div>
+
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-5">
             {error}
           </div>
         )}
 
-        {/* Google Sign-In button */}
-        <button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-2xl py-4 px-5 hover:border-primary-400 hover:bg-primary-50 transition-all font-semibold text-gray-700 text-base disabled:opacity-60 disabled:cursor-not-allowed mb-4 shadow-sm"
-        >
-          {loading ? (
-            <RefreshCw size={22} className="animate-spin text-primary-600" />
-          ) : (
-            <>
-              {/* Google logo SVG */}
-              <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Continue with Google
-            </>
-          )}
-        </button>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 my-5">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400 font-medium">FREE · NO SMS CHARGES</span>
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
-
-        {/* Benefits */}
-        <div className="space-y-3 mb-8">
-          {[
-            { icon: '🔒', text: 'Secure Google login — no password needed' },
-            { icon: '📦', text: 'Track all your orders in one place' },
-            { icon: '🎁', text: 'Get exclusive deals and promo codes' },
-          ].map(({ icon, text }) => (
-            <div key={text} className="flex items-center gap-3">
-              <span className="text-xl">{icon}</span>
-              <p className="text-sm text-gray-600">{text}</p>
-            </div>
+        {/* 6-digit OTP boxes */}
+        <div className="flex gap-2 justify-center mb-6" onPaste={handleOtpPaste}>
+          {otp.map((digit, i) => (
+            <input
+              key={i}
+              ref={(el) => (otpInputs.current[i] = el)}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handleOtpChange(i, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace' && !digit && i > 0) {
+                  otpInputs.current[i - 1]?.focus();
+                }
+              }}
+              className={`w-11 h-14 text-center text-2xl font-black border-2 rounded-xl outline-none transition-colors ${
+                digit ? 'border-primary-600 bg-primary-50 text-primary-800' : 'border-gray-200 text-gray-900'
+              } focus:border-primary-600`}
+            />
           ))}
         </div>
 
-        <p className="text-center text-xs text-gray-400 leading-relaxed">
-          By continuing you agree to VexDeals{' '}
-          <a href="#" className="text-primary-600 underline">Terms</a>{' '}
-          &amp;{' '}
-          <a href="#" className="text-primary-600 underline">Privacy Policy</a>
-        </p>
+        <button
+          onClick={handleVerifyOTP}
+          disabled={loading || otp.join('').length < 6}
+          className="w-full bg-primary-700 text-white py-4 rounded-xl font-bold text-base hover:bg-primary-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <RefreshCw size={20} className="animate-spin" />
+          ) : (
+            <><CheckCircle size={18} /> Verify & Login</>
+          )}
+        </button>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
-          Staff?{' '}
-          <Link to="/admin-login" className="text-primary-600 font-semibold underline">Admin Portal →</Link>
-        </p>
+        {/* Resend OTP */}
+        <div className="text-center mt-5">
+          {resendTimer > 0 ? (
+            <p className="text-sm text-gray-400">
+              Resend OTP in <span className="font-bold text-primary-700">{resendTimer}s</span>
+            </p>
+          ) : (
+            <button
+              onClick={() => { setOtp(['','','','','','']); setError(''); setStep('phone'); }}
+              className="text-sm text-primary-600 font-semibold hover:underline"
+            >
+              Resend OTP →
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
