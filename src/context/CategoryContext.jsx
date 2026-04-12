@@ -248,15 +248,28 @@ export function CategoryProvider({ children }) {
 
     if (!normalized) return null;
 
-    setCategories((currentCategories) => [...currentCategories, normalized]);
+    let fullUpdated = null;
+    setCategories((currentCategories) => {
+      const next = [...currentCategories, normalized];
+      fullUpdated = next;
+      return next;
+    });
 
     if (!db) return normalized;
 
     try {
       if (!cloudHasDataRef.current) {
-        await ensureCloudSeeded(baselineCategories);
+        // Seed with the post-add list so onSnapshot never reverts the optimistic add
+        await Promise.all(
+          fullUpdated.map((cat) =>
+            setDoc(doc(db, CLOUD_COLLECTION, String(cat.id)), serializeCategory(cat))
+          )
+        );
+        cloudHasDataRef.current = true;
+      } else {
+        await writeCloudCategory(normalized);
       }
-      await writeCloudCategory(normalized);
+      setSyncState(buildSyncState({ mode: 'cloud', message: 'Categories are syncing live across devices.' }));
     } catch (error) {
       handleCloudFailure(error);
     }
@@ -265,17 +278,28 @@ export function CategoryProvider({ children }) {
   };
 
   const removeCategory = async (id) => {
-    const baselineCategories = categoriesRef.current;
+    let fullUpdated = null;
 
-    setCategories((currentCategories) => currentCategories.filter((category) => category.id !== id));
+    setCategories((currentCategories) => {
+      const next = currentCategories.filter((category) => category.id !== id);
+      fullUpdated = next;
+      return next;
+    });
 
     if (!db) return;
 
     try {
       if (!cloudHasDataRef.current) {
-        await ensureCloudSeeded(baselineCategories);
+        // Seed with the post-remove list so onSnapshot never reverts the optimistic removal
+        await Promise.all(
+          fullUpdated.map((cat) =>
+            setDoc(doc(db, CLOUD_COLLECTION, String(cat.id)), serializeCategory(cat))
+          )
+        );
+        cloudHasDataRef.current = true;
+      } else {
+        await deleteDoc(doc(db, CLOUD_COLLECTION, String(id)));
       }
-      await deleteDoc(doc(db, CLOUD_COLLECTION, String(id)));
       setSyncState(buildSyncState({
         mode: 'cloud',
         message: 'Categories are syncing live across devices.',
@@ -286,48 +310,69 @@ export function CategoryProvider({ children }) {
   };
 
   const toggleCategory = async (id) => {
-    const baselineCategories = categoriesRef.current;
     let nextCategory = null;
+    let fullUpdated = null;
 
-    setCategories((currentCategories) =>
-      currentCategories.map((category) => {
+    setCategories((currentCategories) => {
+      const next = currentCategories.map((category) => {
         if (category.id !== id) return category;
         nextCategory = { ...category, active: !category.active };
         return nextCategory;
-      })
-    );
+      });
+      fullUpdated = next;
+      return next;
+    });
 
     if (!db || !nextCategory) return;
 
     try {
       if (!cloudHasDataRef.current) {
-        await ensureCloudSeeded(baselineCategories);
+        // Seed ALL categories with the already-toggled state so onSnapshot
+        // never reverts the optimistic UI update
+        await Promise.all(
+          fullUpdated.map((cat) =>
+            setDoc(doc(db, CLOUD_COLLECTION, String(cat.id)), serializeCategory(cat))
+          )
+        );
+        cloudHasDataRef.current = true;
+      } else {
+        await writeCloudCategory(nextCategory);
       }
-      await writeCloudCategory(nextCategory);
+      setSyncState(buildSyncState({ mode: 'cloud', message: 'Categories are syncing live across devices.' }));
     } catch (error) {
       handleCloudFailure(error);
     }
   };
 
   const updateCategory = async (id, updates) => {
-    const baselineCategories = categoriesRef.current;
     let nextCategory = null;
+    let fullUpdated = null;
 
-    setCategories((currentCategories) =>
-      currentCategories.map((category) => {
+    setCategories((currentCategories) => {
+      const next = currentCategories.map((category) => {
         if (category.id !== id) return category;
         nextCategory = normalizeCategoryList([{ ...category, ...updates }])[0] || category;
         return nextCategory;
-      })
-    );
+      });
+      fullUpdated = next;
+      return next;
+    });
 
     if (!db || !nextCategory) return nextCategory;
 
     try {
       if (!cloudHasDataRef.current) {
-        await ensureCloudSeeded(baselineCategories);
+        // Seed with the post-update list so onSnapshot never reverts the optimistic update
+        await Promise.all(
+          fullUpdated.map((cat) =>
+            setDoc(doc(db, CLOUD_COLLECTION, String(cat.id)), serializeCategory(cat))
+          )
+        );
+        cloudHasDataRef.current = true;
+      } else {
+        await writeCloudCategory(nextCategory);
       }
-      await writeCloudCategory(nextCategory);
+      setSyncState(buildSyncState({ mode: 'cloud', message: 'Categories are syncing live across devices.' }));
     } catch (error) {
       handleCloudFailure(error);
     }

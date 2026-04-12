@@ -390,6 +390,27 @@ export function CustomerDataProvider({ children }) {
     return order;
   };
 
+  // ── Real-time order status sync from Firestore ───────────────────────────
+  useEffect(() => {
+    if (!db || !user?.id || !isCustomer) return undefined;
+
+    const q = query(
+      collection(db, 'orders'),
+      where('userId', '==', String(user.id)),
+      orderBy('createdAt', 'desc')
+    );
+
+    return onSnapshot(q, (snap) => {
+      if (snap.empty) return;
+      const firestoreOrders = snap.docs
+        .map((d, i) => normalizeOrder({ ...d.data(), id: d.id }, i + 1, user))
+        .filter(Boolean);
+      if (firestoreOrders.length > 0) {
+        setOrders(firestoreOrders);
+      }
+    }, () => { /* silent fail — keep localStorage orders */ });
+  }, [user?.id, isCustomer]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const defaultAddress = useMemo(
     () => addresses.find((address) => address.isDefault) || addresses[0] || null,
     [addresses]
