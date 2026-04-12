@@ -2,20 +2,33 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { RefreshCw, CheckCircle, User, Phone } from 'lucide-react';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
 
 const googleProvider = new GoogleAuthProvider();
 
-// Track customer logins in localStorage for analytics
+// Track customer logins in localStorage and Firestore
 const saveCustomer = (user) => {
   try {
+    // localStorage
     const customers = JSON.parse(localStorage.getItem('vexdeals_customers') || '[]');
-    const exists = customers.find(c => c.id === user.id);
-    if (!exists) {
+    const idx = customers.findIndex(c => c.id === user.id);
+    if (idx === -1) {
       customers.push({ ...user, firstLogin: new Date().toISOString() });
-      localStorage.setItem('vexdeals_customers', JSON.stringify(customers));
+    } else {
+      // update phone if it changed
+      customers[idx] = { ...customers[idx], ...user };
+    }
+    localStorage.setItem('vexdeals_customers', JSON.stringify(customers));
+
+    // Firestore (cross-device admin visibility)
+    if (db) {
+      setDoc(doc(db, 'users', String(user.id)), {
+        ...user,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true }).catch(() => {});
     }
   } catch { /* ignore */ }
 };

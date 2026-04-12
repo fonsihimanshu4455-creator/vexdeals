@@ -1,23 +1,103 @@
-import { useState } from 'react';
-import { Search, Eye, X, Users, Shield, User } from 'lucide-react';
-import { users } from '../../data/users';
+import { useEffect, useState } from 'react';
+import { Search, Eye, X, Users, Shield, User, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { users as staticUsers } from '../../data/users';
+
+const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
+
+// Read customers saved in localStorage (Google sign-in)
+const getLocalCustomers = () => {
+  try {
+    return JSON.parse(localStorage.getItem('vexdeals_customers') || '[]');
+  } catch { return []; }
+};
+
+// Count orders and total spent for a user from localStorage
+const getOrderStats = (userId, userEmail) => {
+  try {
+    const store = JSON.parse(localStorage.getItem('vexdeals_customer_orders') || '{}');
+    const key = userEmail || userId;
+    const orders = Array.isArray(store[key]) ? store[key] : [];
+    const totalOrders = orders.length;
+    const totalSpent = orders
+      .filter(o => ['Delivered', 'Confirmed'].includes(o.status))
+      .reduce((sum, o) => sum + (o.total || 0), 0);
+    return { totalOrders, totalSpent };
+  } catch { return { totalOrders: 0, totalSpent: 0 }; }
+};
+
+// Merge static admins + real customers (Firestore takes priority over localStorage)
+const buildUserList = (firestoreUsers) => {
+  const admins = staticUsers
+    .filter(u => u.role === 'admin' || u.role === 'subadmin')
+    .map(u => ({ ...u, source: 'static' }));
+
+  const customers = firestoreUsers.length > 0
+    ? firestoreUsers
+    : getLocalCustomers().map(u => ({ ...u, source: 'local' }));
+
+  const merged = [...admins];
+  customers.forEach(cu => {
+    if (!merged.find(u => u.id === cu.id || u.email === cu.email)) {
+      const stats = getOrderStats(cu.id, cu.email);
+      merged.push({
+        ...cu,
+        role: cu.role || 'customer',
+        status: cu.status || 'Active',
+        totalOrders: cu.totalOrders ?? stats.totalOrders,
+        totalSpent: cu.totalSpent ?? stats.totalSpent,
+        joinDate: cu.joinDate || cu.firstLogin?.split('T')[0] || '—',
+      });
+    }
+  });
+
+  return merged;
+};
 
 export default function AdminUsers() {
-  const [search, setSearch] = useState('');
+  const [allUsers, setAllUsers]     = useState(() => buildUserList([]));
+  const [liveSync, setLiveSync]     = useState(false);
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState('');
   const [filterRole, setFilterRole] = useState('All');
-  const [viewUser, setViewUser] = useState(null);
+  const [viewUser, setViewUser]     = useState(null);
 
-  const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
+  // Real-time Firestore subscription
+  useEffect(() => {
+    if (!db) {
+      setAllUsers(buildUserList([]));
+      setLoading(false);
+      return;
+    }
 
-  const filtered = users.filter(u => {
+    const q = query(collection(db, 'users'), orderBy('updatedAt', 'desc'));
+    const unsub = onSnapshot(q, (snap) => {
+      const fsUsers = snap.docs.map(d => ({ ...d.data(), id: d.id, source: 'cloud' }));
+      setAllUsers(buildUserList(fsUsers));
+      setLiveSync(true);
+      setLoading(false);
+    }, () => {
+      setAllUsers(buildUserList([]));
+      setLiveSync(false);
+      setLoading(false);
+    });
+
+    return unsub;
+  }, []);
+
+  const filtered = allUsers.filter(u => {
     const matchRole = filterRole === 'All' || u.role === filterRole;
+    const q = search.toLowerCase();
     const matchSearch =
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
+      (u.name || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.phone || '').includes(q);
     return matchRole && matchSearch;
   });
 
-  const totalRevenue = users.filter(u => u.role === 'customer').reduce((a, u) => a + u.totalSpent, 0);
+  const customers   = allUsers.filter(u => u.role === 'customer');
+  const totalRevenue = customers.reduce((a, u) => a + (u.totalSpent || 0), 0);
 
   return (
     <div className="space-y-5">
@@ -25,17 +105,28 @@ export default function AdminUsers() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Users</h2>
-          <p className="text-gray-500 text-sm">{users.length} registered users</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-gray-500 text-sm">{allUsers.length} registered users</p>
+            {liveSync ? (
+              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                <Wifi size={12} /> Live
+              </span>
+            ) : !loading && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                <WifiOff size={12} /> Local cache
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total Users', value: users.length, color: 'text-primary-600', Icon: Users },
-          { label: 'Customers', value: users.filter(u => u.role === 'customer').length, color: 'text-blue-600', Icon: User },
-          { label: 'Admins', value: users.filter(u => u.role === 'admin').length, color: 'text-violet-600', Icon: Shield },
-          { label: 'Total Spent', value: formatPrice(totalRevenue), color: 'text-emerald-600', Icon: Users },
+          { label: 'Total Users',   value: allUsers.length,    color: 'text-primary-600', Icon: Users  },
+          { label: 'Customers',     value: customers.length,   color: 'text-blue-600',    Icon: User   },
+          { label: 'Admins',        value: allUsers.filter(u => u.role === 'admin' || u.role === 'subadmin').length, color: 'text-violet-600', Icon: Shield },
+          { label: 'Total Spent',   value: formatPrice(totalRevenue), color: 'text-emerald-600', Icon: Users },
         ].map(({ label, value, color, Icon }) => (
           <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
             <div className="flex items-center gap-3">
@@ -55,7 +146,7 @@ export default function AdminUsers() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search users by name or email..."
+            placeholder="Search by name, email or phone..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-primary-500"
@@ -76,65 +167,97 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Users table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                {['User', 'Email', 'Phone', 'Role', 'Joined', 'Orders', 'Total Spent', 'Status', 'Actions'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map(user => (
-                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover bg-gray-100" />
-                      <p className="font-medium text-gray-800 whitespace-nowrap">{user.name}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{user.email}</td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{user.phone}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${
-                      user.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{user.joinDate}</td>
-                  <td className="px-4 py-3 text-center font-semibold text-gray-800">{user.totalOrders}</td>
-                  <td className="px-4 py-3 font-bold text-gray-900">{formatPrice(user.totalSpent)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      user.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => setViewUser(user)}
-                      className="p-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors"
-                    >
-                      <Eye size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div className="text-center py-12">
-              <Users size={40} className="text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No users found</p>
-            </div>
-          )}
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-16 gap-2 text-gray-400">
+          <RefreshCw size={20} className="animate-spin" />
+          <span className="text-sm">Loading users…</span>
         </div>
-      </div>
+      )}
+
+      {/* Users table */}
+      {!loading && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  {['User', 'Email', 'Phone', 'Role', 'Joined', 'Orders', 'Total Spent', 'Status', 'Actions'].map(h => (
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filtered.map(u => {
+                  const stats = u.role === 'customer' ? getOrderStats(u.id, u.email) : null;
+                  const orders = stats?.totalOrders ?? u.totalOrders ?? 0;
+                  const spent  = stats?.totalSpent  ?? u.totalSpent  ?? 0;
+                  return (
+                    <tr key={u.id || u.email} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'U')}&background=1e3a8a&color=fff`}
+                            alt={u.name}
+                            className="w-9 h-9 rounded-full object-cover bg-gray-100"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-800 whitespace-nowrap">{u.name}</p>
+                            {u.provider === 'google' && (
+                              <span className="text-xs text-blue-500 font-medium">Google</span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 text-xs">{u.email || '—'}</td>
+                      <td className="px-4 py-3 text-gray-700 font-medium whitespace-nowrap">
+                        {u.phone ? (
+                          <a href={`tel:${u.phone}`} className="hover:text-primary-600">{u.phone}</a>
+                        ) : (
+                          <span className="text-gray-400 text-xs">Not provided</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${
+                          u.role === 'admin' || u.role === 'subadmin'
+                            ? 'bg-violet-100 text-violet-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{u.joinDate || '—'}</td>
+                      <td className="px-4 py-3 text-center font-semibold text-gray-800">{orders}</td>
+                      <td className="px-4 py-3 font-bold text-gray-900">{formatPrice(spent)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                          (u.status || 'Active') === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
+                        }`}>
+                          {u.status || 'Active'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => setViewUser({ ...u, totalOrders: orders, totalSpent: spent })}
+                          className="p-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors"
+                        >
+                          <Eye size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {filtered.length === 0 && (
+              <div className="text-center py-12">
+                <Users size={40} className="text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No users found</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* User detail modal */}
       {viewUser && (
@@ -147,26 +270,35 @@ export default function AdminUsers() {
               </button>
             </div>
             <div className="p-5 space-y-4">
-              {/* Avatar & name */}
               <div className="flex items-center gap-4">
-                <img src={viewUser.avatar} alt={viewUser.name} className="w-16 h-16 rounded-2xl object-cover bg-gray-100" />
+                <img
+                  src={viewUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(viewUser.name || 'U')}&background=1e3a8a&color=fff`}
+                  alt={viewUser.name}
+                  className="w-16 h-16 rounded-2xl object-cover bg-gray-100"
+                />
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg">{viewUser.name}</h4>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
-                    viewUser.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {viewUser.role}
-                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
+                      viewUser.role === 'admin' || viewUser.role === 'subadmin'
+                        ? 'bg-violet-100 text-violet-700'
+                        : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {viewUser.role}
+                    </span>
+                    {viewUser.provider === 'google' && (
+                      <span className="text-xs text-blue-500 font-medium">Google</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Details */}
               <div className="space-y-3 text-sm">
                 {[
-                  { label: 'Email', value: viewUser.email },
-                  { label: 'Phone', value: viewUser.phone },
-                  { label: 'Joined', value: viewUser.joinDate },
-                  { label: 'Status', value: viewUser.status },
+                  { label: 'Email',  value: viewUser.email  || '—' },
+                  { label: 'Phone',  value: viewUser.phone  || 'Not provided' },
+                  { label: 'Joined', value: viewUser.joinDate || '—' },
+                  { label: 'Status', value: viewUser.status  || 'Active' },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between">
                     <span className="text-gray-500">{label}</span>
@@ -175,7 +307,6 @@ export default function AdminUsers() {
                 ))}
               </div>
 
-              {/* Stats */}
               {viewUser.role === 'customer' && (
                 <div className="grid grid-cols-2 gap-3 mt-2">
                   <div className="bg-blue-50 rounded-2xl p-4 text-center">
