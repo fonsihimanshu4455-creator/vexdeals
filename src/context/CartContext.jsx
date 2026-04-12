@@ -1,4 +1,6 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useEffect, useReducer, useState } from 'react';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const CartContext = createContext();
 const CART_STORE_KEY = 'vexdeals_cart';
@@ -79,7 +81,7 @@ const isPromoExpired = (expiry) => {
   return Number.isFinite(endOfDay.getTime()) ? endOfDay.getTime() < Date.now() : false;
 };
 
-const readPromoCatalog = () => {
+const readLocalPromoCatalog = () => {
   if (typeof window === 'undefined') return DEFAULT_PROMOS;
 
   let storedPromos = [];
@@ -100,13 +102,13 @@ const readPromoCatalog = () => {
   ];
 };
 
-const getPromoValidation = (code, subtotal) => {
+const getPromoValidation = (code, subtotal, catalog) => {
   const normalizedCode = String(code || '').trim().toUpperCase();
   if (!normalizedCode) {
     return { valid: false, message: 'Enter a promo code first.' };
   }
 
-  const promo = readPromoCatalog().find((entry) => entry.code === normalizedCode);
+  const promo = catalog.find((entry) => entry.code === normalizedCode);
   if (!promo) {
     return { valid: false, message: 'Promo code not found.' };
   }
@@ -192,6 +194,32 @@ const cartReducer = (state, action) => {
 
 export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [], promoCode: '' });
+  const [promoCatalog, setPromoCatalog] = useState(() => readLocalPromoCatalog());
+
+  // Live promo catalog from Firestore — updates as admin creates/disables codes
+  useEffect(() => {
+    if (!db) return;
+
+    const q = query(collection(db, 'promos'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      if (snap.empty) return; // keep local catalog if Firestore empty
+
+      const fsPromos = snap.docs
+        .map(d => normalizePromo({ ...d.data(), id: d.id }))
+        .filter(Boolean);
+
+      // Always include DEFAULT_PROMOS that are not in Firestore
+      const fsCodes = new Set(fsPromos.map(p => p.code));
+      const merged = [
+        ...fsPromos,
+        ...DEFAULT_PROMOS.filter(p => !fsCodes.has(p.code)),
+      ];
+
+      // Persist to localStorage so offline / fallback still works
+      localStorage.setItem(PROMO_STORE_KEY, JSON.stringify(fsPromos));
+      setPromoCatalog(merged);
+    }, () => {/* silent fail — keep local catalog */});
+  }, []);
 
   useEffect(() => {
     try {
@@ -233,14 +261,14 @@ export function CartProvider({ children }) {
   const totalItems = state.items.reduce((acc, i) => acc + i.qty, 0);
   const subtotal = state.items.reduce((acc, i) => acc + i.price * i.qty, 0);
   const shipping = subtotal > 0 && subtotal < 500 ? 99 : 0;
-  const promoValidation = getPromoValidation(state.promoCode, subtotal);
+  const promoValidation = getPromoValidation(state.promoCode, subtotal, promoCatalog);
   const appliedPromo = promoValidation.valid ? promoValidation.promo : null;
   const discount = appliedPromo ? getPromoDiscount(appliedPromo, subtotal) : 0;
   const total = Math.max(0, subtotal - discount + shipping);
 
   const applyPromoCode = (rawCode) => {
     const code = String(rawCode || '').trim().toUpperCase();
-    const validation = getPromoValidation(code, subtotal);
+    const validation = getPromoValidation(code, subtotal, promoCatalog);
     if (!validation.valid) {
       return { success: false, message: validation.message };
     }

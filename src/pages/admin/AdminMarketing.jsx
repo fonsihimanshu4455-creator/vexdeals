@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Image, Tag, Calendar, Percent, IndianRupee, X, Check, Copy, Eye, Edit2, Upload } from 'lucide-react';
+import { Plus, Trash2, Image, Tag, Calendar, Percent, IndianRupee, X, Check, Copy, Eye, Edit2, Upload, Wifi, WifiOff } from 'lucide-react';
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 
 const getPosters = () => {
@@ -25,6 +27,7 @@ export default function AdminMarketing() {
   const [tab, setTab]           = useState('posters');
   const [posters, setPosters]   = useState(getPosters);
   const [promos, setPromos]     = useState(getPromoCodes);
+  const [promoSync, setPromoSync] = useState(!!db);
 
   // poster modal state
   const [showPoster, setShowPoster]       = useState(false);
@@ -50,6 +53,18 @@ export default function AdminMarketing() {
 
   useEffect(() => { savePosters(posters); }, [posters]);
   useEffect(() => { savePromos(promos);   }, [promos]);
+
+  // Real-time promo sync from Firestore
+  useEffect(() => {
+    if (!db) return;
+    const q = query(collection(db, 'promos'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      if (snap.empty) { setPromoSync(true); return; }
+      const fsPromos = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      setPromos(fsPromos);
+      setPromoSync(true);
+    }, () => setPromoSync(false));
+  }, []);
 
   if (!canManageMarketing) {
     return (
@@ -131,8 +146,8 @@ export default function AdminMarketing() {
       setPromoError('This promo code already exists');
       return;
     }
-    setPromos(prev => [...prev, {
-      id: Date.now(),
+    const newPromo = {
+      id: String(Date.now()),
       code: promoForm.code.toUpperCase().trim(),
       type: promoForm.type,
       value: Number(promoForm.value),
@@ -143,13 +158,24 @@ export default function AdminMarketing() {
       description: promoForm.description.trim(),
       active: true,
       createdAt: new Date().toISOString().split('T')[0],
-    }]);
+    };
+    setPromos(prev => [...prev, newPromo]);
+    if (db) {
+      setDoc(doc(db, 'promos', newPromo.id), newPromo).catch(() => {});
+    }
     setPromoForm({ code: generateCode(), type: 'percent', value: '', minOrder: '', maxUses: '', expiry: '', description: '' });
     setPromoError('');
     setShowPromo(false);
   };
 
-  const togglePromo  = (id) => setPromos(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+  const togglePromo = (id) => {
+    setPromos(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const updated = { ...p, active: !p.active };
+      if (db) setDoc(doc(db, 'promos', String(id)), updated, { merge: true }).catch(() => {});
+      return updated;
+    }));
+  };
   const isExpired    = (expiry) => expiry && new Date(expiry) < new Date();
 
   const copyCode = (code) => {
@@ -165,7 +191,14 @@ export default function AdminMarketing() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Marketing</h2>
-          <p className="text-gray-500 text-sm mt-0.5">{posters.length} posters · {promos.length} promo codes</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-gray-500 text-sm">{posters.length} posters · {promos.length} promo codes</p>
+            {promoSync ? (
+              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium"><Wifi size={11} /> Live</span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs text-amber-600 font-medium"><WifiOff size={11} /> Local</span>
+            )}
+          </div>
         </div>
         <button
           onClick={() => tab === 'posters' ? openAddPoster() : setShowPromo(true)}
@@ -617,7 +650,11 @@ export default function AdminMarketing() {
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeletePromoId(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl hover:bg-gray-50">Cancel</button>
-              <button onClick={() => { setPromos(prev => prev.filter(p => p.id !== deletePromoId)); setDeletePromoId(null); }}
+              <button onClick={() => {
+                setPromos(prev => prev.filter(p => p.id !== deletePromoId));
+                if (db) deleteDoc(doc(db, 'promos', String(deletePromoId))).catch(() => {});
+                setDeletePromoId(null);
+              }}
                 className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Delete</button>
             </div>
           </div>
