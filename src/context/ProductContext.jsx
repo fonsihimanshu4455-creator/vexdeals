@@ -1,8 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
 import { products as seedProducts } from '../data/products';
+import { db } from '../config/firebase';
 
 const ProductContext = createContext();
 const STORAGE_KEY = 'vexdeals_products';
+const CLOUD_COLLECTION = 'products';
 
 const toNumber = (value, fallback) => {
   const parsed = Number(value);
@@ -12,7 +15,29 @@ const toNumber = (value, fallback) => {
 const buildImageSeed = (value) =>
   encodeURIComponent(String(value || 'vexdeals-product').trim().toLowerCase().replace(/\s+/g, '-'));
 
-const normalizeProduct = (rawProduct, fallbackId) => {
+const buildSyncState = (overrides = {}) => ({
+  mode: db ? 'connecting' : 'local',
+  message: db
+    ? 'Connecting shared product sync...'
+    : 'Cloud product sync is off. Products save only on this device.',
+  errorCode: '',
+  ...overrides,
+});
+
+const mapCloudError = (error) => {
+  switch (error?.code) {
+    case 'failed-precondition':
+      return 'Enable Cloud Firestore in Firebase Console so products sync to every device.';
+    case 'permission-denied':
+      return 'Firestore rules are blocking product sync. Products are saving only on this device.';
+    case 'unavailable':
+      return 'Cloud product sync is temporarily unavailable. Products are saving only on this device.';
+    default:
+      return 'Cloud product sync is not available right now. Products are saving only on this device.';
+  }
+};
+
+const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
   if (!rawProduct || typeof rawProduct !== 'object') return null;
 
   const id = Math.max(1, Math.floor(toNumber(rawProduct.id, fallbackId ?? Date.now())));
@@ -28,6 +53,7 @@ const normalizeProduct = (rawProduct, fallbackId) => {
   const rating = Math.min(5, Math.max(0, toNumber(rawProduct.rating, 4.5)));
   const reviews = Math.max(0, Math.floor(toNumber(rawProduct.reviews, 0)));
   const stock = Math.max(0, Math.floor(toNumber(rawProduct.stock, 0)));
+  const sortOrder = Math.max(1, Math.floor(toNumber(rawProduct.sortOrder, fallbackSortOrder ?? id)));
 
   const defaultImage = `https://picsum.photos/seed/${buildImageSeed(name || id)}/500/500`;
   const image = String(rawProduct.image || defaultImage).trim() || defaultImage;
@@ -46,6 +72,7 @@ const normalizeProduct = (rawProduct, fallbackId) => {
     rating,
     reviews,
     stock,
+    sortOrder,
     image,
     images: images.length ? images : [image],
     description: String(rawProduct.description || `${name} is now available on VexDeals.`).trim(),
@@ -61,10 +88,15 @@ const normalizeProduct = (rawProduct, fallbackId) => {
   };
 };
 
-const normalizeProductList = (list) =>
-  (Array.isArray(list) ? list : seedProducts)
-    .map((product, index) => normalizeProduct(product, index + 1))
-    .filter(Boolean);
+const normalizeProductList = (list) => {
+  const safeList = Array.isArray(list) ? list : seedProducts;
+  const total = safeList.length;
+
+  return safeList
+    .map((product, index) => normalizeProduct(product, index + 1, total - index))
+    .filter(Boolean)
+    .sort((a, b) => b.sortOrder - a.sortOrder || b.id - a.id);
+};
 
 const readStoredProducts = () => {
   if (typeof window === 'undefined') {
@@ -80,10 +112,22 @@ const readStoredProducts = () => {
   }
 };
 
+const serializeProduct = (product) => ({
+  ...product,
+  updatedAt: new Date().toISOString(),
+});
+
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState(() => readStoredProducts());
+  const [syncState, setSyncState] = useState(() => buildSyncState());
   const channelRef = useRef(null);
   const lastSnapshotRef = useRef(JSON.stringify(products));
+  const productsRef = useRef(products);
+  const cloudHasDataRef = useRef(false);
+
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -142,26 +186,156 @@ export function ProductProvider({ children }) {
     };
   }, []);
 
-  const addProduct = (draftProduct) => {
-    setProducts((currentProducts) => {
-      const nextId = currentProducts.reduce((maxId, product) => Math.max(maxId, product.id), 0) + 1;
-      const normalized = normalizeProduct({ ...draftProduct, id: nextId }, nextId);
-      return normalized ? [normalized, ...currentProducts] : currentProducts;
-    });
-  };
+  useEffect(() => {
+    if (!db) return undefined;
 
-  const updateProduct = (productId, updates) => {
-    setProducts((currentProducts) =>
-      currentProducts.map((product) =>
-        product.id === productId
-          ? normalizeProduct({ ...product, ...updates, id: product.id }, product.id) || product
-          : product
+    const productsQuery = query(collection(db, CLOUD_COLLECTION), orderBy('sortOrder', 'desc'));
+
+    return onSnapshot(
+      productsQuery,
+      (snapshot) => {
+        if (snapshot.empty) {
+          cloudHasDataRef.current = false;
+          setSyncState(buildSyncState({
+            mode: 'cloud-empty',
+            message: 'Shared product sync is ready. Add a product once to publish the catalog to every device.',
+          }));
+          return;
+        }
+
+        const nextProducts = normalizeProductList(
+          snapshot.docs.map((docSnapshot) => ({
+            ...docSnapshot.data(),
+            id: docSnapshot.data().id ?? docSnapshot.id,
+          }))
+        );
+
+        cloudHasDataRef.current = nextProducts.length > 0;
+        setProducts(nextProducts);
+        setSyncState(buildSyncState({
+          mode: 'cloud',
+          message: 'Products are syncing live across devices.',
+        }));
+      },
+      (error) => {
+        cloudHasDataRef.current = false;
+        setSyncState(buildSyncState({
+          mode: 'local-error',
+          message: mapCloudError(error),
+          errorCode: error?.code || '',
+        }));
+      }
+    );
+  }, []);
+
+  const ensureCloudSeeded = async (baselineProducts) => {
+    if (!db || cloudHasDataRef.current) return;
+
+    const normalizedBaseline = normalizeProductList(baselineProducts);
+    if (!normalizedBaseline.length) return;
+
+    await Promise.all(
+      normalizedBaseline.map((product) =>
+        setDoc(doc(db, CLOUD_COLLECTION, String(product.id)), serializeProduct(product))
       )
     );
+
+    cloudHasDataRef.current = true;
   };
 
-  const deleteProduct = (productId) => {
+  const writeCloudProduct = async (product) => {
+    if (!db) return;
+
+    await setDoc(doc(db, CLOUD_COLLECTION, String(product.id)), serializeProduct(product));
+    setSyncState(buildSyncState({
+      mode: 'cloud',
+      message: 'Products are syncing live across devices.',
+    }));
+  };
+
+  const handleCloudFailure = (error) => {
+    setSyncState(buildSyncState({
+      mode: 'local-error',
+      message: mapCloudError(error),
+      errorCode: error?.code || '',
+    }));
+  };
+
+  const addProduct = async (draftProduct) => {
+    const baselineProducts = productsRef.current;
+    const nextId = baselineProducts.reduce((maxId, product) => Math.max(maxId, product.id), 0) + 1;
+    const nextSortOrder = baselineProducts.reduce((maxSortOrder, product) => Math.max(maxSortOrder, product.sortOrder || 0), 0) + 1;
+    const normalized = normalizeProduct({ ...draftProduct, id: nextId, sortOrder: nextSortOrder }, nextId, nextSortOrder);
+
+    if (!normalized) return null;
+
+    setProducts((currentProducts) => [normalized, ...currentProducts]);
+
+    if (!db) return normalized;
+
+    try {
+      if (!cloudHasDataRef.current) {
+        await ensureCloudSeeded(baselineProducts);
+      }
+      await writeCloudProduct(normalized);
+    } catch (error) {
+      handleCloudFailure(error);
+    }
+
+    return normalized;
+  };
+
+  const updateProduct = async (productId, updates) => {
+    const baselineProducts = productsRef.current;
+    let nextProduct = null;
+
+    setProducts((currentProducts) =>
+      currentProducts.map((product) => {
+        if (product.id !== productId) return product;
+
+        nextProduct = normalizeProduct(
+          { ...product, ...updates, id: product.id, sortOrder: product.sortOrder },
+          product.id,
+          product.sortOrder
+        ) || product;
+
+        return nextProduct;
+      })
+    );
+
+    if (!db || !nextProduct) return nextProduct;
+
+    try {
+      if (!cloudHasDataRef.current) {
+        await ensureCloudSeeded(baselineProducts);
+      }
+      await writeCloudProduct(nextProduct);
+    } catch (error) {
+      handleCloudFailure(error);
+    }
+
+    return nextProduct;
+  };
+
+  const deleteProduct = async (productId) => {
+    const baselineProducts = productsRef.current;
+
     setProducts((currentProducts) => currentProducts.filter((product) => product.id !== productId));
+
+    if (!db) return;
+
+    try {
+      if (!cloudHasDataRef.current) {
+        await ensureCloudSeeded(baselineProducts);
+      }
+      await deleteDoc(doc(db, CLOUD_COLLECTION, String(productId)));
+      setSyncState(buildSyncState({
+        mode: 'cloud',
+        message: 'Products are syncing live across devices.',
+      }));
+    } catch (error) {
+      handleCloudFailure(error);
+    }
   };
 
   const value = useMemo(() => ({
@@ -169,7 +343,8 @@ export function ProductProvider({ children }) {
     addProduct,
     updateProduct,
     deleteProduct,
-  }), [products]);
+    syncState,
+  }), [products, syncState]);
 
   return (
     <ProductContext.Provider value={value}>

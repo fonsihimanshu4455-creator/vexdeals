@@ -1,15 +1,16 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // All values come from environment variables — set them in Vercel dashboard
 // and in a local .env file (see .env.example)
 const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY            || 'AIzaSyBVrk2cTyDCSJ_0xwWNPa9-ZvyzMhEGLjA',
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN        || 'vexdeals-7b381.firebaseapp.com',
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID         || 'vexdeals-7b381',
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET     || 'vexdeals-7b381.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '700443326824',
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID             || '1:700443326824:web:c5cca1a77c159d48747edd',
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 export const firebaseConfigReady = Object.values(firebaseConfig).every(
@@ -21,3 +22,4 @@ const app = firebaseConfigReady
   : null;
 
 export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;

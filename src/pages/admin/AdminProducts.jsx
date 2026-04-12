@@ -43,7 +43,7 @@ const getImageDimensions = (src) =>
   });
 
 export default function AdminProducts() {
-  const { products: productList, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { products: productList, addProduct, updateProduct, deleteProduct, syncState: productSyncState } = useProducts();
   const { categories: adminCategories } = useCategories();
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('All');
@@ -219,6 +219,21 @@ export default function AdminProducts() {
         >
           <Plus size={16} /> Add Product
         </button>
+      </div>
+
+      <div
+        className={`rounded-2xl border px-4 py-3 text-sm ${
+          productSyncState.mode === 'cloud'
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : productSyncState.mode === 'cloud-empty'
+              ? 'border-primary-200 bg-primary-50 text-primary-700'
+              : 'border-amber-200 bg-amber-50 text-amber-700'
+        }`}
+      >
+        <p className="font-semibold">
+          {productSyncState.mode === 'cloud' ? 'Realtime product sync is live' : 'Realtime product sync needs attention'}
+        </p>
+        <p className="mt-1">{productSyncState.message}</p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row gap-3">
@@ -502,7 +517,7 @@ export default function AdminProducts() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-gray-900">Upload Product Image</p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Recommended: {RECOMMENDED_IMAGE_SIZE}, square image, JPG/PNG/WEBP, max {formatFileSize(MAX_IMAGE_SIZE_BYTES)}.
+                      Recommended: 1000 x 1000 px, square image, JPG/PNG/WEBP, max 500 KB.
                     </p>
                     <p className="mt-1 text-xs text-amber-700">
                       Current setup stores products locally, so smaller images save more reliably.

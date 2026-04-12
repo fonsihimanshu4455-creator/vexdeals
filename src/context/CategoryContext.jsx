@@ -1,49 +1,105 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const DEFAULT_CATEGORIES = [
-  { id: 1, name: 'Watches',      icon: '⌚', color: 'bg-blue-50 hover:bg-blue-100',    active: true  },
-  { id: 2, name: 'Eyewear',      icon: '🕶️', color: 'bg-indigo-50 hover:bg-indigo-100', active: true  },
-  { id: 3, name: 'Electronics',  icon: '💻', color: 'bg-sky-50 hover:bg-sky-100',       active: true  },
-  { id: 4, name: 'Fashion',      icon: '👗', color: 'bg-pink-50 hover:bg-pink-100',     active: true  },
-  { id: 5, name: 'Home & Living',icon: '🏠', color: 'bg-emerald-50 hover:bg-emerald-100',active: true },
-  { id: 6, name: 'Sports',       icon: '🏋️', color: 'bg-orange-50 hover:bg-orange-100', active: true  },
-  { id: 7, name: 'Beauty',       icon: '✨', color: 'bg-purple-50 hover:bg-purple-100', active: false },
+  { id: 1, name: 'Watches',       icon: '⌚',  color: 'bg-blue-50 hover:bg-blue-100',       active: true },
+  { id: 2, name: 'Eyewear',       icon: '🕶️', color: 'bg-indigo-50 hover:bg-indigo-100',   active: true },
+  { id: 3, name: 'Electronics',   icon: '💻', color: 'bg-sky-50 hover:bg-sky-100',         active: true },
+  { id: 4, name: 'Fashion',       icon: '👗', color: 'bg-pink-50 hover:bg-pink-100',       active: true },
+  { id: 5, name: 'Home & Living', icon: '🏠', color: 'bg-emerald-50 hover:bg-emerald-100', active: true },
+  { id: 6, name: 'Sports',        icon: '🏋️', color: 'bg-orange-50 hover:bg-orange-100',   active: true },
+  { id: 7, name: 'Beauty',        icon: '✨', color: 'bg-purple-50 hover:bg-purple-100',    active: false },
 ];
 
 const CategoryContext = createContext();
+const STORAGE_KEY = 'vexdeals_categories';
+const CLOUD_COLLECTION = 'categories';
 
-const readStoredCategories = () => {
-  if (typeof window === 'undefined') {
-    return DEFAULT_CATEGORIES;
-  }
+const buildSyncState = (overrides = {}) => ({
+  mode: db ? 'connecting' : 'local',
+  message: db
+    ? 'Connecting shared category sync...'
+    : 'Cloud category sync is off. Categories save only on this device.',
+  errorCode: '',
+  ...overrides,
+});
 
-  try {
-    const saved = localStorage.getItem('vexdeals_categories');
-    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
-  } catch {
-    localStorage.removeItem('vexdeals_categories');
-    return DEFAULT_CATEGORIES;
+const mapCloudError = (error) => {
+  switch (error?.code) {
+    case 'failed-precondition':
+      return 'Enable Cloud Firestore in Firebase Console so categories sync to every device.';
+    case 'permission-denied':
+      return 'Firestore rules are blocking category sync. Categories are saving only on this device.';
+    case 'unavailable':
+      return 'Cloud category sync is temporarily unavailable. Categories are saving only on this device.';
+    default:
+      return 'Cloud category sync is not available right now. Categories are saving only on this device.';
   }
 };
 
+const normalizeCategoryList = (list) => {
+  const safeList = Array.isArray(list) ? list : DEFAULT_CATEGORIES;
+  const total = safeList.length;
+
+  return safeList
+    .map((category, index) => ({
+      ...category,
+      id: Number(category?.id) || index + 1,
+      name: String(category?.name || '').trim(),
+      icon: String(category?.icon || '🛍️').trim() || '🛍️',
+      color: String(category?.color || 'bg-blue-50 hover:bg-blue-100').trim() || 'bg-blue-50 hover:bg-blue-100',
+      active: Boolean(category?.active),
+      sortOrder: Number(category?.sortOrder) || index + 1 || total,
+    }))
+    .filter((category) => category.name)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+};
+
+const readStoredCategories = () => {
+  if (typeof window === 'undefined') {
+    return normalizeCategoryList(DEFAULT_CATEGORIES);
+  }
+
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? normalizeCategoryList(JSON.parse(saved)) : normalizeCategoryList(DEFAULT_CATEGORIES);
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return normalizeCategoryList(DEFAULT_CATEGORIES);
+  }
+};
+
+const serializeCategory = (category) => ({
+  ...category,
+  updatedAt: new Date().toISOString(),
+});
+
 export function CategoryProvider({ children }) {
   const [categories, setCategories] = useState(() => readStoredCategories());
+  const [syncState, setSyncState] = useState(() => buildSyncState());
   const channelRef = useRef(null);
   const lastSnapshotRef = useRef(JSON.stringify(categories));
+  const categoriesRef = useRef(categories);
+  const cloudHasDataRef = useRef(false);
+
+  useEffect(() => {
+    categoriesRef.current = categories;
+  }, [categories]);
 
   useEffect(() => {
     const snapshot = JSON.stringify(categories);
     if (snapshot === lastSnapshotRef.current) return;
 
     lastSnapshotRef.current = snapshot;
-    localStorage.setItem('vexdeals_categories', snapshot);
+    localStorage.setItem(STORAGE_KEY, snapshot);
     channelRef.current?.postMessage(snapshot);
   }, [categories]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
-    channelRef.current = 'BroadcastChannel' in window ? new BroadcastChannel('vexdeals_categories') : null;
+    channelRef.current = 'BroadcastChannel' in window ? new BroadcastChannel(STORAGE_KEY) : null;
 
     const syncCategories = (nextCategories) => {
       const snapshot = JSON.stringify(nextCategories);
@@ -53,7 +109,7 @@ export function CategoryProvider({ children }) {
     };
 
     const handleStorage = (event) => {
-      if (event.key && event.key !== 'vexdeals_categories') return;
+      if (event.key && event.key !== STORAGE_KEY) return;
       syncCategories(readStoredCategories());
     };
 
@@ -63,7 +119,7 @@ export function CategoryProvider({ children }) {
 
     const handleMessage = (event) => {
       try {
-        syncCategories(JSON.parse(event.data));
+        syncCategories(normalizeCategoryList(JSON.parse(event.data)));
       } catch {
         syncCategories(readStoredCategories());
       }
@@ -86,10 +142,88 @@ export function CategoryProvider({ children }) {
     };
   }, []);
 
-  const activeCategories = categories.filter(c => c.active);
+  useEffect(() => {
+    if (!db) return undefined;
 
-  const addCategory = (name, icon) => {
-    const id = Date.now();
+    const categoriesQuery = query(collection(db, CLOUD_COLLECTION), orderBy('sortOrder', 'asc'));
+
+    return onSnapshot(
+      categoriesQuery,
+      (snapshot) => {
+        if (snapshot.empty) {
+          cloudHasDataRef.current = false;
+          setSyncState(buildSyncState({
+            mode: 'cloud-empty',
+            message: 'Shared category sync is ready. Add or edit a category once to publish it to every device.',
+          }));
+          return;
+        }
+
+        const nextCategories = normalizeCategoryList(
+          snapshot.docs.map((docSnapshot) => ({
+            ...docSnapshot.data(),
+            id: docSnapshot.data().id ?? docSnapshot.id,
+          }))
+        );
+
+        cloudHasDataRef.current = nextCategories.length > 0;
+        setCategories(nextCategories);
+        setSyncState(buildSyncState({
+          mode: 'cloud',
+          message: 'Categories are syncing live across devices.',
+        }));
+      },
+      (error) => {
+        cloudHasDataRef.current = false;
+        setSyncState(buildSyncState({
+          mode: 'local-error',
+          message: mapCloudError(error),
+          errorCode: error?.code || '',
+        }));
+      }
+    );
+  }, []);
+
+  const ensureCloudSeeded = async (baselineCategories) => {
+    if (!db || cloudHasDataRef.current) return;
+
+    const normalizedBaseline = normalizeCategoryList(baselineCategories);
+    if (!normalizedBaseline.length) return;
+
+    await Promise.all(
+      normalizedBaseline.map((category) =>
+        setDoc(doc(db, CLOUD_COLLECTION, String(category.id)), serializeCategory(category))
+      )
+    );
+
+    cloudHasDataRef.current = true;
+  };
+
+  const writeCloudCategory = async (category) => {
+    if (!db) return;
+
+    await setDoc(doc(db, CLOUD_COLLECTION, String(category.id)), serializeCategory(category));
+    setSyncState(buildSyncState({
+      mode: 'cloud',
+      message: 'Categories are syncing live across devices.',
+    }));
+  };
+
+  const handleCloudFailure = (error) => {
+    setSyncState(buildSyncState({
+      mode: 'local-error',
+      message: mapCloudError(error),
+      errorCode: error?.code || '',
+    }));
+  };
+
+  const activeCategories = useMemo(
+    () => categories.filter((category) => category.active),
+    [categories]
+  );
+
+  const addCategory = async (name, icon) => {
+    const baselineCategories = categoriesRef.current;
     const colors = [
       'bg-blue-50 hover:bg-blue-100',
       'bg-indigo-50 hover:bg-indigo-100',
@@ -100,31 +234,119 @@ export function CategoryProvider({ children }) {
       'bg-amber-50 hover:bg-amber-100',
       'bg-teal-50 hover:bg-teal-100',
     ];
-    const color = colors[categories.length % colors.length];
-    setCategories(prev => [...prev, { id, name, icon, color, active: true }]);
+
+    const nextId = baselineCategories.reduce((maxId, category) => Math.max(maxId, category.id), 0) + 1;
+    const nextSortOrder = baselineCategories.reduce((maxSortOrder, category) => Math.max(maxSortOrder, category.sortOrder || 0), 0) + 1;
+    const normalized = normalizeCategoryList([{
+      id: nextId,
+      name,
+      icon,
+      color: colors[baselineCategories.length % colors.length],
+      active: true,
+      sortOrder: nextSortOrder,
+    }])[0];
+
+    if (!normalized) return null;
+
+    setCategories((currentCategories) => [...currentCategories, normalized]);
+
+    if (!db) return normalized;
+
+    try {
+      if (!cloudHasDataRef.current) {
+        await ensureCloudSeeded(baselineCategories);
+      }
+      await writeCloudCategory(normalized);
+    } catch (error) {
+      handleCloudFailure(error);
+    }
+
+    return normalized;
   };
 
-  const removeCategory = (id) => {
-    setCategories(prev => prev.filter(c => c.id !== id));
+  const removeCategory = async (id) => {
+    const baselineCategories = categoriesRef.current;
+
+    setCategories((currentCategories) => currentCategories.filter((category) => category.id !== id));
+
+    if (!db) return;
+
+    try {
+      if (!cloudHasDataRef.current) {
+        await ensureCloudSeeded(baselineCategories);
+      }
+      await deleteDoc(doc(db, CLOUD_COLLECTION, String(id)));
+      setSyncState(buildSyncState({
+        mode: 'cloud',
+        message: 'Categories are syncing live across devices.',
+      }));
+    } catch (error) {
+      handleCloudFailure(error);
+    }
   };
 
-  const toggleCategory = (id) => {
-    setCategories(prev => prev.map(c => c.id === id ? { ...c, active: !c.active } : c));
+  const toggleCategory = async (id) => {
+    const baselineCategories = categoriesRef.current;
+    let nextCategory = null;
+
+    setCategories((currentCategories) =>
+      currentCategories.map((category) => {
+        if (category.id !== id) return category;
+        nextCategory = { ...category, active: !category.active };
+        return nextCategory;
+      })
+    );
+
+    if (!db || !nextCategory) return;
+
+    try {
+      if (!cloudHasDataRef.current) {
+        await ensureCloudSeeded(baselineCategories);
+      }
+      await writeCloudCategory(nextCategory);
+    } catch (error) {
+      handleCloudFailure(error);
+    }
   };
 
-  const updateCategory = (id, updates) => {
-    setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+  const updateCategory = async (id, updates) => {
+    const baselineCategories = categoriesRef.current;
+    let nextCategory = null;
+
+    setCategories((currentCategories) =>
+      currentCategories.map((category) => {
+        if (category.id !== id) return category;
+        nextCategory = normalizeCategoryList([{ ...category, ...updates }])[0] || category;
+        return nextCategory;
+      })
+    );
+
+    if (!db || !nextCategory) return nextCategory;
+
+    try {
+      if (!cloudHasDataRef.current) {
+        await ensureCloudSeeded(baselineCategories);
+      }
+      await writeCloudCategory(nextCategory);
+    } catch (error) {
+      handleCloudFailure(error);
+    }
+
+    return nextCategory;
   };
+
+  const value = useMemo(() => ({
+    categories,
+    activeCategories,
+    addCategory,
+    removeCategory,
+    toggleCategory,
+    updateCategory,
+    syncState,
+  }), [categories, activeCategories, syncState]);
 
   return (
-    <CategoryContext.Provider value={{
-      categories,
-      activeCategories,
-      addCategory,
-      removeCategory,
-      toggleCategory,
-      updateCategory,
-    }}>
+    <CategoryContext.Provider value={value}>
       {children}
     </CategoryContext.Provider>
   );
