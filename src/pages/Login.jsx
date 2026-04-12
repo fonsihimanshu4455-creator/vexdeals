@@ -33,7 +33,7 @@ export default function Login() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (user) navigate(user.role === 'customer' ? '/' : '/admin');
+    if (user?.role === 'customer') navigate('/');
   }, [user, navigate]);
 
   const handleGoogleLogin = async () => {
