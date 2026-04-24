@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Star, Package, X, Check, Upload, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Star, Package, X, Check, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
 
@@ -10,12 +10,14 @@ const createEmptyForm = (defaultCategory = 'Electronics') => ({
   originalPrice: '',
   stock: '',
   shippingCharge: 0,
-  image: '',
+  images: [],
   description: '',
   featured: true,
   isNew: false,
   isBestseller: false,
 });
+
+const MAX_IMAGES = 6;
 
 const MAX_IMAGE_SIZE_BYTES = 500 * 1024;
 const RECOMMENDED_IMAGE_SIZE = '1000 x 1000 px';
@@ -58,7 +60,7 @@ export default function AdminProducts() {
   const [deleteId, setDeleteId] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [formError, setFormError] = useState('');
-  const [imageDetails, setImageDetails] = useState(null);
+  const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef(null);
 
   const formatPrice = (price) => `₹${Number(price).toLocaleString('en-IN')}`;
@@ -120,7 +122,7 @@ export default function AdminProducts() {
     setAddOpen(true);
     setAddForm(createEmptyForm(defaultCategory));
     setFormError('');
-    setImageDetails(null);
+    setUrlInput('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -128,51 +130,63 @@ export default function AdminProducts() {
     setAddOpen(false);
     setAddForm(createEmptyForm(defaultCategory));
     setFormError('');
-    setImageDetails(null);
+    setUrlInput('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleImageUpload = async (event) => {
+  const addImageFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (addForm.images.length >= MAX_IMAGES) {
+      setFormError(`Maximum ${MAX_IMAGES} images allowed.`);
+      event.target.value = '';
+      return;
+    }
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
       setFormError('Please upload a JPG, PNG, or WEBP image.');
       event.target.value = '';
       return;
     }
-
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setFormError(`Image is too large. Keep it under ${formatFileSize(MAX_IMAGE_SIZE_BYTES)} for reliable saving.`);
+      setFormError(`Image too large. Keep each image under ${formatFileSize(MAX_IMAGE_SIZE_BYTES)}.`);
       event.target.value = '';
       return;
     }
 
     try {
       const dataUrl = await readFileAsDataUrl(file);
-      const { width, height } = await getImageDimensions(dataUrl);
-
-      setAddForm((current) => ({ ...current, image: dataUrl }));
-      setImageDetails({
-        name: file.name,
-        type: file.type.replace('image/', '').toUpperCase(),
-        sizeLabel: formatFileSize(file.size),
-        width,
-        height,
-      });
+      setAddForm((current) => ({ ...current, images: [...current.images, dataUrl] }));
       setFormError('');
     } catch (error) {
-      setFormError(error.message || 'Could not process the selected image.');
-      event.target.value = '';
+      setFormError(error.message || 'Could not read the selected image.');
     }
+    event.target.value = '';
   };
 
-  const handleImageUrlChange = (value) => {
-    setAddForm((current) => ({ ...current, image: value }));
-    if (value.trim()) {
-      setImageDetails(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+  const addImageUrl = () => {
+    const url = urlInput.trim();
+    if (!url) return;
+    if (addForm.images.length >= MAX_IMAGES) {
+      setFormError(`Maximum ${MAX_IMAGES} images allowed.`);
+      return;
     }
+    setAddForm((current) => ({ ...current, images: [...current.images, url] }));
+    setUrlInput('');
+    setFormError('');
+  };
+
+  const removeImage = (idx) => {
+    setAddForm((current) => ({ ...current, images: current.images.filter((_, i) => i !== idx) }));
+  };
+
+  const moveImage = (from, to) => {
+    setAddForm((current) => {
+      const imgs = [...current.images];
+      const [item] = imgs.splice(from, 1);
+      imgs.splice(to, 0, item);
+      return { ...current, images: imgs };
+    });
   };
 
   const handleAddProduct = () => {
@@ -212,6 +226,8 @@ export default function AdminProducts() {
       originalPrice: Number.isFinite(originalPrice) && originalPrice > 0 ? originalPrice : price,
       stock,
       shippingCharge,
+      image: addForm.images[0] || '',
+      images: addForm.images,
       rating: 4.5,
       reviews: 0,
       specs: [],
@@ -569,76 +585,103 @@ export default function AdminProducts() {
                 </div>
               </label>
 
-              <label className="text-sm text-gray-700">
-                <span className="block mb-1 font-medium">Image URL</span>
-                <input
-                  value={addForm.image}
-                  onChange={(e) => handleImageUrlChange(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500"
-                  placeholder="https://..."
-                />
-              </label>
-
-              <div className="sm:col-span-2 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-xl bg-white p-2 text-primary-600 shadow-sm">
-                    <Upload size={18} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-gray-900">Upload Product Image</p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Recommended: 1000 x 1000 px, square image, JPG/PNG/WEBP, max 500 KB.
-                    </p>
-                    <p className="mt-1 text-xs text-amber-700">
-                      Current setup stores products locally, so smaller images save more reliably.
-                    </p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleImageUpload}
-                      className="mt-3 block w-full text-sm text-gray-600 file:mr-3 file:rounded-xl file:border-0 file:bg-primary-600 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-white hover:file:bg-primary-700"
-                    />
-                  </div>
+              {/* ── Multi-image upload ───────────────────────────────────── */}
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-700">
+                    Product Images
+                    <span className="text-gray-400 font-normal ml-1">(max {MAX_IMAGES} · first = primary)</span>
+                  </p>
+                  <span className="text-xs text-gray-400">{addForm.images.length}/{MAX_IMAGES}</span>
                 </div>
 
-                {(imageDetails || addForm.image) && (
-                  <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-3 shadow-sm sm:flex-row sm:items-start">
-                    <div className="h-24 w-24 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-                      {addForm.image ? (
-                        <img src={addForm.image} alt="Preview" className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-gray-400">
-                          <ImageIcon size={20} />
+                {/* Uploaded image thumbnails */}
+                {addForm.images.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {addForm.images.map((img, idx) => (
+                      <div key={idx} className="relative group w-20 h-20">
+                        <div className={`w-full h-full rounded-xl overflow-hidden border-2 ${idx === 0 ? 'border-primary-500' : 'border-gray-200'}`}>
+                          <img src={img} alt="" className="w-full h-full object-cover" />
                         </div>
-                      )}
+
+                        {/* Position badge */}
+                        <span className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow ${idx === 0 ? 'bg-primary-600 text-white' : 'bg-gray-500 text-white'}`}>
+                          {idx + 1}
+                        </span>
+
+                        {/* Remove */}
+                        <button
+                          onClick={() => removeImage(idx)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X size={10} />
+                        </button>
+
+                        {/* Reorder arrows */}
+                        <div className="absolute bottom-0.5 left-0 right-0 flex justify-between px-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {idx > 0 && (
+                            <button
+                              onClick={() => moveImage(idx, idx - 1)}
+                              className="w-5 h-5 bg-black/60 hover:bg-black/80 text-white rounded flex items-center justify-center"
+                            >
+                              <ChevronLeft size={12} />
+                            </button>
+                          )}
+                          {idx < addForm.images.length - 1 && (
+                            <button
+                              onClick={() => moveImage(idx, idx + 1)}
+                              className="w-5 h-5 bg-black/60 hover:bg-black/80 text-white rounded flex items-center justify-center ml-auto"
+                            >
+                              <ChevronRight size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add image controls */}
+                {addForm.images.length < MAX_IMAGES && (
+                  <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 space-y-3">
+                    {/* URL input */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={urlInput}
+                        onChange={(e) => setUrlInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && addImageUrl()}
+                        placeholder="Paste image URL and press Add…"
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 bg-white"
+                      />
+                      <button
+                        onClick={addImageUrl}
+                        disabled={!urlInput.trim()}
+                        className="px-3 py-2 bg-primary-50 text-primary-700 text-sm font-semibold rounded-xl border border-primary-200 hover:bg-primary-100 disabled:opacity-40"
+                      >
+                        Add URL
+                      </button>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-gray-900">Selected image</p>
-                      {imageDetails ? (
-                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-600 sm:grid-cols-4">
-                          <div>
-                            <p className="text-gray-400">File</p>
-                            <p className="truncate font-medium text-gray-800">{imageDetails.name}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400">Type</p>
-                            <p className="font-medium text-gray-800">{imageDetails.type}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400">Size</p>
-                            <p className="font-medium text-gray-800">{imageDetails.sizeLabel}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400">Resolution</p>
-                            <p className="font-medium text-gray-800">{imageDetails.width} x {imageDetails.height}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="mt-2 text-xs text-gray-500">
-                          Using image from URL. Upload a file if you want automatic size details here.
-                        </p>
-                      )}
+
+                    {/* File upload */}
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl bg-white p-2 text-primary-600 shadow-sm shrink-0">
+                        <Upload size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-900">Upload from device</p>
+                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 500 KB per image</p>
+                      </div>
+                      <label className="shrink-0 cursor-pointer bg-primary-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-primary-700">
+                        Choose File
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={addImageFile}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
                   </div>
                 )}

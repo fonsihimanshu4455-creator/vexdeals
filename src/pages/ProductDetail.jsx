@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap } from 'lucide-react';
+import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
@@ -15,6 +15,29 @@ export default function ProductDetail() {
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [added, setAdded] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+
+  const images = product?.images || [];
+  const totalImgs = images.length;
+
+  const prevImg = () => setSelectedImg(i => Math.max(0, i - 1));
+  const nextImg = () => setSelectedImg(i => Math.min(totalImgs - 1, i + 1));
+
+  const openLightbox = () => { setLightboxOpen(true); setZoomLevel(1); };
+  const closeLightbox = () => { setLightboxOpen(false); setZoomLevel(1); };
+  const cycleZoom = () => setZoomLevel(z => z >= 3 ? 1 : z + 1);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') prevImg();
+      if (e.key === 'ArrowRight') nextImg();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [lightboxOpen, totalImgs]);
 
   if (!product) {
     return (
@@ -64,20 +87,52 @@ export default function ProductDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Image gallery */}
             <div className="space-y-3">
-              <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50">
+              {/* Main image */}
+              <div className="relative group aspect-square rounded-2xl overflow-hidden bg-gray-50 cursor-zoom-in" onClick={openLightbox}>
                 <img
-                  src={product.images[selectedImg]}
+                  src={images[selectedImg]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
+                {/* Zoom hint */}
+                <div className="absolute top-3 right-3 bg-black/40 text-white rounded-xl px-2 py-1 text-xs flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  <ZoomIn size={12} /> Tap to zoom
+                </div>
+                {/* Prev / Next on hover */}
+                {totalImgs > 1 && selectedImg > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); prevImg(); }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                )}
+                {totalImgs > 1 && selectedImg < totalImgs - 1 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); nextImg(); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                )}
+                {/* Dot indicators */}
+                {totalImgs > 1 && (
+                  <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+                    {images.map((_, i) => (
+                      <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${selectedImg === i ? 'bg-primary-600' : 'bg-white/60'}`} />
+                    ))}
+                  </div>
+                )}
               </div>
-              {product.images.length > 1 && (
-                <div className="flex gap-3">
-                  {product.images.map((img, i) => (
+
+              {/* Thumbnail strip */}
+              {totalImgs > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {images.map((img, i) => (
                     <button
                       key={i}
                       onClick={() => setSelectedImg(i)}
-                      className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-colors ${
+                      className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${
                         selectedImg === i ? 'border-primary-600' : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -87,6 +142,93 @@ export default function ProductDetail() {
                 </div>
               )}
             </div>
+
+            {/* Product info in next sibling — lightbox is rendered outside the grid */}
+            {lightboxOpen && (
+              <div
+                className="fixed inset-0 z-50 bg-black/95 flex flex-col"
+                onClick={closeLightbox}
+              >
+                {/* Top bar */}
+                <div
+                  className="flex items-center justify-between px-4 py-3 shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-white/60 text-sm">{selectedImg + 1} / {totalImgs}</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={cycleZoom}
+                      className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-colors"
+                    >
+                      <ZoomIn size={14} /> {zoomLevel}×
+                    </button>
+                    <button onClick={closeLightbox} className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Zoomed image area */}
+                <div
+                  className={`flex-1 ${zoomLevel > 1 ? 'overflow-auto' : 'overflow-hidden flex items-center justify-center'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className={zoomLevel > 1 ? 'flex items-center justify-center p-4' : 'w-full h-full flex items-center justify-center p-4'}>
+                    <img
+                      src={images[selectedImg]}
+                      alt={product.name}
+                      onDoubleClick={cycleZoom}
+                      style={{
+                        maxWidth: zoomLevel === 1 ? '100%' : 'none',
+                        maxHeight: zoomLevel === 1 ? '100%' : 'none',
+                        width: zoomLevel > 1 ? `${zoomLevel * 80}vw` : undefined,
+                        cursor: zoomLevel > 1 ? 'move' : 'zoom-in',
+                      }}
+                      className="object-contain rounded-lg select-none"
+                      draggable={false}
+                    />
+                  </div>
+                </div>
+
+                {/* Prev / Next arrows */}
+                {totalImgs > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); prevImg(); setZoomLevel(1); }}
+                      disabled={selectedImg === 0}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-20"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); nextImg(); setZoomLevel(1); }}
+                      disabled={selectedImg === totalImgs - 1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-20"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </>
+                )}
+
+                {/* Bottom thumbnail strip */}
+                {totalImgs > 1 && (
+                  <div
+                    className="flex gap-2 justify-center px-4 py-3 overflow-x-auto shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {images.map((img, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { setSelectedImg(i); setZoomLevel(1); }}
+                        className={`shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-colors ${selectedImg === i ? 'border-white' : 'border-white/30 hover:border-white/60'}`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Product info */}
             <div className="flex flex-col gap-4">
