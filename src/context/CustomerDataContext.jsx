@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { collection, doc, onSnapshot, orderBy, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import { orders as seedOrders } from '../data/orders';
 import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
@@ -394,17 +394,20 @@ export function CustomerDataProvider({ children }) {
   useEffect(() => {
     if (!db || !user?.id || !isCustomer) return undefined;
 
+    // No orderBy here — combining where+orderBy on different fields needs a
+    // composite Firestore index; we sort client-side instead so the query
+    // works with only the default single-field indexes.
     const q = query(
       collection(db, 'orders'),
-      where('userId', '==', String(user.id)),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', String(user.id))
     );
 
     return onSnapshot(q, (snap) => {
       if (snap.empty) return;
       const firestoreOrders = snap.docs
         .map((d, i) => normalizeOrder({ ...d.data(), id: d.id }, i + 1, user))
-        .filter(Boolean);
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
       if (firestoreOrders.length > 0) {
         setOrders(firestoreOrders);
       }

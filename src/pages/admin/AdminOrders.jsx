@@ -64,11 +64,18 @@ export default function AdminOrders() {
 
   // ── Update order status ────────────────────────────────────────────────────
   const updateStatus = async (orderId, newStatus) => {
+    const fullOrder = orders.find(o => o.id === orderId);
     setOrders(list => list.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     if (viewOrder?.id === orderId) setViewOrder(prev => ({ ...prev, status: newStatus }));
 
     if (db) {
-      await setDoc(doc(db, 'orders', orderId), { status: newStatus }, { merge: true }).catch(() => {});
+      if (fullOrder) {
+        // Write full order so userId field is always present — customers'
+        // real-time query filters by userId and won't see the update without it.
+        await setDoc(doc(db, 'orders', orderId), { ...fullOrder, status: newStatus }).catch(() => {});
+      } else {
+        await setDoc(doc(db, 'orders', orderId), { status: newStatus }, { merge: true }).catch(() => {});
+      }
     }
   };
 
