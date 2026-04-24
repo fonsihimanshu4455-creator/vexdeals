@@ -343,7 +343,7 @@ export default function ProductDetail() {
               {/* Delivery info */}
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { Icon: Truck, text: 'Free Delivery', sub: 'Above ₹500' },
+                  { Icon: Truck, text: 'Free Delivery', sub: 'Above ₹1000' },
                   { Icon: RotateCcw, text: '7 Day Return', sub: 'Easy returns' },
                   { Icon: Shield, text: 'Warranty', sub: 'Brand warranty' },
                 ].map(({ Icon, text, sub }) => (

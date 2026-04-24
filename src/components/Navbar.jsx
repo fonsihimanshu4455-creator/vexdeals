@@ -38,7 +38,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white shadow-md">
       {/* Top announcement banner */}
       <div className="bg-primary-800 text-white text-center py-1.5 text-xs font-medium">
-        Free shipping on orders above ₹500 &nbsp;|&nbsp; Use code{' '}
+        Free shipping on orders above ₹1000 &nbsp;|&nbsp; Use code{' '}
         <span className="font-bold text-accent-400">VEXFIRST</span> for 10% off
       </div>
 

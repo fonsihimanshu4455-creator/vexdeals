@@ -107,24 +107,6 @@ export default function AdminLogin() {
             </button>
           </form>
 
-          {/* Demo accounts */}
-          <div className="mt-6">
-            <div className="relative flex items-center">
-              <div className="flex-1 border-t border-gray-200" />
-              <span className="px-3 text-xs text-gray-400">Demo Accounts</span>
-              <div className="flex-1 border-t border-gray-200" />
-            </div>
-            <div className="mt-4 grid grid-cols-1 gap-3">
-              <button
-                onClick={() => { setEmail('admin@vexdeals.com'); setPassword('admin123'); }}
-                className="text-sm bg-primary-50 text-primary-700 border border-primary-200 rounded-xl px-4 py-3 hover:bg-primary-100 transition-colors font-medium text-left"
-              >
-                <span className="font-bold">Main Admin</span>
-                <span className="text-primary-500 font-normal text-xs block">admin@vexdeals.com · admin123 · Full Access</span>
-              </button>
-            </div>
-          </div>
-
           <p className="text-center text-xs text-gray-400 mt-5">
             Customer?{' '}
             <Link to="/login" className="text-primary-600 font-semibold hover:underline">Login on your mobile →</Link>

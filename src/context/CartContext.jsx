@@ -311,10 +311,12 @@ export function CartProvider({ children }) {
 
   const totalItems = state.items.reduce((acc, i) => acc + i.qty, 0);
   const subtotal = state.items.reduce((acc, i) => acc + i.price * i.qty, 0);
-  const shipping = state.items.reduce(
+  const rawShipping = state.items.reduce(
     (acc, item) => acc + normalizeShippingCharge(item.shippingCharge) * item.qty,
     0
   );
+  // Free delivery when subtotal ≥ ₹1000; otherwise per-product charges apply
+  const shipping = subtotal >= 1000 ? 0 : rawShipping;
   const promoValidation = getPromoValidation(state.promoCode, subtotal, promoCatalog);
   const appliedPromo = promoValidation.valid ? promoValidation.promo : null;
   const discount = appliedPromo ? getPromoDiscount(appliedPromo, subtotal + shipping) : 0;
