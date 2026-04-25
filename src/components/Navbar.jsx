@@ -49,7 +49,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link to="/" className="shrink-0">
-            <VexLogoInline size="md" />
+            <VexLogoInline size="lg" />
           </Link>
 
           {/* Search bar — desktop */}
@@ -221,6 +221,59 @@ export default function Navbar() {
           >
             ⚡ View All Deals
           </Link>
+
+          {/* Account section */}
+          <div className="border-t border-gray-100 pt-3">
+            {user ? (
+              <>
+                <div className="flex items-center gap-3 px-1 mb-3">
+                  <img src={avatar} alt={displayName} className="w-9 h-9 rounded-full object-cover border-2 border-primary-200 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-gray-800 truncate">{displayName}</p>
+                    <p className="text-[11px] text-gray-400 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {isStaff && (
+                    <Link to="/admin" onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl text-sm font-semibold">
+                      <LayoutDashboard size={15} /> Admin
+                    </Link>
+                  )}
+                  {isCustomer && (
+                    <>
+                      <Link to="/account/orders" onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium">
+                        <Package size={15} /> My Orders
+                      </Link>
+                      <Link to="/account/transactions" onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium">
+                        <CreditCard size={15} /> Transactions
+                      </Link>
+                      <Link to="/account/addresses" onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium">
+                        <MapPin size={15} /> Addresses
+                      </Link>
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={() => { handleLogout(); setMenuOpen(false); }}
+                  className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-semibold"
+                >
+                  <LogOut size={15} /> Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full bg-primary-600 text-white font-bold py-3 rounded-xl text-sm"
+              >
+                <User size={15} /> Sign In to Your Account
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </header>

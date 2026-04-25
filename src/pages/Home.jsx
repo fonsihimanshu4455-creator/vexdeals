@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Zap, Star, ShieldCheck, RotateCcw, Headphones } from 'lucide-react';
+import { ArrowRight, Zap, Star, ShieldCheck, Headphones } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
@@ -93,19 +93,18 @@ export default function Home() {
 
       {/* ── Trust strip ─────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-2">
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {[
             { Icon: ShieldCheck, title: '100% Authentic', sub: 'Genuine branded products' },
-            { Icon: RotateCcw,   title: '7-Day Returns',  sub: 'Hassle-free returns'   },
             { Icon: Headphones,  title: '24/7 Support',   sub: 'Always here to help'   },
           ].map(({ Icon, title, sub }) => (
-            <div key={title} className="flex flex-col items-center gap-1.5 sm:flex-row sm:items-start sm:gap-3 bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-sm border border-gray-100 text-center sm:text-left">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary-50 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0">
-                <Icon size={16} className="text-primary-600 sm:text-[18px]" />
+            <div key={title} className="flex items-center gap-3 bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
+              <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
+                <Icon size={18} className="text-primary-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] sm:text-sm font-bold text-gray-900 leading-tight">{title}</p>
-                <p className="text-[10px] sm:text-xs text-gray-500 hidden sm:block mt-0.5">{sub}</p>
+                <p className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">{title}</p>
+                <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">{sub}</p>
               </div>
             </div>
           ))}

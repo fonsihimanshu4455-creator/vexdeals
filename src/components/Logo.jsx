@@ -131,19 +131,17 @@ export function VexLogoFull({ className = '', variant = 'dark' }) {
  *  variant='dark'  → white text on dark background (admin sidebar)
  */
 export function VexLogoInline({ size = 'md', variant = 'light' }) {
-  const logoSize = size === 'sm' ? 32 : 40;
+  const logoSize = size === 'sm' ? 32 : size === 'lg' ? 52 : 40;
   const vexColor  = variant === 'dark' ? 'text-white'      : 'text-primary-800';
   const dealsColor = variant === 'dark' ? 'text-accent-400' : 'text-accent-500';
+  const vexText   = size === 'sm' ? 'text-base' : size === 'lg' ? 'text-2xl' : 'text-xl';
+  const dealsText = size === 'sm' ? 'text-[9px]' : size === 'lg' ? 'text-[13px]' : 'text-[11px]';
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2.5">
       <VexLogoMark size={logoSize} />
       <div className="leading-none">
-        <div className={`font-black tracking-tight ${vexColor} ${size === 'sm' ? 'text-base' : 'text-xl'}`}>
-          VEX
-        </div>
-        <div className={`font-black tracking-[0.2em] ${dealsColor} ${size === 'sm' ? 'text-[9px]' : 'text-[11px]'} -mt-0.5`}>
-          DEALS
-        </div>
+        <div className={`font-black tracking-tight ${vexColor} ${vexText}`}>VEX</div>
+        <div className={`font-black tracking-[0.2em] ${dealsColor} ${dealsText} -mt-0.5`}>DEALS</div>
       </div>
     </div>
   );
