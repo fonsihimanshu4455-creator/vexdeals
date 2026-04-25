@@ -20,8 +20,8 @@ export function VexLogoMark({ size = 40 }) {
           <stop offset="100%" stopColor="#0f2060" />
         </linearGradient>
         <linearGradient id="goldRing" x1="30" y1="55" x2="70" y2="85" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#e8c04a" />
-          <stop offset="100%" stopColor="#c9a83c" />
+          <stop offset="0%"   stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#f59e0b" />
         </linearGradient>
         <radialGradient id="watchFace" cx="50%" cy="50%" r="50%">
           <stop offset="0%"   stopColor="#ffffff" />
@@ -40,16 +40,16 @@ export function VexLogoMark({ size = 40 }) {
       {/* ── Glasses / Sunglasses ── */}
       {/* Left lens frame */}
       <rect x="14" y="24" width="28" height="18" rx="6" ry="6"
-        fill="none" stroke="#c9a83c" strokeWidth="2.5" />
+        fill="none" stroke="#f59e0b" strokeWidth="2.5" />
       {/* Right lens frame */}
       <rect x="58" y="24" width="28" height="18" rx="6" ry="6"
-        fill="none" stroke="#c9a83c" strokeWidth="2.5" />
+        fill="none" stroke="#f59e0b" strokeWidth="2.5" />
       {/* Bridge between lenses */}
-      <line x1="42" y1="33" x2="58" y2="33" stroke="#c9a83c" strokeWidth="2.5" />
+      <line x1="42" y1="33" x2="58" y2="33" stroke="#f59e0b" strokeWidth="2.5" />
       {/* Left arm */}
-      <line x1="14" y1="33" x2="8" y2="30" stroke="#c9a83c" strokeWidth="2" strokeLinecap="round" />
+      <line x1="14" y1="33" x2="8" y2="30" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
       {/* Right arm */}
-      <line x1="86" y1="33" x2="92" y2="30" stroke="#c9a83c" strokeWidth="2" strokeLinecap="round" />
+      <line x1="86" y1="33" x2="92" y2="30" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
       {/* Lens tint */}
       <rect x="15.5" y="25.5" width="25" height="15" rx="5" ry="5"
         fill="#1e3a8a" fillOpacity="0.6" />
@@ -90,17 +90,17 @@ export function VexLogoMark({ size = 40 }) {
         stroke="#1e3a8a" strokeWidth="2" strokeLinecap="round" />
       {/* Second hand — gold */}
       <line x1="50" y1="68" x2="54" y2="80"
-        stroke="#c9a83c" strokeWidth="1.2" strokeLinecap="round" />
+        stroke="#f59e0b" strokeWidth="1.2" strokeLinecap="round" />
       {/* Center dot */}
       <circle cx="50" cy="68" r="2" fill="#1e3a8a" />
 
       {/* Crown at 3 o'clock */}
-      <rect x="72" y="66" width="5" height="4" rx="1" fill="#c9a83c" />
+      <rect x="72" y="66" width="5" height="4" rx="1" fill="#f59e0b" />
 
       {/* Watch strap top */}
-      <rect x="45" y="44" width="10" height="6" rx="2" fill="#c9a83c" opacity="0.7" />
+      <rect x="45" y="44" width="10" height="6" rx="2" fill="#f59e0b" opacity="0.7" />
       {/* Watch strap bottom */}
-      <rect x="45" y="90" width="10" height="6" rx="2" fill="#c9a83c" opacity="0.7" />
+      <rect x="45" y="90" width="10" height="6" rx="2" fill="#f59e0b" opacity="0.7" />
     </svg>
   );
 }

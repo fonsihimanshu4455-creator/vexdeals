@@ -5,26 +5,26 @@ export default {
     extend: {
       colors: {
         primary: {
-          50:  '#eef2ff',
-          100: '#dde6fa',
-          200: '#b8caf5',
-          300: '#7fa0ea',
-          400: '#4d78de',
-          500: '#2b56cc',
-          600: '#1e3a8a',   // main navy – matches logo "VEX" colour
-          700: '#172e6e',
-          800: '#0f1f52',
-          900: '#081236',
+          50:  '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',   // main brand — vibrant royal blue (CTA buttons, links)
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',   // deep navy — hero/dark-section backgrounds
         },
         accent: {
           50:  '#fffbeb',
           100: '#fef3c7',
           200: '#fde68a',
           300: '#fcd34d',
-          400: '#e8c04a',
-          500: '#c9a83c',   // main gold – matches logo "DEALS" colour
-          600: '#a27c1a',
-          700: '#7c5c0d',
+          400: '#fbbf24',   // bright amber highlight
+          500: '#f59e0b',   // main accent — vivid amber-gold
+          600: '#d97706',
+          700: '#b45309',
         },
         navy: {
           900: '#070e2a',

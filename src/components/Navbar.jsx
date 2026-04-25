@@ -35,11 +35,12 @@ export default function Navbar() {
   const avatar = user?.avatar || 'https://picsum.photos/seed/vexdeals-user/100/100';
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-md">
+    <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
       {/* Top announcement banner */}
-      <div className="bg-primary-800 text-white text-center py-1.5 text-xs font-medium">
-        Free shipping on orders above ₹1000 &nbsp;|&nbsp; Use code{' '}
-        <span className="font-bold text-accent-400">VEXFIRST</span> for 10% off
+      <div className="bg-gradient-to-r from-navy-900 via-primary-900 to-navy-900 text-white text-center py-2 text-xs font-medium tracking-wide">
+        🎁 Free shipping on orders above ₹1000 &nbsp;·&nbsp; Use code{' '}
+        <span className="font-bold text-accent-400 bg-accent-400/10 px-1.5 py-0.5 rounded">VEXFIRST</span>
+        {' '}for 10% off
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,16 +52,16 @@ export default function Navbar() {
 
           {/* Search bar — desktop */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl">
-            <div className="flex w-full border-2 border-primary-600 rounded-lg overflow-hidden">
+            <div className="flex w-full bg-gray-50 border-2 border-gray-200 hover:border-primary-400 focus-within:border-primary-600 rounded-xl overflow-hidden transition-colors">
               <input
                 type="text"
                 placeholder="Search watches, eyewear & more…"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="flex-1 px-4 py-2 text-sm outline-none"
+                className="flex-1 px-4 py-2.5 text-sm outline-none bg-transparent"
               />
-              <button type="submit" className="bg-primary-600 px-4 text-white hover:bg-primary-700 transition-colors">
-                <Search size={18} />
+              <button type="submit" className="bg-primary-600 px-5 text-white hover:bg-primary-700 transition-colors">
+                <Search size={17} />
               </button>
             </div>
           </form>
@@ -68,10 +69,10 @@ export default function Navbar() {
           {/* Right actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Cart */}
-            <Link to="/cart" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <ShoppingCart size={22} className="text-gray-700" />
+            <Link to="/cart" className="relative p-2 hover:bg-primary-50 rounded-xl transition-colors group">
+              <ShoppingCart size={22} className="text-gray-600 group-hover:text-primary-600 transition-colors" />
               {totalItems > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-accent-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-0.5 -right-0.5 bg-accent-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold shadow">
                   {totalItems > 9 ? '9+' : totalItems}
                 </span>
               )}
@@ -139,10 +140,10 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/login"
-                className="flex items-center gap-1.5 bg-primary-700 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-800 transition-colors"
+                className="flex items-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:shadow-lg hover:shadow-primary-600/30"
               >
-                <User size={16} />
-                <span className="hidden sm:block">Login</span>
+                <User size={15} />
+                <span className="hidden sm:block">Sign In</span>
               </Link>
             )}
 
@@ -157,18 +158,21 @@ export default function Navbar() {
         </div>
 
         {/* Category nav — desktop */}
-        <nav className="hidden md:flex items-center gap-6 pb-3 text-sm font-medium text-gray-600 border-t border-gray-100 pt-2">
+        <nav className="hidden md:flex items-center gap-1 pb-2 border-t border-gray-50 pt-1.5">
           {activeCategories.map(cat => (
             <Link
               key={cat.id}
               to={`/products?category=${encodeURIComponent(cat.name)}`}
-              className="hover:text-primary-700 transition-colors whitespace-nowrap flex items-center gap-1"
+              className="text-xs font-semibold text-gray-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5"
             >
               <span>{cat.icon}</span> {cat.name}
             </Link>
           ))}
-          <Link to="/products" className="ml-auto text-accent-500 hover:text-accent-600 font-bold">
-            All Deals →
+          <Link
+            to="/products"
+            className="ml-auto text-xs font-bold text-white bg-accent-500 hover:bg-accent-600 px-4 py-1.5 rounded-lg transition-all flex items-center gap-1"
+          >
+            ⚡ All Deals
           </Link>
         </nav>
       </div>
