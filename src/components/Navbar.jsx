@@ -37,8 +37,10 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
       {/* Top announcement banner */}
-      <div className="bg-gradient-to-r from-navy-900 via-primary-900 to-navy-900 text-white text-center py-2 text-xs font-medium tracking-wide">
-        🎁 Free shipping on orders above ₹1000 &nbsp;·&nbsp; Use code{' '}
+      <div className="bg-gradient-to-r from-navy-900 via-primary-900 to-navy-900 text-white text-center py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium tracking-wide px-3">
+        <span className="hidden sm:inline">🎁 Free shipping on orders above ₹1000 &nbsp;·&nbsp; </span>
+        <span className="sm:hidden">🎁 Free shipping ₹1000+ &nbsp;·&nbsp; </span>
+        Use code{' '}
         <span className="font-bold text-accent-400 bg-accent-400/10 px-1.5 py-0.5 rounded">VEXFIRST</span>
         {' '}for 10% off
       </div>
@@ -179,31 +181,46 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3">
-          <form onSubmit={handleSearch} className="flex border-2 border-primary-600 rounded-lg overflow-hidden">
+        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-4">
+          {/* Search */}
+          <form onSubmit={handleSearch} className="flex border-2 border-primary-600 rounded-xl overflow-hidden">
             <input
               type="text"
-              placeholder="Search…"
+              placeholder="Search products…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="flex-1 px-3 py-2 text-sm outline-none"
+              className="flex-1 px-3 py-2.5 text-sm outline-none"
             />
             <button type="submit" className="bg-primary-600 px-4 text-white">
               <Search size={16} />
             </button>
           </form>
-          <div className="grid grid-cols-2 gap-2">
-            {activeCategories.map(cat => (
-              <Link
-                key={cat.id}
-                to={`/products?category=${encodeURIComponent(cat.name)}`}
-                onClick={() => setMenuOpen(false)}
-                className="text-sm text-gray-600 hover:text-primary-700 py-1 font-medium flex items-center gap-1"
-              >
-                {cat.icon} {cat.name}
-              </Link>
-            ))}
+
+          {/* Category links */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Shop by Category</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+              {activeCategories.map(cat => (
+                <Link
+                  key={cat.id}
+                  to={`/products?category=${encodeURIComponent(cat.name)}`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2 text-sm text-gray-600 hover:text-primary-700 font-medium border-b border-gray-50"
+                >
+                  <span className="text-base">{cat.icon}</span> {cat.name}
+                </Link>
+              ))}
+            </div>
           </div>
+
+          {/* All Deals CTA */}
+          <Link
+            to="/products"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-accent-500 to-accent-400 text-gray-900 font-bold py-3 rounded-xl text-sm"
+          >
+            ⚡ View All Deals
+          </Link>
         </div>
       )}
     </header>

@@ -22,13 +22,13 @@ function CountdownTimer() {
   }, []);
   const pad = n => String(n).padStart(2, '0');
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1">
       {[time.h, time.m, time.s].map((val, i) => (
-        <span key={i} className="flex items-center gap-1.5">
-          <span className="bg-white/15 backdrop-blur text-white font-black text-xl sm:text-2xl px-3 py-1.5 rounded-xl min-w-[52px] text-center border border-white/20">
+        <span key={i} className="flex items-center gap-1">
+          <span className="bg-white/15 backdrop-blur text-white font-black text-base sm:text-2xl px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl min-w-[38px] sm:min-w-[52px] text-center border border-white/20">
             {pad(val)}
           </span>
-          {i < 2 && <span className="text-white/70 font-bold text-lg">:</span>}
+          {i < 2 && <span className="text-white/70 font-bold text-sm sm:text-lg">:</span>}
         </span>
       ))}
     </div>
@@ -58,36 +58,30 @@ export default function Home() {
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-primary-400 opacity-10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-28">
           <div className="max-w-2xl">
             {/* Pill badge */}
-            <div className="inline-flex items-center gap-2 bg-accent-500/20 border border-accent-500/30 text-accent-300 text-xs font-bold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wider">
-              <Zap size={12} fill="currentColor" /> Flash Deals — Up to 70% off
+            <div className="inline-flex items-center gap-2 bg-accent-500/20 border border-accent-500/30 text-accent-300 text-[11px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full mb-5 sm:mb-6 uppercase tracking-wider">
+              <Zap size={11} fill="currentColor" /> Flash Deals — Up to 70% off
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-4">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-3 sm:mb-4">
               Premium Style,{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-300">
                 Unbeatable Deals
               </span>
             </h1>
 
-            <p className="text-primary-300 text-base sm:text-lg mb-8 max-w-lg leading-relaxed">
-              Top watches & eyewear brands — hand-picked deals you won't find anywhere else.
+            <p className="text-primary-300 text-sm sm:text-lg mb-7 sm:mb-8 max-w-lg leading-relaxed">
+              Top eyewear & accessories — hand-picked deals you won't find anywhere else.
             </p>
 
             <div className="flex flex-wrap gap-3">
               <Link
                 to="/products"
-                className="inline-flex items-center gap-2 bg-accent-500 hover:bg-accent-400 text-gray-900 font-bold px-7 py-3.5 rounded-2xl text-sm sm:text-base transition-all hover:scale-105 shadow-xl shadow-accent-500/30"
+                className="inline-flex items-center gap-2 bg-accent-500 hover:bg-accent-400 text-gray-900 font-bold px-6 sm:px-7 py-3 sm:py-3.5 rounded-2xl text-sm sm:text-base transition-all hover:scale-105 shadow-xl shadow-accent-500/30"
               >
                 Shop All Deals <ArrowRight size={16} />
-              </Link>
-              <Link
-                to="/products?category=Watches"
-                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-7 py-3.5 rounded-2xl text-sm sm:text-base border border-white/20 backdrop-blur transition-all"
-              >
-                ⌚ Explore Watches
               </Link>
             </div>
           </div>
@@ -98,20 +92,20 @@ export default function Home() {
       </section>
 
       {/* ── Trust strip ─────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-2">
-        <div className="grid grid-cols-3 gap-3">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-2">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { Icon: ShieldCheck, title: '100% Authentic', sub: 'Genuine branded products' },
             { Icon: RotateCcw,   title: '7-Day Returns',  sub: 'Hassle-free returns'   },
             { Icon: Headphones,  title: '24/7 Support',   sub: 'Always here to help'   },
           ].map(({ Icon, title, sub }) => (
-            <div key={title} className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 text-center sm:text-left">
-              <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
-                <Icon size={18} className="text-primary-600" />
+            <div key={title} className="flex flex-col items-center gap-1.5 sm:flex-row sm:items-start sm:gap-3 bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-sm border border-gray-100 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary-50 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0">
+                <Icon size={16} className="text-primary-600 sm:text-[18px]" />
               </div>
-              <div>
-                <p className="text-xs sm:text-sm font-bold text-gray-900">{title}</p>
-                <p className="text-[11px] sm:text-xs text-gray-500 hidden sm:block">{sub}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-sm font-bold text-gray-900 leading-tight">{title}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 hidden sm:block mt-0.5">{sub}</p>
               </div>
             </div>
           ))}
@@ -165,18 +159,18 @@ export default function Home() {
             {/* Glow */}
             <div className="absolute -right-20 -top-20 w-80 h-80 bg-accent-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="relative flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
               <div className="flex items-center gap-3">
-                <div className="bg-accent-500/20 border border-accent-500/30 rounded-2xl p-2.5">
-                  <Zap size={22} className="text-accent-400" fill="currentColor" />
+                <div className="bg-accent-500/20 border border-accent-500/30 rounded-xl sm:rounded-2xl p-2">
+                  <Zap size={20} className="text-accent-400" fill="currentColor" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-white">Flash Sale</h2>
-                  <p className="text-white/60 text-sm">Limited stock — grab it before it's gone!</p>
+                  <h2 className="text-lg sm:text-2xl font-extrabold text-white">Flash Sale</h2>
+                  <p className="text-white/60 text-xs sm:text-sm">Limited stock — grab it fast!</p>
                 </div>
               </div>
-              <div>
-                <p className="text-xs uppercase tracking-widest mb-2 text-accent-400 font-bold text-center sm:text-right">Ends in</p>
+              <div className="flex items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
+                <p className="text-[10px] uppercase tracking-widest text-accent-400 font-bold sm:mb-1">Ends in</p>
                 <CountdownTimer />
               </div>
             </div>
