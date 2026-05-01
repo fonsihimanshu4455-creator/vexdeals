@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Shield, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
 
@@ -37,80 +37,93 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-navy-900 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-hero-gradient flex items-center justify-center px-4 py-10 relative overflow-hidden">
+      {/* Background visuals */}
+      <div className="absolute inset-0 bg-grid-dark opacity-40 pointer-events-none" />
+      <div className="absolute -top-40 -left-32 w-[34rem] h-[34rem] bg-primary-600/30 rounded-full blur-3xl animate-blob pointer-events-none" />
+      <div className="absolute -bottom-40 -right-32 w-[34rem] h-[34rem] bg-accent-500/25 rounded-full blur-3xl animate-blob-slow pointer-events-none" />
+
+      <div className="relative w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 animate-fade-up">
           <Link to="/" className="inline-block mb-4">
             <VexLogoFull />
           </Link>
 
-          <div className="inline-flex items-center gap-2 bg-accent-500/20 border border-accent-500/40 text-accent-400 rounded-full px-4 py-1.5 text-xs font-semibold mb-4">
-            <Shield size={14} /> Admin & Staff Portal
+          <div className="inline-flex items-center gap-2 bg-accent-500/15 backdrop-blur-md border border-accent-400/40 text-accent-300 rounded-full px-4 py-1.5 text-xs font-bold mb-3 uppercase tracking-[0.2em]">
+            <Shield size={13} /> Admin & Staff Portal
           </div>
-          <h1 className="text-2xl font-bold text-white">Staff Sign In</h1>
-          <p className="text-primary-300 text-sm mt-1">Access your department panel</p>
+          <h1 className="font-display text-3xl font-bold text-white">Staff Sign In</h1>
+          <p className="text-primary-200/80 text-sm mt-1">Access your department panel</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-5">
-              {error}
-            </div>
-          )}
+        {/* Glow card */}
+        <div className="relative animate-fade-up delay-200">
+          <div className="absolute -inset-1 bg-gradient-to-br from-accent-400/30 via-primary-500/30 to-fuchsia-500/20 rounded-[2rem] blur-2xl opacity-80" />
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-semibold text-primary-800 mb-1.5">Email Address</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="admin@vexdeals.com"
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-primary-800 mb-1.5">Password</label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm outline-none focus:border-primary-600 transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+          <div className="relative glass-card rounded-[2rem] shadow-2xl p-7 sm:p-9">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-5 animate-fade-up">
+                {error}
               </div>
-            </div>
+            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary-600 text-white py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <><LogIn size={18} /> Sign In to Panel</>
-              )}
-            </button>
-          </form>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2">Email</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="admin@vexdeals.com"
+                    className="w-full bg-white border-2 border-gray-200 rounded-2xl pl-10 pr-4 py-3.5 text-sm outline-none focus:border-primary-600 focus:ring-4 focus:ring-primary-200/50 transition-all"
+                  />
+                </div>
+              </div>
 
-          <p className="text-center text-xs text-gray-400 mt-5">
-            Customer?{' '}
-            <Link to="/login" className="text-primary-600 font-semibold hover:underline">Login on your mobile →</Link>
-          </p>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2">Password</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-white border-2 border-gray-200 rounded-2xl pl-10 pr-12 py-3.5 text-sm outline-none focus:border-primary-600 focus:ring-4 focus:ring-primary-200/50 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
+                  >
+                    {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-shine w-full bg-gradient-to-r from-primary-700 via-primary-600 to-primary-500 hover:from-primary-600 hover:to-primary-400 text-white py-4 rounded-2xl font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-70 shadow-glow-blue transition-all hover:scale-[1.02]"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <><LogIn size={18} /> Sign In to Panel</>
+                )}
+              </button>
+            </form>
+
+            <p className="text-center text-xs text-gray-500 mt-6">
+              Customer?{' '}
+              <Link to="/login" className="text-primary-600 font-bold hover:underline">Customer login →</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

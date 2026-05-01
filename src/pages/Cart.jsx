@@ -42,14 +42,19 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-6 px-4">
-        <div className="text-center">
-          <ShoppingBag size={80} className="text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
+      <div className="min-h-screen bg-mesh-light flex flex-col items-center justify-center gap-6 px-4 relative overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary-300/40 rounded-full blur-3xl animate-blob pointer-events-none" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-accent-300/40 rounded-full blur-3xl animate-blob-slow pointer-events-none" />
+        <div className="relative text-center bg-white/70 backdrop-blur-xl border border-white/60 rounded-4xl p-10 sm:p-14 shadow-card animate-fade-up">
+          <div className="relative inline-flex items-center justify-center mb-6">
+            <span className="absolute inset-0 bg-primary-300/40 blur-2xl rounded-full" />
+            <ShoppingBag size={80} className="relative text-primary-600" />
+          </div>
+          <h2 className="font-display text-3xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
           <p className="text-gray-500 mb-8">Looks like you haven't added any items yet.</p>
           <Link
             to="/products"
-            className="inline-flex items-center gap-2 bg-primary-600 text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-primary-700 transition-colors"
+            className="btn-shine inline-flex items-center gap-2 bg-gradient-to-r from-primary-700 to-primary-500 text-white px-8 py-3.5 rounded-2xl font-bold shadow-glow-blue hover:scale-105 transition-transform"
           >
             Start Shopping <ArrowRight size={18} />
           </Link>
@@ -59,9 +64,11 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-mesh-light py-8 sm:py-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Shopping Cart ({items.length} {items.length === 1 ? 'item' : 'items'})</h1>
+        <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
+          Shopping Cart <span className="text-gray-400 font-normal text-xl">({items.length} {items.length === 1 ? 'item' : 'items'})</span>
+        </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Cart items */}
@@ -229,7 +236,7 @@ export default function Cart() {
 
               <button
                 onClick={() => navigate('/checkout')}
-                className="w-full mt-5 bg-primary-600 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+                className="btn-shine w-full mt-5 bg-gradient-to-r from-primary-700 to-primary-500 hover:from-primary-600 hover:to-primary-400 text-white py-4 rounded-2xl font-extrabold text-sm shadow-glow-blue flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
               >
                 Proceed to Checkout <ArrowRight size={18} />
               </button>

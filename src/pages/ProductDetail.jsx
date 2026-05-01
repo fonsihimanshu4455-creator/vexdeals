@@ -70,20 +70,20 @@ export default function ProductDetail() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
+    <div className="min-h-screen bg-mesh-light py-6 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-          <Link to="/" className="hover:text-primary-600">Home</Link>
-          <span>/</span>
-          <Link to="/products" className="hover:text-primary-600">Products</Link>
-          <span>/</span>
-          <Link to={`/products?category=${product.category}`} className="hover:text-primary-600">{product.category}</Link>
-          <span>/</span>
-          <span className="text-gray-900 font-medium line-clamp-1">{product.name}</span>
+          <Link to="/" className="hover:text-primary-700 transition-colors">Home</Link>
+          <span className="text-gray-300">/</span>
+          <Link to="/products" className="hover:text-primary-700 transition-colors">Products</Link>
+          <span className="text-gray-300">/</span>
+          <Link to={`/products?category=${product.category}`} className="hover:text-primary-700 transition-colors">{product.category}</Link>
+          <span className="text-gray-300">/</span>
+          <span className="text-gray-900 font-semibold line-clamp-1">{product.name}</span>
         </nav>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 lg:p-8">
+        <div className="bg-white/80 backdrop-blur-xl rounded-4xl shadow-card border border-white/60 p-6 lg:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Image gallery */}
             <div className="space-y-3">
