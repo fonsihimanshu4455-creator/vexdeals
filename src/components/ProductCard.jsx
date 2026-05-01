@@ -1,32 +1,51 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Heart, Zap, BadgeCheck, ArrowUpRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function ProductCard({ product }) {
   const { dispatch } = useCart();
-  const cardRef = useRef(null);
+  const cardRef  = useRef(null);
+  const rafRef   = useRef(0);
+  const [tilt, setTilt] = useState(false);
+
+  // Only enable expensive 3D tilt on devices with a fine pointer (mouse).
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(pointer: fine) and (hover: hover)');
+    setTilt(mq.matches);
+    const onChange = (e) => setTilt(e.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
 
   const addToCart = (e) => {
     e.preventDefault();
     dispatch({ type: 'ADD_ITEM', payload: product });
   };
 
-  // 3D tilt + spotlight follow on pointer fine devices
+  // rAF-batched pointer handler: keeps it to one DOM write per frame.
   const onMouseMove = (e) => {
+    if (!tilt) return;
     const el = cardRef.current;
     if (!el) return;
-    const r  = el.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width;
-    const py = (e.clientY - r.top)  / r.height;
-    const rx = (py - 0.5) * -8;   // rotateX
-    const ry = (px - 0.5) *  10;  // rotateY
-    el.style.setProperty('--rx', `${rx}deg`);
-    el.style.setProperty('--ry', `${ry}deg`);
-    el.style.setProperty('--mx', `${px * 100}%`);
-    el.style.setProperty('--my', `${py * 100}%`);
+    const cx = e.clientX;
+    const cy = e.clientY;
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0;
+      const r  = el.getBoundingClientRect();
+      const px = (cx - r.left) / r.width;
+      const py = (cy - r.top)  / r.height;
+      el.style.setProperty('--rx', `${(py - 0.5) * -6}deg`);
+      el.style.setProperty('--ry', `${(px - 0.5) *  8}deg`);
+      el.style.setProperty('--mx', `${px * 100}%`);
+      el.style.setProperty('--my', `${py * 100}%`);
+    });
   };
   const onMouseLeave = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = 0;
     const el = cardRef.current;
     if (!el) return;
     el.style.setProperty('--rx', '0deg');
@@ -42,10 +61,10 @@ export default function ProductCard({ product }) {
     <Link
       ref={cardRef}
       to={`/products/${product.id}`}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-      style={{ transform: 'perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))' }}
-      className="group spotlight relative flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden transition-[transform,box-shadow] duration-300 ease-out-soft hover:shadow-card-hover will-change-transform"
+      onMouseMove={tilt ? onMouseMove : undefined}
+      onMouseLeave={tilt ? onMouseLeave : undefined}
+      style={tilt ? { transform: 'perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))' } : undefined}
+      className="group relative flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden transition-[transform,box-shadow] duration-300 ease-out-soft hover:shadow-card-hover"
     >
       {/* Soft gradient halo on hover */}
       <div className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-br from-primary-500/0 via-accent-400/0 to-fuchsia-500/0 group-hover:from-primary-500/30 group-hover:via-accent-400/20 group-hover:to-fuchsia-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
@@ -55,8 +74,9 @@ export default function ProductCard({ product }) {
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-[1.2s] ease-out-soft group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out-soft group-hover:scale-105"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Inner spotlight overlay (uses --mx/--my from parent) */}

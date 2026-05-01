@@ -1,18 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
+/**
+ * Slim gradient progress bar pinned to the top of the viewport.
+ * Writes width directly to the bar via rAF — never causes a React re-render.
+ */
 export default function ScrollProgress() {
-  const [pct, setPct] = useState(0);
+  const barRef = useRef(null);
 
   useEffect(() => {
-    const onScroll = () => {
-      const h  = document.documentElement;
-      const sc = h.scrollTop || document.body.scrollTop;
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const h   = document.documentElement;
+      const sc  = h.scrollTop || document.body.scrollTop;
       const max = h.scrollHeight - h.clientHeight;
-      setPct(max > 0 ? (sc / max) * 100 : 0);
+      const pct = max > 0 ? (sc / max) * 100 : 0;
+      if (barRef.current) barRef.current.style.width = `${pct}%`;
     };
-    onScroll();
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+    update();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
@@ -20,10 +33,11 @@ export default function ScrollProgress() {
   }, []);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] h-[3px] bg-transparent pointer-events-none">
+    <div className="fixed top-0 left-0 right-0 z-[100] h-[3px] pointer-events-none">
       <div
-        className="h-full bg-gradient-to-r from-primary-500 via-accent-400 to-fuchsia-500 shadow-[0_0_20px_rgba(245,158,11,.6)] transition-[width] duration-100 ease-out"
-        style={{ width: `${pct}%` }}
+        ref={barRef}
+        className="h-full bg-gradient-to-r from-primary-500 via-accent-400 to-fuchsia-500 will-change-[width]"
+        style={{ width: 0 }}
       />
     </div>
   );

@@ -79,6 +79,8 @@ export default function Cart() {
                   <img
                     src={item.image}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl bg-gray-50"
                   />
                 </Link>

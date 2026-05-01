@@ -28,7 +28,15 @@ export default function Navbar() {
   const closeTimer = useRef();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 8);
+        ticking = false;
+      });
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -111,10 +119,10 @@ export default function Navbar() {
 
       {/* ── Main bar ── */}
       <div
-        className={`relative transition-all duration-300 ${
+        className={`relative transition-colors duration-300 ${
           scrolled
-            ? 'bg-white/75 backdrop-blur-xl backdrop-saturate-150 shadow-[0_8px_30px_-12px_rgba(15,23,42,.18)] border-b border-white/40'
-            : 'bg-white/95 backdrop-blur-md border-b border-gray-100'
+            ? 'bg-white/90 backdrop-blur-md shadow-[0_4px_20px_-8px_rgba(15,23,42,.15)] border-b border-gray-100'
+            : 'bg-white border-b border-gray-100'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -283,7 +291,7 @@ export default function Navbar() {
                     >
                       <div className="relative">
                         <div className="absolute -inset-1 bg-gradient-to-br from-primary-500/20 via-accent-400/15 to-fuchsia-500/15 rounded-3xl blur-xl opacity-70" />
-                        <div className="relative bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl p-5">
+                        <div className="relative bg-white border border-gray-100 rounded-3xl shadow-2xl p-5">
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-600">Featured</p>
@@ -306,7 +314,7 @@ export default function Navbar() {
                                 className="group block"
                               >
                                 <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden ring-1 ring-gray-100 group-hover:ring-primary-300 transition-all">
-                                  <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                  <img src={p.image} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                 </div>
                                 <p className="mt-2 text-[11px] font-semibold text-gray-700 line-clamp-1 group-hover:text-primary-700 transition-colors">{p.name}</p>
                                 <p className="text-[11px] font-bold text-gray-900">₹{p.price.toLocaleString('en-IN')}</p>
@@ -446,7 +454,7 @@ export default function Navbar() {
                         onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
                       >
-                        <img src={p.image} alt={p.name} className="w-12 h-12 rounded-xl object-cover bg-gray-50 ring-1 ring-gray-100" />
+                        <img src={p.image} alt={p.name} loading="lazy" decoding="async" className="w-12 h-12 rounded-xl object-cover bg-gray-50 ring-1 ring-gray-100" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-900 line-clamp-1 group-hover:text-primary-700 transition-colors">{p.name}</p>
                           <p className="text-[11px] text-gray-500">{p.category}</p>

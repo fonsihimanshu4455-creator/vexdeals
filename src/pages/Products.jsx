@@ -87,7 +87,7 @@ export default function Products() {
       </section>
 
       {/* Sticky filter toolbar */}
-      <div className="sticky top-[105px] sm:top-[112px] z-30 backdrop-blur-xl bg-white/80 border-b border-gray-100 shadow-soft">
+      <div className="sticky top-[105px] sm:top-[112px] z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex-1 min-w-48 relative">
@@ -287,7 +287,7 @@ export default function Products() {
             <div className="space-y-4">
               {filtered.map(product => (
                 <div key={product.id} className="group bg-white rounded-3xl border border-gray-100 shadow-soft p-4 flex gap-4 hover:shadow-card-hover hover:-translate-y-0.5 transition-all">
-                  <img src={product.image} alt={product.name} className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shrink-0 bg-gray-50 group-hover:scale-[1.02] transition-transform" />
+                  <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shrink-0 bg-gray-50 group-hover:scale-[1.02] transition-transform" />
                   <div className="flex-1 min-w-0">
                     <span className="text-[10px] text-primary-700 font-bold bg-primary-50 px-2 py-0.5 rounded-full uppercase tracking-wider">{product.category}</span>
                     <h3 className="font-bold text-gray-900 mt-1.5 line-clamp-2 group-hover:text-primary-700 transition-colors">{product.name}</h3>

@@ -136,7 +136,7 @@ export default function ProductDetail() {
                         selectedImg === i ? 'border-primary-600' : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img src={img} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -222,7 +222,7 @@ export default function ProductDetail() {
                         onClick={() => { setSelectedImg(i); setZoomLevel(1); }}
                         className={`shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-colors ${selectedImg === i ? 'border-white' : 'border-white/30 hover:border-white/60'}`}
                       >
-                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <img src={img} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>

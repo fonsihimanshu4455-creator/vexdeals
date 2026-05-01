@@ -190,6 +190,33 @@
     background: linear-gradient(90deg, transparent, rgba(245,158,11,.4), transparent);
   }
 
+  /* Content-visibility — skip rendering offscreen sections */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 800px;
+  }
+  .cv-auto-sm {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 400px;
+  }
+
+  /* Reduce-motion support: disable expensive infinite animations */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-blob,
+    .animate-blob-slow,
+    .animate-float,
+    .animate-spin-slow,
+    .animate-marquee,
+    .animate-marquee-slow,
+    .animate-marquee-right,
+    .animate-orbit,
+    .animate-drift,
+    .animate-pulse-glow,
+    .animate-gradient {
+      animation: none !important;
+    }
+  }
+
   /* Massive watermark text */
   .watermark {
     font-family: 'Space Grotesk', Inter, sans-serif;
