@@ -74,6 +74,28 @@
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+@keyframes marqueeRight {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+@keyframes slideUpToast {
+  0%   { opacity: 0; transform: translate(-20px, 30px); }
+  10%  { opacity: 1; transform: translate(0, 0); }
+  90%  { opacity: 1; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(0, -10px); }
+}
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(160px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(160px) rotate(-360deg); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: .35; transform: scale(1); }
+  50%      { opacity: .8;  transform: scale(1.08); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(40px, -30px) scale(1.05); }
+}
 @keyframes fadeUp {
   0%   { opacity: 0; transform: translateY(16px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -124,6 +146,61 @@
   .animate-gradient   { background-size: 200% 200%; animation: gradientShift 8s ease infinite; }
   .animate-spin-slow  { animation: spinSlow 14s linear infinite; }
   .animate-marquee    { animation: marquee 30s linear infinite; }
+  .animate-marquee-slow { animation: marquee 60s linear infinite; }
+  .animate-marquee-right{ animation: marqueeRight 40s linear infinite; }
+  .animate-toast      { animation: slideUpToast 6s ease-in-out forwards; }
+  .animate-orbit      { animation: orbit 24s linear infinite; }
+  .animate-drift      { animation: drift 14s ease-in-out infinite; }
+
+  /* 3D / perspective */
+  .perspective-1000   { perspective: 1000px; }
+  .preserve-3d        { transform-style: preserve-3d; }
+  .backface-hidden    { backface-visibility: hidden; }
+  .tilt-card          { transition: transform .5s cubic-bezier(.2,.8,.2,1); transform-style: preserve-3d; }
+  .tilt-card:hover    { transform: perspective(900px) rotateX(4deg) rotateY(-6deg) translateZ(8px); }
+
+  /* Spotlight follower (pointer-fine devices only) */
+  .spotlight {
+    position: relative;
+    isolation: isolate;
+  }
+  .spotlight::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%),
+                rgba(245,158,11,.18), rgba(99,102,241,.12) 40%, transparent 70%);
+    opacity: 0;
+    transition: opacity .35s;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .spotlight:hover::before { opacity: 1; }
+
+  /* Marquee gradient mask edges */
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+
+  /* Pretty divider */
+  .divider-shine {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(245,158,11,.4), transparent);
+  }
+
+  /* Massive watermark text */
+  .watermark {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: .85;
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+  }
 
   .delay-100 { animation-delay: .1s; }
   .delay-200 { animation-delay: .2s; }

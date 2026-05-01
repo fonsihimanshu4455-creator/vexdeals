@@ -7,6 +7,8 @@ import { CustomerDataProvider } from './context/CustomerDataContext';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ScrollProgress from './components/ScrollProgress';
+import LiveActivity from './components/LiveActivity';
 
 import Home from './pages/Home';
 import Products from './pages/Products';
@@ -32,8 +34,10 @@ import AdminMarketing from './pages/admin/AdminMarketing';
 function CustomerLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col">
+      <ScrollProgress />
       <Navbar />
       <main className="flex-1">{children}</main>
+      <LiveActivity />
       <Footer />
     </div>
   );

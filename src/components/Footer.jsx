@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Mail, Phone, MapPin, ArrowRight, Sparkles } from 'lucide-react';
+import {
+  Facebook, Instagram, Mail, Phone, MapPin, ArrowUpRight, Sparkles,
+  ShieldCheck, Truck, RotateCcw, CreditCard,
+} from 'lucide-react';
+import Marquee from './Marquee';
 import { VexLogoInline } from './Logo';
 
 const LINKS = {
@@ -20,27 +24,73 @@ const LINKS = {
 export default function Footer() {
   return (
     <footer className="relative overflow-hidden bg-navy-950 text-gray-400">
-      {/* Top accent gradient line */}
+      {/* gradient accent line */}
       <div className="h-px bg-gradient-to-r from-transparent via-accent-400/60 to-transparent" />
-      <div className="h-1 bg-gradient-to-r from-primary-600 via-accent-500 to-primary-600 animate-gradient" />
+      <div className="h-1 bg-gradient-to-r from-primary-600 via-accent-500 to-fuchsia-600 animate-gradient" />
 
-      {/* Decorative blobs */}
+      {/* Decorative blobs + grid */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-32 -left-20 w-96 h-96 bg-primary-700/20 rounded-full blur-3xl animate-blob" />
-        <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl animate-blob-slow" />
+        <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-accent-500/15 rounded-full blur-3xl animate-blob-slow" />
         <div className="absolute inset-0 bg-grid-dark opacity-30" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      {/* Trust marquee strip */}
+      <div className="relative border-b border-white/5 bg-navy-950/80">
+        <Marquee className="py-4">
+          {[
+            { Icon: ShieldCheck, label: 'Authentic guarantee'  },
+            { Icon: Truck,       label: 'Free shipping ₹1000+' },
+            { Icon: RotateCcw,   label: '7-day easy returns'   },
+            { Icon: CreditCard,  label: 'Secure payments'      },
+            { Icon: Sparkles,    label: 'New drops weekly'     },
+          ].map(({ Icon, label }, i) => (
+            <span key={i} className="flex items-center gap-3 text-white/60">
+              <Icon size={18} className="text-accent-400" />
+              <span className="font-display text-base sm:text-lg tracking-tight">{label}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-400/60" />
+            </span>
+          ))}
+        </Marquee>
+      </div>
 
-          {/* Brand column */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+
+        {/* Top callout — newsletter promo */}
+        <div className="mb-14 sm:mb-20 flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6 pb-12 border-b border-white/10">
+          <div className="max-w-2xl">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-accent-300 mb-3">Stay in the loop</p>
+            <h3 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.05] tracking-tight">
+              Style sent <br className="hidden sm:block" />
+              <span className="text-shimmer">straight to your inbox.</span>
+            </h3>
+          </div>
+          <form
+            onSubmit={(e) => e.preventDefault()}
+            className="flex w-full lg:w-auto flex-col sm:flex-row gap-3"
+          >
+            <input
+              type="email"
+              placeholder="you@example.com"
+              className="flex-1 lg:w-72 bg-white/10 backdrop-blur-md border border-white/20 placeholder:text-white/40 text-white px-5 py-4 rounded-2xl text-sm outline-none focus:border-accent-400 focus:bg-white/15 transition"
+            />
+            <button
+              type="submit"
+              className="btn-shine bg-gradient-to-r from-accent-500 to-amber-400 text-navy-950 font-extrabold px-7 py-4 rounded-2xl text-sm shadow-glow-gold hover:scale-[1.03] transition-transform inline-flex items-center justify-center gap-2"
+            >
+              Subscribe <ArrowUpRight size={16} />
+            </button>
+          </form>
+        </div>
+
+        {/* Link columns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           <div className="lg:col-span-1 space-y-5">
             <VexLogoInline size="md" variant="dark" />
             <p className="text-sm leading-relaxed text-gray-400 max-w-xs">
-              Premium watches & eyewear — hand-picked deals you won't find anywhere else. Authentic brands, unbeatable prices.
+              Premium watches & eyewear — hand-picked deals you won't find anywhere else.
+              Authentic brands, unbeatable prices.
             </p>
-            {/* Social */}
             <div className="flex gap-2.5 pt-1">
               {[
                 { Icon: Instagram, href: 'https://www.instagram.com/vexdeals/', label: 'Instagram' },
@@ -61,7 +111,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Shop links */}
           <div>
             <h4 className="text-white font-bold text-sm mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
               <span className="w-6 h-px bg-accent-400" /> Shop
@@ -73,7 +122,7 @@ export default function Footer() {
                     to={to}
                     className="group inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-accent-300 transition-colors"
                   >
-                    <ArrowRight size={12} className="opacity-0 -ml-3 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                    <ArrowUpRight size={12} className="opacity-0 -ml-3 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                     {label}
                   </Link>
                 </li>
@@ -81,7 +130,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Account links */}
           <div>
             <h4 className="text-white font-bold text-sm mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
               <span className="w-6 h-px bg-accent-400" /> Account
@@ -93,7 +141,7 @@ export default function Footer() {
                     to={to}
                     className="group inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-accent-300 transition-colors"
                   >
-                    <ArrowRight size={12} className="opacity-0 -ml-3 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                    <ArrowUpRight size={12} className="opacity-0 -ml-3 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                     {label}
                   </Link>
                 </li>
@@ -101,7 +149,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contact */}
           <div>
             <h4 className="text-white font-bold text-sm mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
               <span className="w-6 h-px bg-accent-400" /> Contact
@@ -120,29 +167,19 @@ export default function Footer() {
                 <span>India</span>
               </li>
             </ul>
-
-            {/* Trust badges */}
-            <div className="mt-6 flex flex-col gap-2">
-              {['100% Authentic Products', '7-Day Easy Returns', 'Secure Payments'].map(badge => (
-                <div key={badge} className="flex items-center gap-2 text-xs text-gray-500">
-                  <Sparkles size={11} className="text-accent-500/80" />
-                  {badge}
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* Big brand wordmark */}
-        <div className="mt-14 pt-8 border-t border-white/5 select-none overflow-hidden">
-          <p className="text-center font-display font-bold text-[18vw] sm:text-[12rem] leading-none bg-gradient-to-b from-white/5 to-transparent bg-clip-text text-transparent tracking-tighter">
+        {/* Big brand wordmark with gradient stroke */}
+        <div className="mt-14 pt-10 border-t border-white/5 select-none overflow-hidden">
+          <p className="text-center font-display font-bold text-[20vw] sm:text-[14rem] leading-none bg-gradient-to-b from-white/8 via-white/3 to-transparent bg-clip-text text-transparent tracking-tighter">
             VEXDEALS
           </p>
         </div>
       </div>
 
       {/* Bottom bar */}
-      <div className="relative border-t border-white/5">
+      <div className="relative border-t border-white/5 bg-navy-950/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
           <p>© {new Date().getFullYear()} VexDeals. All rights reserved.</p>
           <div className="flex gap-5">
