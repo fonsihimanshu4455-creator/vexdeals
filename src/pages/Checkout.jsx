@@ -4,6 +4,7 @@ import { Check, Smartphone, RefreshCw, AlertTriangle, MapPin, Tag } from 'lucide
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCustomerData } from '../context/CustomerDataContext';
+import BrandLogo from '../components/BrandLogo';
 
 // ── Load Razorpay script dynamically ────────────────────────────────────────
 const loadRazorpay = () =>
@@ -532,8 +533,18 @@ export default function Checkout() {
             <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
               {items.map(item => (
                 <div key={item.id} className="flex gap-3">
-                  <img src={item.image} alt={item.name} loading="lazy" decoding="async" className="w-12 h-12 rounded-lg object-cover bg-gray-50 shrink-0" />
+                  <div className="relative shrink-0">
+                    <img src={item.image} alt={item.name} loading="lazy" decoding="async" className="w-12 h-12 rounded-lg object-cover bg-gray-50" />
+                    {item.brand && (
+                      <div className="absolute -bottom-1 -right-1">
+                        <BrandLogo brand={item.brand} size="xs" variant="logo" />
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {item.brand && <BrandLogo brand={item.brand} size="xs" variant="inline" />}
+                    </div>
                     <p className="text-xs font-medium text-gray-800 line-clamp-1">{item.name}</p>
                     <p className="text-xs text-gray-500">Qty: {item.qty}</p>
                     <p className={`text-[11px] ${Number(item.shippingCharge) > 0 ? 'text-blue-600' : 'text-emerald-600'}`}>

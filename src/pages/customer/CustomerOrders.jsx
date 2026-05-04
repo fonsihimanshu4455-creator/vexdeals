@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Package, ShoppingBag } from 'lucide-react';
 import CustomerAccountShell from '../../components/CustomerAccountShell';
+import BrandLogo from '../../components/BrandLogo';
 import { useCustomerData } from '../../context/CustomerDataContext';
 
 const statusColors = {
@@ -59,8 +60,16 @@ export default function CustomerOrders() {
               <div className="mt-5 space-y-3">
                 {order.products.map((product) => (
                   <div key={`${order.id}-${product.productId}-${product.name}`} className="flex items-center gap-3 rounded-2xl bg-gray-50 p-3">
-                    <img src={product.image} alt={product.name} className="h-14 w-14 rounded-xl object-cover bg-white" />
+                    <div className="relative shrink-0">
+                      <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-14 w-14 rounded-xl object-cover bg-white" />
+                      {product.brand && (
+                        <div className="absolute -bottom-1 -right-1">
+                          <BrandLogo brand={product.brand} size="xs" variant="logo" />
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
+                      {product.brand && <BrandLogo brand={product.brand} size="xs" variant="inline" className="mb-0.5" />}
                       <p className="line-clamp-1 text-sm font-semibold text-gray-800">{product.name}</p>
                       <p className="text-xs text-gray-500">Qty: {product.qty}</p>
                     </div>

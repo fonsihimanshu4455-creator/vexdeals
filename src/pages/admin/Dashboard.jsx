@@ -6,6 +6,7 @@ import {
 import { orders } from '../../data/orders';
 import { users } from '../../data/users';
 import { useProducts } from '../../context/ProductContext';
+import BrandLogo from '../../components/BrandLogo';
 
 const statusStyles = {
   Delivered:  'bg-emerald-50 text-emerald-700 ring-emerald-200',
@@ -228,10 +229,21 @@ export default function Dashboard() {
                 <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent-400 to-amber-500 text-white text-xs font-black flex items-center justify-center">
                   {i + 1}
                 </span>
-                <img src={product.image} alt={product.name} className="w-11 h-11 rounded-xl object-cover bg-gray-50 ring-1 ring-gray-100" />
+                <div className="relative shrink-0">
+                  <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="w-11 h-11 rounded-xl object-cover bg-gray-50 ring-1 ring-gray-100" />
+                  {product.brand && (
+                    <div className="absolute -bottom-1 -right-1">
+                      <BrandLogo brand={product.brand} size="xs" variant="logo" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-gray-900 line-clamp-1">{product.name}</p>
-                  <p className="text-xs text-gray-500">{product.reviews.toLocaleString()} reviews</p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                    {product.brand && <BrandLogo brand={product.brand} size="xs" variant="inline" />}
+                    {product.brand && <span className="text-gray-300">·</span>}
+                    <span>{product.reviews.toLocaleString()} reviews</span>
+                  </p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-gray-900">{formatPrice(product.price)}</p>

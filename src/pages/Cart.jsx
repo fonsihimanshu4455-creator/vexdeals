@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Tag, Truck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Cart() {
   const {
@@ -75,7 +76,7 @@ export default function Cart() {
           <div className="lg:col-span-2 space-y-4">
             {items.map(item => (
               <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex gap-4">
-                <Link to={`/products/${item.id}`} className="shrink-0">
+                <Link to={`/products/${item.id}`} className="relative shrink-0">
                   <img
                     src={item.image}
                     alt={item.name}
@@ -83,11 +84,19 @@ export default function Cart() {
                     decoding="async"
                     className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl bg-gray-50"
                   />
+                  {item.brand && (
+                    <div className="absolute top-1 left-1">
+                      <BrandLogo brand={item.brand} size="xs" variant="logo" />
+                    </div>
+                  )}
                 </Link>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-xs text-primary-600 font-medium">{item.category}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-xs text-primary-600 font-medium">{item.category}</p>
+                        {item.brand && <BrandLogo brand={item.brand} size="xs" variant="inline" />}
+                      </div>
                       <Link to={`/products/${item.id}`}>
                         <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-2 hover:text-primary-600 transition-colors">
                           {item.name}

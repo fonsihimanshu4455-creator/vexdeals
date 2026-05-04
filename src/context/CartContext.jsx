@@ -287,6 +287,7 @@ export function CartProvider({ children }) {
           ...item,
           name: latestProduct.name,
           category: latestProduct.category,
+          brand: latestProduct.brand || item.brand || '',
           image: latestProduct.image,
           price: latestProduct.price,
           stock: latestProduct.stock,

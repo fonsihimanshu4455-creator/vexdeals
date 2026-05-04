@@ -227,8 +227,13 @@ export default function Home() {
                 >
                   <div className="relative bg-white rounded-3xl p-4 shadow-2xl ring-1 ring-white/40 hover:scale-105 transition-transform duration-500">
                     <div className="absolute -inset-1 bg-gradient-to-br from-accent-400/40 via-primary-500/30 to-fuchsia-500/30 rounded-3xl blur-xl opacity-70 -z-10" />
-                    <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100">
+                    <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100">
                       <img src={heroPick.image} alt={heroPick.name} loading="eager" fetchpriority="high" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      {heroPick.brand && (
+                        <div className="absolute bottom-2 left-2">
+                          <BrandLogo brand={heroPick.brand} size="sm" variant="chip" />
+                        </div>
+                      )}
                     </div>
                     <div className="mt-3 flex items-end justify-between gap-2">
                       <div className="min-w-0">
@@ -253,8 +258,13 @@ export default function Home() {
                     style={pos}
                     className="absolute w-32 bg-white rounded-2xl p-2 shadow-xl hover:scale-110 transition-transform animate-float"
                   >
-                    <div className="aspect-square rounded-xl overflow-hidden bg-gray-50">
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50">
                       <img src={p.image} alt={p.name} loading="eager" decoding="async" className="w-full h-full object-cover" />
+                      {p.brand && (
+                        <div className="absolute top-1 left-1">
+                          <BrandLogo brand={p.brand} size="xs" variant="logo" />
+                        </div>
+                      )}
                     </div>
                     <p className="text-[10px] font-bold text-primary-700 mt-1.5">{formatPrice(p.price)}</p>
                   </Link>
@@ -367,6 +377,11 @@ export default function Home() {
                 className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" />
               <div className="absolute inset-0 bg-gradient-to-tr from-navy-950/85 via-navy-950/40 to-transparent" />
               <div className="absolute inset-0 bg-grid-dark opacity-30 mix-blend-overlay" />
+              {bentoPicks[0].brand && (
+                <div className="absolute top-4 right-4 z-[1]">
+                  <BrandLogo brand={bentoPicks[0].brand} size="md" variant="chip" />
+                </div>
+              )}
               <div className="relative h-full flex flex-col justify-end p-6 sm:p-8 text-white">
                 <span className="inline-flex w-fit items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.3em] bg-white/10 backdrop-blur border border-white/20 rounded-full px-3 py-1 mb-3">
                   <Award size={11} className="text-accent-300" /> Hero piece
@@ -391,6 +406,11 @@ export default function Home() {
               <img src={bentoPicks[1].image} alt={bentoPicks[1].name} loading="lazy" decoding="async"
                 className="absolute right-0 inset-y-0 h-full w-3/5 object-cover group-hover:scale-105 transition-transform duration-700" />
               <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-amber-500/70 to-transparent" />
+              {bentoPicks[1].brand && (
+                <div className="absolute top-3 right-3 z-[1]">
+                  <BrandLogo brand={bentoPicks[1].brand} size="sm" variant="chip" />
+                </div>
+              )}
               <div className="relative h-full flex flex-col justify-center p-5 sm:p-6 text-navy-950 max-w-[55%]">
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.3em] mb-1">Top pick</p>
                 <h3 className="font-display text-xl sm:text-2xl font-bold leading-tight line-clamp-2">{bentoPicks[1].name}</h3>
@@ -407,6 +427,11 @@ export default function Home() {
               <img src={bentoPicks[2].image} alt={bentoPicks[2].name} loading="lazy" decoding="async"
                 className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-700" />
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent" />
+              {bentoPicks[2].brand && (
+                <div className="absolute top-2 left-2 z-[1]">
+                  <BrandLogo brand={bentoPicks[2].brand} size="xs" variant="logo" />
+                </div>
+              )}
               <div className="relative h-full flex flex-col justify-end p-3">
                 <p className="text-[10px] font-bold text-primary-700 uppercase tracking-widest">{bentoPicks[2].category}</p>
                 <p className="text-sm font-bold text-gray-900 line-clamp-1">{bentoPicks[2].name}</p>
@@ -423,6 +448,11 @@ export default function Home() {
                 <img src={p.image} alt={p.name} loading="lazy" decoding="async"
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                {p.brand && (
+                  <div className="absolute top-2 left-2 z-[1]">
+                    <BrandLogo brand={p.brand} size="xs" variant="logo" />
+                  </div>
+                )}
                 <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform">
                   <p className="text-xs font-bold text-white line-clamp-1">{p.name}</p>
                   <p className="text-xs font-extrabold text-accent-300">{formatPrice(p.price)}</p>
@@ -557,6 +587,11 @@ export default function Home() {
                     <span className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-rose-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-lg">
                       −{product.discount}%
                     </span>
+                    {product.brand && (
+                      <div className="absolute bottom-2 left-2">
+                        <BrandLogo brand={product.brand} size="xs" variant="chip" />
+                      </div>
+                    )}
                   </div>
                   <div className="p-3">
                     <p className="text-xs font-semibold text-gray-800 line-clamp-1 mb-1">{product.name}</p>

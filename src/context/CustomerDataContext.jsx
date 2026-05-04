@@ -102,6 +102,8 @@ const normalizeOrder = (rawOrder, fallbackId, user) => {
           return {
             productId: Number(product.productId || product.id || index + 1),
             name: normalizeText(product.name || 'Product'),
+            brand: normalizeText(product.brand || ''),
+            category: normalizeText(product.category || ''),
             price: Number(product.price || 0),
             qty: Math.max(1, Number(product.qty || 1)),
             image: normalizeText(product.image),
@@ -352,6 +354,8 @@ export function CustomerDataProvider({ children }) {
       products: cartItems.map((item) => ({
         productId: item.id,
         name: item.name,
+        brand: item.brand || '',
+        category: item.category || '',
         price: item.price,
         qty: item.qty,
         image: item.image,

@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
 import Marquee from './Marquee';
+import BrandLogo from './BrandLogo';
 import { VexLogoInline } from './Logo';
 
 export default function Navbar() {
@@ -317,8 +318,13 @@ export default function Navbar() {
                                 onClick={() => setMegaOpen(null)}
                                 className="group block"
                               >
-                                <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden ring-1 ring-gray-100 group-hover:ring-primary-300 transition-all">
+                                <div className="relative aspect-square bg-gray-50 rounded-xl overflow-hidden ring-1 ring-gray-100 group-hover:ring-primary-300 transition-all">
                                   <img src={p.image} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                  {p.brand && (
+                                    <div className="absolute top-1 left-1">
+                                      <BrandLogo brand={p.brand} size="xs" variant="logo" />
+                                    </div>
+                                  )}
                                 </div>
                                 <p className="mt-2 text-[11px] font-semibold text-gray-700 line-clamp-1 group-hover:text-primary-700 transition-colors">{p.name}</p>
                                 <p className="text-[11px] font-bold text-gray-900">₹{p.price.toLocaleString('en-IN')}</p>
@@ -462,10 +468,21 @@ export default function Navbar() {
                         onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
                       >
-                        <img src={p.image} alt={p.name} loading="lazy" decoding="async" className="w-12 h-12 rounded-xl object-cover bg-gray-50 ring-1 ring-gray-100" />
+                        <div className="relative shrink-0">
+                          <img src={p.image} alt={p.name} loading="lazy" decoding="async" className="w-12 h-12 rounded-xl object-cover bg-gray-50 ring-1 ring-gray-100" />
+                          {p.brand && (
+                            <div className="absolute -bottom-1 -right-1">
+                              <BrandLogo brand={p.brand} size="xs" variant="logo" />
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-900 line-clamp-1 group-hover:text-primary-700 transition-colors">{p.name}</p>
-                          <p className="text-[11px] text-gray-500">{p.category}</p>
+                          <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
+                            <span>{p.category}</span>
+                            {p.brand && <span className="text-gray-300">·</span>}
+                            {p.brand && <BrandLogo brand={p.brand} size="xs" variant="inline" />}
+                          </p>
                         </div>
                         <p className="text-sm font-bold text-gray-900 shrink-0">₹{p.price.toLocaleString('en-IN')}</p>
                         <ArrowRight size={14} className="text-gray-300 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Search, Eye, X, ShoppingBag, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import BrandLogo from '../../components/BrandLogo';
 
 const statusColors = {
   Delivered:  'bg-emerald-100 text-emerald-700',
@@ -272,9 +273,17 @@ export default function AdminOrders() {
                 <div className="space-y-3">
                   {getItems(viewOrder).map((item, i) => (
                     <div key={i} className="flex gap-3 items-center">
-                      {item.image && <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover bg-gray-100" />}
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                      <div className="relative shrink-0">
+                        {item.image && <img src={item.image} alt={item.name} loading="lazy" decoding="async" className="w-12 h-12 rounded-xl object-cover bg-gray-100" />}
+                        {item.brand && (
+                          <div className="absolute -bottom-1 -right-1">
+                            <BrandLogo brand={item.brand} size="xs" variant="logo" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {item.brand && <BrandLogo brand={item.brand} size="xs" variant="inline" className="mb-0.5" />}
+                        <p className="text-sm font-medium text-gray-800 line-clamp-1">{item.name}</p>
                         <p className="text-xs text-gray-500">Qty: {item.qty || 1}</p>
                       </div>
                       <p className="text-sm font-bold text-gray-900">{formatPrice((item.price || 0) * (item.qty || 1))}</p>
