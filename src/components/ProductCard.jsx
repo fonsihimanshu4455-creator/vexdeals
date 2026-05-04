@@ -2,12 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Heart, Zap, BadgeCheck, ArrowUpRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useBrands } from '../context/BrandContext';
+import BrandLogo from './BrandLogo';
 
 export default function ProductCard({ product }) {
   const { dispatch } = useCart();
+  const { getBrand } = useBrands();
   const cardRef  = useRef(null);
   const rafRef   = useRef(0);
   const [tilt, setTilt] = useState(false);
+  const brand    = product.brand ? getBrand(product.brand) : null;
 
   // Only enable expensive 3D tilt on devices with a fine pointer (mouse).
   useEffect(() => {
@@ -109,6 +113,13 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
+        {/* Brand logo chip (bottom-left of image) */}
+        {brand && (
+          <div className="absolute bottom-3 left-3 z-[1] pointer-events-none">
+            <BrandLogo brandObj={brand} size="sm" variant="chip" />
+          </div>
+        )}
+
         {/* Wishlist + quick view (top right) */}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
           <button
@@ -136,9 +147,12 @@ export default function ProductCard({ product }) {
 
       {/* Info */}
       <div className="relative p-3.5 sm:p-4 flex flex-col gap-1.5 flex-1">
-        <span className="text-[10px] sm:text-[11px] text-primary-700 font-bold bg-primary-50 border border-primary-100 px-2 py-0.5 rounded-full w-fit uppercase tracking-wider">
-          {product.category}
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] sm:text-[11px] text-primary-700 font-bold bg-primary-50 border border-primary-100 px-2 py-0.5 rounded-full w-fit uppercase tracking-wider">
+            {product.category}
+          </span>
+          {brand && <BrandLogo brandObj={brand} size="xs" variant="inline" />}
+        </div>
 
         <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-primary-700 transition-colors">
           {product.name}

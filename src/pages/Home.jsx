@@ -8,8 +8,11 @@ import {
 import ProductCard from '../components/ProductCard';
 import Marquee from '../components/Marquee';
 import CountUp from '../components/CountUp';
+import BrandLogo from '../components/BrandLogo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
+import { useBrands } from '../context/BrandContext';
+import { useTestimonials } from '../context/TestimonialContext';
 
 /* ───── Countdown for Flash Sale ───── */
 function CountdownTimer() {
@@ -80,6 +83,8 @@ function useMouseSpotlight() {
 export default function Home() {
   const { activeCategories } = useCategories();
   const { products } = useProducts();
+  const { activeBrands } = useBrands();
+  const { activeTestimonials } = useTestimonials();
   useMouseSpotlight();
 
   const featuredProducts = products.filter(p => p.featured);
@@ -306,6 +311,34 @@ export default function Home() {
           ))}
         </Marquee>
       </section>
+
+      {/* ════════════════════════════════════════════════
+          BRAND STRIP — official logos of brands we carry
+         ════════════════════════════════════════════════ */}
+      {activeBrands.length > 0 && (
+        <section className="cv-auto max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="text-center mb-8">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary-600 mb-2">Trusted brands</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
+              The names you <span className="text-gradient-blue">trust</span>.
+            </h2>
+          </div>
+          <Marquee className="py-2 mask-fade-x">
+            {activeBrands.map((b) => (
+              <Link
+                key={b.id}
+                to={`/products?brand=${encodeURIComponent(b.slug)}`}
+                className="group inline-flex items-center gap-3 shrink-0 bg-white rounded-2xl px-5 py-3 border border-gray-100 shadow-soft hover:shadow-card-hover hover:-translate-y-0.5 transition-all"
+              >
+                <BrandLogo brandObj={b} size="md" variant="logo" />
+                <span className="font-display text-base font-bold text-gray-700 group-hover:text-primary-700 transition-colors whitespace-nowrap">
+                  {b.name}
+                </span>
+              </Link>
+            ))}
+          </Marquee>
+        </section>
+      )}
 
       {/* ════════════════════════════════════════════════
           BENTO GRID  —  signature category showcase
@@ -570,28 +603,12 @@ export default function Home() {
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-          {[
-            {
-              name: 'Rahul Sharma', role: 'Verified buyer · Mumbai',
-              avatar: 'https://i.pravatar.cc/120?img=12',
-              quote:  "The watch I ordered exceeded every expectation. Build quality is insane for the price — feels like a brand twice the cost.",
-              rating: 5,
-            },
-            {
-              name: 'Priya Patel', role: 'Verified buyer · Delhi',
-              avatar: 'https://i.pravatar.cc/120?img=32',
-              quote:  "Got my aviators in 2 days. Polarized lenses are stunning and the packaging felt seriously premium. Now my daily pair.",
-              rating: 5,
-            },
-            {
-              name: 'Karan Mehta', role: 'Verified buyer · Bangalore',
-              avatar: 'https://i.pravatar.cc/120?img=47',
-              quote:  "Their support team is gold. Had a sizing issue and they replaced same-day. This is how every store should run.",
-              rating: 5,
-            },
-          ].map((t, i) => (
+          {activeTestimonials.length === 0 && (
+            <p className="md:col-span-3 text-center text-gray-400 text-sm">No testimonials yet.</p>
+          )}
+          {activeTestimonials.slice(0, 6).map((t, i) => (
             <div
-              key={t.name}
+              key={t.id}
               className="group relative bg-white rounded-3xl border border-gray-100 p-6 sm:p-7 shadow-soft hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-500"
               style={{ animationDelay: `${i * 100}ms` }}
             >

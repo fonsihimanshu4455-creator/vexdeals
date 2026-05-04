@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, Grid3X3, List, X, ChevronDown, Sparkles } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import BrandLogo from '../components/BrandLogo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
+import { useBrands } from '../context/BrandContext';
 
 const sortOptions = [
   { value: 'featured',   label: 'Featured' },
@@ -17,24 +19,34 @@ const sortOptions = [
 export default function Products() {
   const { activeCategories } = useCategories();
   const { products } = useProducts();
+  const { activeBrands, brandsForCategory } = useBrands();
   const categories = ['All', ...activeCategories.map(c => c.name)];
 
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'All';
   const initialSearch   = searchParams.get('search')   || '';
+  const initialBrand    = searchParams.get('brand')    || 'All';
 
   const [search, setSearch]       = useState(initialSearch);
   const [category, setCategory]   = useState(initialCategory);
+  const [brand, setBrand]         = useState(initialBrand);
   const [sort, setSort]           = useState('featured');
   const [maxPrice, setMaxPrice]   = useState(200000);
   const [viewMode, setViewMode]   = useState('grid');
   const [filterOpen, setFilterOpen] = useState(false);
 
+  const visibleBrands = useMemo(() => {
+    if (category === 'All') return activeBrands;
+    return brandsForCategory(category);
+  }, [activeBrands, category, brandsForCategory]);
+
   const filtered = useMemo(() => {
     let result = [...products];
     if (category !== 'All') result = result.filter(p => p.category === category);
+    if (brand !== 'All')    result = result.filter(p => (p.brand || '').toLowerCase() === brand.toLowerCase());
     if (search) result = result.filter(p =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.brand || '').toLowerCase().includes(search.toLowerCase()) ||
       p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
     );
     result = result.filter(p => p.price <= maxPrice);
@@ -48,13 +60,23 @@ export default function Products() {
       default:           result.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
     return result;
-  }, [products, category, search, sort, maxPrice]);
+  }, [products, category, brand, search, sort, maxPrice]);
 
   const handleCategoryChange = (cat) => {
     setCategory(cat);
+    setBrand('All');
     const params = new URLSearchParams(searchParams);
     if (cat === 'All') params.delete('category');
     else params.set('category', cat);
+    params.delete('brand');
+    setSearchParams(params);
+  };
+
+  const handleBrandChange = (slug) => {
+    setBrand(slug);
+    const params = new URLSearchParams(searchParams);
+    if (slug === 'All') params.delete('brand');
+    else params.set('brand', slug);
     setSearchParams(params);
   };
 
@@ -203,6 +225,38 @@ export default function Products() {
               ))}
             </div>
           </div>
+
+          {visibleBrands.length > 0 && (
+            <div className="bg-white rounded-3xl p-5 shadow-soft border border-gray-100">
+              <h3 className="font-display font-bold text-gray-900 mb-3">Brands</h3>
+              <div className="space-y-1 max-h-80 overflow-y-auto pr-1 -mr-1 scrollbar-none">
+                <button
+                  onClick={() => handleBrandChange('All')}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all ${
+                    brand === 'All'
+                      ? 'bg-primary-50 text-primary-700 font-bold ring-1 ring-primary-100'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  All brands
+                </button>
+                {visibleBrands.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => handleBrandChange(b.slug)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all ${
+                      brand === b.slug
+                        ? 'bg-primary-50 text-primary-700 font-bold ring-1 ring-primary-100'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <BrandLogo brandObj={b} size="xs" variant="logo" />
+                    <span className="truncate">{b.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-3xl p-5 shadow-soft border border-gray-100">
             <h3 className="font-display font-bold text-gray-900 mb-3">Quick Filter</h3>

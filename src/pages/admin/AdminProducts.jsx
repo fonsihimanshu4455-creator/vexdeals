@@ -2,10 +2,13 @@ import { useMemo, useRef, useState } from 'react';
 import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
+import { useBrands } from '../../context/BrandContext';
+import BrandLogo from '../../components/BrandLogo';
 
 const createEmptyForm = (defaultCategory = 'Electronics') => ({
   name: '',
   category: defaultCategory,
+  brand: '',
   price: '',
   originalPrice: '',
   stock: '',
@@ -53,6 +56,7 @@ const getImageDimensions = (src) =>
 export default function AdminProducts() {
   const { products: productList, addProduct, updateProduct, deleteProduct, syncState: productSyncState } = useProducts();
   const { categories: adminCategories } = useCategories();
+  const { brandsForCategory, getBrand } = useBrands();
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('All');
   const [editId, setEditId] = useState(null);
@@ -100,6 +104,7 @@ export default function AdminProducts() {
       originalPrice: product.originalPrice,
       stock: product.stock,
       category: product.category,
+      brand: product.brand || '',
       shippingCharge: product.shippingCharge ?? 0,
       description: product.description || '',
       featured: product.featured ?? false,
@@ -161,9 +166,11 @@ export default function AdminProducts() {
     const price = Number(editData.price);
     if (!Number.isFinite(price) || price <= 0) { setEditError('Enter a valid selling price.'); return; }
     const shippingCharge = normalizeShippingCharge(editData.shippingCharge);
+    const brandObj = editData.brand ? getBrand(editData.brand) : null;
     updateProduct(editId, {
       ...editData,
       name,
+      brand: brandObj?.slug || editData.brand || '',
       price,
       originalPrice: Number(editData.originalPrice || editData.price) || price,
       stock: Number(editData.stock) || 0,
@@ -279,10 +286,15 @@ export default function AdminProducts() {
       return;
     }
 
+    const brandObj = addForm.brand ? getBrand(addForm.brand) : null;
+    const baseTags = category ? [category.toLowerCase()] : [];
+    if (brandObj) baseTags.push(brandObj.name.toLowerCase(), brandObj.slug);
+
     addProduct({
       ...addForm,
       name,
       category,
+      brand: brandObj?.slug || addForm.brand || '',
       price,
       originalPrice: Number.isFinite(originalPrice) && originalPrice > 0 ? originalPrice : price,
       stock,
@@ -292,7 +304,7 @@ export default function AdminProducts() {
       rating: 4.5,
       reviews: 0,
       specs: [],
-      tags: category ? [category.toLowerCase()] : [],
+      tags: baseTags,
     });
 
     closeAddModal();
@@ -395,9 +407,14 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs bg-primary-50 text-primary-700 font-medium px-2 py-1 rounded-full">
-                      {product.category}
-                    </span>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs bg-primary-50 text-primary-700 font-medium px-2 py-1 rounded-full w-fit">
+                        {product.category}
+                      </span>
+                      {product.brand && getBrand(product.brand) && (
+                        <BrandLogo brand={product.brand} variant="inline" size="xs" />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-900">
                     <div className="text-sm">{formatPrice(product.price)}</div>
@@ -499,6 +516,28 @@ export default function AdminProducts() {
                 </select>
                 <span className="mt-1 block text-xs text-gray-500">
                   Existing admin categories only. Manage them from Admin Categories.
+                </span>
+              </label>
+
+              <label className="text-sm text-gray-700 sm:col-span-2">
+                <span className="flex items-center justify-between mb-1">
+                  <span className="font-medium">Brand</span>
+                  {addForm.brand && getBrand(addForm.brand) && (
+                    <BrandLogo brand={addForm.brand} variant="inline" size="sm" />
+                  )}
+                </span>
+                <select
+                  value={addForm.brand}
+                  onChange={(e) => setAddForm((current) => ({ ...current, brand: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500 bg-white"
+                >
+                  <option value="">— No brand —</option>
+                  {brandsForCategory(addForm.category).map((b) => (
+                    <option key={b.id} value={b.slug}>{b.name}</option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs text-gray-500">
+                  Brand logo will appear on the product card. Manage brands from Admin → Brands.
                 </span>
               </label>
 
@@ -744,6 +783,25 @@ export default function AdminProducts() {
                 <select value={editData.category || ''} onChange={e => setEditData(c => ({ ...c, category: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500 bg-white">
                   {editableCategoryNames.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+
+              <label className="text-sm text-gray-700 sm:col-span-2">
+                <span className="flex items-center justify-between mb-1">
+                  <span className="font-medium">Brand</span>
+                  {editData.brand && getBrand(editData.brand) && (
+                    <BrandLogo brand={editData.brand} variant="inline" size="sm" />
+                  )}
+                </span>
+                <select
+                  value={editData.brand || ''}
+                  onChange={(e) => setEditData((c) => ({ ...c, brand: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500 bg-white"
+                >
+                  <option value="">— No brand —</option>
+                  {brandsForCategory(editData.category).map((b) => (
+                    <option key={b.id} value={b.slug}>{b.name}</option>
+                  ))}
                 </select>
               </label>
 

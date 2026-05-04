@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { CategoryProvider } from './context/CategoryContext';
+import { BrandProvider } from './context/BrandContext';
 import { ProductProvider } from './context/ProductContext';
+import { TestimonialProvider } from './context/TestimonialContext';
 import { CustomerDataProvider } from './context/CustomerDataContext';
 
 import Navbar from './components/Navbar';
@@ -33,6 +35,8 @@ const AdminOrders       = lazy(() => import('./pages/admin/AdminOrders'));
 const AdminUsers        = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminAnalytics    = lazy(() => import('./pages/admin/AdminAnalytics'));
 const AdminCategories   = lazy(() => import('./pages/admin/AdminCategories'));
+const AdminBrands       = lazy(() => import('./pages/admin/AdminBrands'));
+const AdminTestimonials = lazy(() => import('./pages/admin/AdminTestimonials'));
 const AdminSubAdmins    = lazy(() => import('./pages/admin/AdminSubAdmins'));
 const AdminMarketing    = lazy(() => import('./pages/admin/AdminMarketing'));
 
@@ -62,22 +66,26 @@ export default function App() {
       <ScrollToTop />
       <AuthProvider>
         <CustomerDataProvider>
-          <ProductProvider>
-            <CategoryProvider>
-              <CartProvider>
-                <Suspense fallback={<AdminFallback />}>
+          <CategoryProvider>
+            <BrandProvider>
+              <ProductProvider>
+                <TestimonialProvider>
+                  <CartProvider>
+                    <Suspense fallback={<AdminFallback />}>
                   <Routes>
                     <Route path="/admin-login" element={<AdminLogin />} />
 
                     <Route path="/admin" element={<AdminLayout />}>
-                      <Route index              element={<Dashboard />}       />
-                      <Route path="products"    element={<AdminProducts />}   />
-                      <Route path="orders"      element={<AdminOrders />}     />
-                      <Route path="users"       element={<AdminUsers />}      />
-                      <Route path="analytics"   element={<AdminAnalytics />}  />
-                      <Route path="categories"  element={<AdminCategories />} />
-                      <Route path="sub-admins"  element={<AdminSubAdmins />}  />
-                      <Route path="marketing"   element={<AdminMarketing />}  />
+                      <Route index               element={<Dashboard />}        />
+                      <Route path="products"     element={<AdminProducts />}    />
+                      <Route path="orders"       element={<AdminOrders />}      />
+                      <Route path="users"        element={<AdminUsers />}       />
+                      <Route path="analytics"    element={<AdminAnalytics />}   />
+                      <Route path="categories"   element={<AdminCategories />}  />
+                      <Route path="brands"       element={<AdminBrands />}      />
+                      <Route path="testimonials" element={<AdminTestimonials />}/>
+                      <Route path="sub-admins"   element={<AdminSubAdmins />}   />
+                      <Route path="marketing"    element={<AdminMarketing />}   />
                     </Route>
 
                     <Route path="/login" element={<Login />} />
@@ -94,9 +102,11 @@ export default function App() {
                     <Route path="/account/addresses"    element={<CustomerLayout><CustomerAddresses /></CustomerLayout>} />
                   </Routes>
                 </Suspense>
-              </CartProvider>
-            </CategoryProvider>
-          </ProductProvider>
+                  </CartProvider>
+                </TestimonialProvider>
+              </ProductProvider>
+            </BrandProvider>
+          </CategoryProvider>
         </CustomerDataProvider>
       </AuthProvider>
     </BrowserRouter>

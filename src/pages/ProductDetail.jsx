@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import BrandLogo from '../components/BrandLogo';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
+import { useBrands } from '../context/BrandContext';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const { products } = useProducts();
+  const { getBrand } = useBrands();
   const product = products.find(p => p.id === Number(id));
+  const brand = product?.brand ? getBrand(product.brand) : null;
   const { dispatch, items } = useCart();
 
   const [selectedImg, setSelectedImg] = useState(0);
@@ -94,6 +98,12 @@ export default function ProductDetail() {
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
+                {/* Brand watermark */}
+                {brand && (
+                  <div className="absolute top-3 left-3 pointer-events-none">
+                    <BrandLogo brandObj={brand} size="md" variant="chip" />
+                  </div>
+                )}
                 {/* Zoom hint */}
                 <div className="absolute top-3 right-3 bg-black/40 text-white rounded-xl px-2 py-1 text-xs flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   <ZoomIn size={12} /> Tap to zoom
@@ -232,6 +242,20 @@ export default function ProductDetail() {
 
             {/* Product info */}
             <div className="flex flex-col gap-4">
+              {/* Brand banner */}
+              {brand && (
+                <Link
+                  to={`/products?brand=${encodeURIComponent(brand.slug)}`}
+                  className="group inline-flex items-center gap-3 self-start bg-gradient-to-r from-gray-50 to-white border border-gray-200 hover:border-primary-300 rounded-2xl pl-2 pr-4 py-2 shadow-soft transition-all"
+                >
+                  <BrandLogo brandObj={brand} size="md" variant="logo" />
+                  <div className="leading-tight">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Brand</p>
+                    <p className="text-sm font-display font-bold text-gray-900 group-hover:text-primary-700 transition-colors">{brand.name}</p>
+                  </div>
+                </Link>
+              )}
+
               {/* Badges */}
               <div className="flex gap-2 flex-wrap">
                 <span className="bg-primary-50 text-primary-600 text-xs font-semibold px-3 py-1 rounded-full">

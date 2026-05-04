@@ -73,6 +73,7 @@ const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
     id,
     name,
     category,
+    brand: String(rawProduct.brand || '').trim(),
     price,
     originalPrice,
     discount,
