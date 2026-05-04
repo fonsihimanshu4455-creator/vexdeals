@@ -9,6 +9,7 @@ import { CustomerDataProvider } from './context/CustomerDataContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollProgress from './components/ScrollProgress';
+import ScrollToTop from './components/ScrollToTop';
 import LiveActivity from './components/LiveActivity';
 
 // Customer pages — eager so SPA navigation is instant after first load
@@ -22,6 +23,7 @@ import AdminLogin from './pages/AdminLogin';
 import CustomerOrders from './pages/customer/CustomerOrders';
 import CustomerTransactions from './pages/customer/CustomerTransactions';
 import CustomerAddresses from './pages/customer/CustomerAddresses';
+import CustomerProfile from './pages/customer/CustomerProfile';
 
 // Admin panel — lazy so customers never download these chunks
 const AdminLayout       = lazy(() => import('./pages/admin/AdminLayout'));
@@ -57,6 +59,7 @@ function AdminFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <CustomerDataProvider>
           <ProductProvider>
@@ -84,6 +87,8 @@ export default function App() {
                     <Route path="/products/:id"         element={<CustomerLayout><ProductDetail /></CustomerLayout>} />
                     <Route path="/cart"                 element={<CustomerLayout><Cart /></CustomerLayout>} />
                     <Route path="/checkout"             element={<CustomerLayout><Checkout /></CustomerLayout>} />
+                    <Route path="/account"              element={<CustomerLayout><CustomerProfile /></CustomerLayout>} />
+                    <Route path="/account/profile"      element={<CustomerLayout><CustomerProfile /></CustomerLayout>} />
                     <Route path="/account/orders"       element={<CustomerLayout><CustomerOrders /></CustomerLayout>} />
                     <Route path="/account/transactions" element={<CustomerLayout><CustomerTransactions /></CustomerLayout>} />
                     <Route path="/account/addresses"    element={<CustomerLayout><CustomerAddresses /></CustomerLayout>} />

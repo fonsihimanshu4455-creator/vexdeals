@@ -87,6 +87,33 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('vexdeals_user');
   };
 
+  /**
+   * Merge `patch` into the active user, persist to localStorage, and mirror
+   * to the customer registry so the user list / Firestore mirror stays in sync.
+   * Returns the updated normalized user.
+   */
+  const updateProfile = (patch = {}) => {
+    if (!user) return null;
+    const merged = normalizeUser({
+      ...user,
+      ...patch,
+      preferences: { ...(user.preferences || {}), ...(patch.preferences || {}) },
+      updatedAt: new Date().toISOString(),
+    });
+    setUser(merged);
+    try {
+      localStorage.setItem('vexdeals_user', JSON.stringify(merged));
+
+      // mirror into the customer registry so admins see the latest data
+      const registry = JSON.parse(localStorage.getItem('vexdeals_customers') || '[]');
+      const idx = registry.findIndex(c => c.id === merged.id || c.email === merged.email);
+      if (idx === -1) registry.push(merged);
+      else registry[idx] = { ...registry[idx], ...merged };
+      localStorage.setItem('vexdeals_customers', JSON.stringify(registry));
+    } catch { /* ignore */ }
+    return merged;
+  };
+
   // role hierarchy
   const isAdmin    = user?.role === 'admin';
   const isSubAdmin = user?.role === 'subadmin';
@@ -102,6 +129,7 @@ export function AuthProvider({ children }) {
       user,
       login,
       logout,
+      updateProfile,
       isAdmin,
       isSubAdmin,
       isStaff,

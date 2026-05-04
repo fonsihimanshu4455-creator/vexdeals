@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ShoppingCart, Search, User, Menu, X, LogOut, LayoutDashboard,
+  ShoppingCart, Search, User, UserCircle, Menu, X, LogOut, LayoutDashboard,
   CreditCard, MapPin, Package, Sparkles, ChevronDown, ArrowRight,
   Command,
 } from 'lucide-react';
@@ -213,6 +213,10 @@ export default function Navbar() {
                           )}
                           {isCustomer && (
                             <>
+                              <Link to="/account/profile" onClick={() => setDropdownOpen(false)}
+                                className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
+                                <UserCircle size={15} className="text-primary-500" /> My Profile
+                              </Link>
                               <Link to="/account/orders" onClick={() => setDropdownOpen(false)}
                                 className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                                 <Package size={15} className="text-primary-500" /> My Orders
@@ -384,6 +388,10 @@ export default function Navbar() {
                   )}
                   {isCustomer && (
                     <>
+                      <Link to="/account/profile" onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium">
+                        <UserCircle size={15} /> Profile
+                      </Link>
                       <Link to="/account/orders" onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium">
                         <Package size={15} /> Orders
