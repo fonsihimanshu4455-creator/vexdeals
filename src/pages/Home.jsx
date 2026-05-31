@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Zap, Star, ShieldCheck, Headphones } from 'lucide-react';
+import { ArrowRight, Zap, Star } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
@@ -49,67 +49,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
-      {/* ── Hero Banner ─────────────────────────────────────────────────── */}
-      <section className="relative bg-gradient-to-br from-navy-900 via-primary-900 to-primary-800 overflow-hidden">
-        {/* Decorative glows */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-accent-500 opacity-10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
-          <div className="absolute bottom-0 left-0 w-72 h-72 bg-primary-400 opacity-10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-28">
-          <div className="max-w-2xl">
-            {/* Pill badge */}
-            <div className="inline-flex items-center gap-2 bg-accent-500/20 border border-accent-500/30 text-accent-300 text-[11px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full mb-5 sm:mb-6 uppercase tracking-wider">
-              <Zap size={11} fill="currentColor" /> Flash Deals — Up to 70% off
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-3 sm:mb-4">
-              Premium Style,{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-300">
-                Unbeatable Deals
-              </span>
-            </h1>
-
-            <p className="text-primary-300 text-sm sm:text-lg mb-7 sm:mb-8 max-w-lg leading-relaxed">
-              Top eyewear & accessories — hand-picked deals you won't find anywhere else.
-            </p>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/products"
-                className="inline-flex items-center gap-2 bg-accent-500 hover:bg-accent-400 text-gray-900 font-bold px-6 sm:px-7 py-3 sm:py-3.5 rounded-2xl text-sm sm:text-base transition-all hover:scale-105 shadow-xl shadow-accent-500/30"
-              >
-                Shop All Deals <ArrowRight size={16} />
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Wave bottom edge */}
-        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gray-50" style={{ borderRadius: '50% 50% 0 0 / 100% 100% 0 0' }} />
-      </section>
-
-      {/* ── Trust strip ─────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-2">
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { Icon: ShieldCheck, title: '100% Authentic', sub: 'Genuine branded products' },
-            { Icon: Headphones,  title: '24/7 Support',   sub: 'Always here to help'   },
-          ].map(({ Icon, title, sub }) => (
-            <div key={title} className="flex items-center gap-3 bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
-              <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
-                <Icon size={18} className="text-primary-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">{title}</p>
-                <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">{sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* ── Shop by Category ────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
