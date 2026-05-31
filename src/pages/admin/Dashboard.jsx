@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { TrendingUp, Package, ShoppingBag, Users, ArrowUpRight, ArrowRight, IndianRupee, Clock } from 'lucide-react';
-import { orders } from '../../data/orders';
-import { users } from '../../data/users';
 import { useProducts } from '../../context/ProductContext';
+import { useAdminOrders, useAdminUsers } from '../../hooks/useAdminData';
 
 const statusColors = {
   Delivered: 'bg-emerald-100 text-emerald-700',
+  Confirmed: 'bg-teal-100 text-teal-700',
   Shipped: 'bg-blue-100 text-blue-700',
   Processing: 'bg-amber-100 text-amber-700',
   Pending: 'bg-gray-100 text-gray-700',
@@ -14,13 +14,20 @@ const statusColors = {
 
 export default function Dashboard() {
   const { products } = useProducts();
-  const totalRevenue = orders.filter(o => o.status === 'Delivered').reduce((a, o) => a + o.total, 0);
+  const { orders } = useAdminOrders();
+  const { users } = useAdminUsers();
+
+  const totalRevenue = orders
+    .filter(o => ['Delivered', 'Confirmed'].includes(o.status))
+    .reduce((a, o) => a + (o.total || 0), 0);
   const pendingOrders = orders.filter(o => ['Pending', 'Processing'].includes(o.status)).length;
   const totalCustomers = users.filter(u => u.role === 'customer').length;
   const lowStockProducts = products.filter(p => p.stock < 20).length;
 
-  const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
-  const recentOrders = [...orders].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
+  const recentOrders = [...orders]
+    .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))
+    .slice(0, 5);
   const topProducts = [...products].sort((a, b) => b.reviews - a.reviews).slice(0, 5);
 
   const stats = [
@@ -83,7 +90,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-xl px-3 py-2">
           <Clock size={14} />
-          <span>Updated: April 10, 2026</span>
+          <span>Updated: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
       </div>
 
@@ -135,9 +142,9 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <h3 className="font-bold text-gray-900 mb-5">Order Status</h3>
           <div className="space-y-3">
-            {['Delivered', 'Shipped', 'Processing', 'Pending'].map(status => {
+            {['Delivered', 'Confirmed', 'Shipped', 'Processing', 'Pending'].map(status => {
               const count = orders.filter(o => o.status === status).length;
-              const pct = Math.round((count / orders.length) * 100);
+              const pct = orders.length ? Math.round((count / orders.length) * 100) : 0;
               return (
                 <div key={status}>
                   <div className="flex items-center justify-between mb-1">
@@ -191,6 +198,9 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="space-y-3">
+            {recentOrders.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-6">No orders yet</p>
+            )}
             {recentOrders.map(order => (
               <div key={order.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
                 <div className="w-8 h-8 bg-primary-50 rounded-full flex items-center justify-center shrink-0">

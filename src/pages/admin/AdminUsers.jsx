@@ -1,90 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Search, Eye, X, Users, Shield, User, Wifi, WifiOff, RefreshCw } from 'lucide-react';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { users as staticUsers } from '../../data/users';
+import { useAdminUsers, getOrderStats } from '../../hooks/useAdminData';
 
 const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
 
-// Read customers saved in localStorage (Google sign-in)
-const getLocalCustomers = () => {
-  try {
-    return JSON.parse(localStorage.getItem('vexdeals_customers') || '[]');
-  } catch { return []; }
-};
-
-// Count orders and total spent for a user from localStorage
-const getOrderStats = (userId, userEmail) => {
-  try {
-    const store = JSON.parse(localStorage.getItem('vexdeals_customer_orders') || '{}');
-    const key = userEmail || userId;
-    const orders = Array.isArray(store[key]) ? store[key] : [];
-    const totalOrders = orders.length;
-    const totalSpent = orders
-      .filter(o => ['Delivered', 'Confirmed'].includes(o.status))
-      .reduce((sum, o) => sum + (o.total || 0), 0);
-    return { totalOrders, totalSpent };
-  } catch { return { totalOrders: 0, totalSpent: 0 }; }
-};
-
-// Merge static admins + real customers (Firestore takes priority over localStorage)
-const buildUserList = (firestoreUsers) => {
-  const admins = staticUsers
-    .filter(u => u.role === 'admin' || u.role === 'subadmin')
-    .map(u => ({ ...u, source: 'static' }));
-
-  const customers = firestoreUsers.length > 0
-    ? firestoreUsers
-    : getLocalCustomers().map(u => ({ ...u, source: 'local' }));
-
-  const merged = [...admins];
-  customers.forEach(cu => {
-    if (!merged.find(u => u.id === cu.id || u.email === cu.email)) {
-      const stats = getOrderStats(cu.id, cu.email);
-      merged.push({
-        ...cu,
-        role: cu.role || 'customer',
-        status: cu.status || 'Active',
-        totalOrders: cu.totalOrders ?? stats.totalOrders,
-        totalSpent: cu.totalSpent ?? stats.totalSpent,
-        joinDate: cu.joinDate || cu.firstLogin?.split('T')[0] || '—',
-      });
-    }
-  });
-
-  return merged;
-};
-
 export default function AdminUsers() {
-  const [allUsers, setAllUsers]     = useState(() => buildUserList([]));
-  const [liveSync, setLiveSync]     = useState(false);
-  const [loading, setLoading]       = useState(true);
+  const { users: allUsers, loading, liveSync } = useAdminUsers();
   const [search, setSearch]         = useState('');
   const [filterRole, setFilterRole] = useState('All');
   const [viewUser, setViewUser]     = useState(null);
-
-  // Real-time Firestore subscription
-  useEffect(() => {
-    if (!db) {
-      setAllUsers(buildUserList([]));
-      setLoading(false);
-      return;
-    }
-
-    const q = query(collection(db, 'users'), orderBy('updatedAt', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      const fsUsers = snap.docs.map(d => ({ ...d.data(), id: d.id, source: 'cloud' }));
-      setAllUsers(buildUserList(fsUsers));
-      setLiveSync(true);
-      setLoading(false);
-    }, () => {
-      setAllUsers(buildUserList([]));
-      setLiveSync(false);
-      setLoading(false);
-    });
-
-    return unsub;
-  }, []);
 
   const filtered = allUsers.filter(u => {
     const matchRole = filterRole === 'All' || u.role === filterRole;
