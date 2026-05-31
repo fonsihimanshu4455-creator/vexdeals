@@ -10,11 +10,21 @@ const DEFAULT_CATEGORIES = [
   { id: 5, name: 'Home & Living', icon: '🏠', color: 'bg-emerald-50 hover:bg-emerald-100', active: true },
   { id: 6, name: 'Sports',        icon: '🏋️', color: 'bg-orange-50 hover:bg-orange-100',   active: true },
   { id: 7, name: 'Beauty',        icon: '✨', color: 'bg-purple-50 hover:bg-purple-100',    active: false },
+  { id: 8, name: 'Eyeglasses',    icon: '👓', color: 'bg-teal-50 hover:bg-teal-100',       active: true },
+  { id: 9, name: 'Sunglasses',    icon: '🕶️', color: 'bg-amber-50 hover:bg-amber-100',      active: true },
+  { id: 10, name: 'Contacts',     icon: '👁️', color: 'bg-cyan-50 hover:bg-cyan-100',       active: true },
 ];
 
 const CategoryContext = createContext();
 const STORAGE_KEY = 'vexdeals_categories';
 const CLOUD_COLLECTION = 'categories';
+
+// Categories that ship after the original 7 defaults. A one-time, per-device
+// migration makes sure these appear even when a device already cached an older
+// category list, without resurrecting them once an admin deletes them.
+const NEW_SEED_CATEGORIES = DEFAULT_CATEGORIES.filter((category) => category.id >= 8);
+const SEED_VERSION = 2;
+const SEED_VERSION_KEY = 'vexdeals_categories_seed_version';
 
 const buildSyncState = (overrides = {}) => ({
   mode: db ? 'connecting' : 'local',
@@ -182,6 +192,48 @@ export function CategoryProvider({ children }) {
         }));
       }
     );
+  }, []);
+
+  // One-time migration: ensure newer default categories are present even on
+  // devices that cached an older list. Deferred so the cloud subscription has
+  // settled first; guarded by a version flag so it only runs once per device.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current) return undefined;
+
+    let applied = 0;
+    try { applied = Number(localStorage.getItem(SEED_VERSION_KEY) || 0); } catch { applied = 0; }
+    if (applied >= SEED_VERSION) { seededRef.current = true; return undefined; }
+
+    const timer = window.setTimeout(() => {
+      seededRef.current = true;
+      try { localStorage.setItem(SEED_VERSION_KEY, String(SEED_VERSION)); } catch { /* ignore */ }
+
+      const current = categoriesRef.current;
+      const existingNames = new Set(current.map((category) => category.name.toLowerCase()));
+      const additions = NEW_SEED_CATEGORIES.filter((category) => !existingNames.has(category.name.toLowerCase()));
+      if (!additions.length) return;
+
+      const merged = normalizeCategoryList([...current, ...additions]);
+      setCategories(merged);
+
+      if (!db) return;
+
+      if (cloudHasDataRef.current) {
+        // Cloud already populated — just publish the new categories.
+        additions.forEach((category) => {
+          const full = merged.find((item) => item.name.toLowerCase() === category.name.toLowerCase());
+          if (full) setDoc(doc(db, CLOUD_COLLECTION, String(full.id)), serializeCategory(full)).catch(() => {});
+        });
+      } else {
+        // Cloud empty — publish the full merged catalog so nothing is dropped.
+        Promise.all(
+          merged.map((category) => setDoc(doc(db, CLOUD_COLLECTION, String(category.id)), serializeCategory(category)))
+        ).then(() => { cloudHasDataRef.current = true; }).catch(() => {});
+      }
+    }, 2000);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const ensureCloudSeeded = async (baselineCategories) => {
