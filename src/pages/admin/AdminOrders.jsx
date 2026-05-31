@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Search, Eye, X, ShoppingBag, RefreshCw, Wifi, WifiOff } from 'lucide-react';
-import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { useAdminOrders } from '../../hooks/useAdminData';
 
 const statusColors = {
   Delivered:  'bg-emerald-100 text-emerald-700',
@@ -16,51 +17,11 @@ const allStatuses = ['All', 'Pending', 'Confirmed', 'Processing', 'Shipped', 'De
 
 const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
 
-// Read fallback orders from localStorage (vexdeals_customer_orders)
-const getLocalOrders = () => {
-  try {
-    const store = JSON.parse(localStorage.getItem('vexdeals_customer_orders') || '{}');
-    return Object.values(store).flat().filter(Boolean);
-  } catch { return []; }
-};
-
 export default function AdminOrders() {
-  const [orders, setOrders]           = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [liveSync, setLiveSync]       = useState(false);
+  const { orders, setOrders, loading, liveSync } = useAdminOrders();
   const [search, setSearch]           = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [viewOrder, setViewOrder]     = useState(null);
-
-  // ── Real-time Firestore subscription ───────────────────────────────────────
-  useEffect(() => {
-    if (!db) {
-      // Firestore not available — fall back to localStorage
-      setOrders(getLocalOrders());
-      setLoading(false);
-      return;
-    }
-
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      const firestoreOrders = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-      // Merge with any localStorage orders not yet in Firestore
-      const localOrders = getLocalOrders();
-      const fsIds = new Set(firestoreOrders.map(o => o.id));
-      const localOnly = localOrders.filter(o => !fsIds.has(o.id));
-      setOrders([...firestoreOrders, ...localOnly]
-        .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0)));
-      setLiveSync(true);
-      setLoading(false);
-    }, () => {
-      // On error, fall back to localStorage
-      setOrders(getLocalOrders());
-      setLiveSync(false);
-      setLoading(false);
-    });
-
-    return unsub;
-  }, []);
 
   // ── Update order status ────────────────────────────────────────────────────
   const updateStatus = async (orderId, newStatus) => {

@@ -1,40 +1,33 @@
 import { BarChart3, ShoppingBag, Users, Package, TrendingUp, IndianRupee } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
+import { useAdminOrders, useAdminUsers } from '../../hooks/useAdminData';
 
 const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
 
-// Read live orders from localStorage (placed via checkout)
-const getLiveOrders = () => {
-  try { return JSON.parse(localStorage.getItem('vexdeals_orders') || '[]'); }
-  catch { return []; }
-};
-
-// Read live customers (OTP-logged-in users stored in localStorage history)
-const getLiveCustomers = () => {
-  try { return JSON.parse(localStorage.getItem('vexdeals_customers') || '[]'); }
-  catch { return []; }
-};
-
 export default function AdminAnalytics() {
   const { products } = useProducts();
-  const liveOrders   = getLiveOrders();
-  const customers    = getLiveCustomers();
+  const { orders: liveOrders } = useAdminOrders();
+  const { users } = useAdminUsers();
+  const customers = users.filter(u => u.role === 'customer');
 
   // ── KPI calculations ──────────────────────────────────────────────────────
-  const deliveredOrders  = liveOrders.filter(o => o.status === 'Delivered');
-  const totalRevenue     = deliveredOrders.reduce((a, o) => a + (o.total || 0), 0);
+  const totalRevenue     = liveOrders
+    .filter(o => ['Delivered', 'Confirmed'].includes(o.status))
+    .reduce((a, o) => a + (o.total || 0), 0);
   const pendingOrders    = liveOrders.filter(o => o.status === 'Pending').length;
   const avgOrder         = liveOrders.length ? Math.round(liveOrders.reduce((a, o) => a + (o.total || 0), 0) / liveOrders.length) : 0;
   const lowStockCount    = products.filter(p => p.stock > 0 && p.stock < 10).length;
   const outOfStockCount  = products.filter(p => p.stock === 0).length;
 
   // ── Order status breakdown ────────────────────────────────────────────────
-  const statuses = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+  const statuses = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
   const statusColors = {
     Pending:    'bg-gray-400',
+    Confirmed:  'bg-teal-500',
     Processing: 'bg-amber-500',
     Shipped:    'bg-blue-500',
     Delivered:  'bg-emerald-500',
+    Cancelled:  'bg-red-500',
   };
   const maxStatusCount = Math.max(...statuses.map(s => liveOrders.filter(o => o.status === s).length), 1);
 
@@ -47,7 +40,9 @@ export default function AdminAnalytics() {
   const maxCatCount = Math.max(...catEntries.map(([, c]) => c), 1);
 
   // ── Recent orders ─────────────────────────────────────────────────────────
-  const recentOrders = [...liveOrders].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, 5);
+  const recentOrders = [...liveOrders]
+    .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))
+    .slice(0, 5);
 
   const isEmpty = liveOrders.length === 0 && products.length === 0;
 
