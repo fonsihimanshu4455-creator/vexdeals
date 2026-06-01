@@ -56,7 +56,7 @@ export default function Home() {
   const containerRef = useRef(null);
 
   const featuredProducts = products.filter(p => p.featured);
-  const bestsellers      = products.filter(p => p.isBestseller).slice(0, 4);
+  const bestsellers      = products.filter(p => p.isBestseller).slice(0, 8);
   const newArrivals      = products.filter(p => p.isNew).slice(0, 4);
   const saleProducts     = products.filter(p => p.discount >= 20).slice(0, 6);
   const heroProduct      = featuredProducts[0] || bestsellers[0] || products[0];

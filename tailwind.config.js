@@ -19,6 +19,7 @@ export default {
           800: '#3730a3',
           900: '#1e1b4b',
         },
+        // `accent` remapped to cognac / terracotta.
         accent: {
           50:  '#f5f3ff',
           100: '#ede9fe',
