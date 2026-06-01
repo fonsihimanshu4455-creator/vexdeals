@@ -178,7 +178,7 @@ export default function Navbar() {
           </Link>
           <Link
             to="/products"
-            className="ml-auto text-xs font-bold text-white bg-accent-500 hover:bg-accent-600 px-4 py-1.5 rounded-lg transition-all flex items-center gap-1"
+            className="ml-auto text-xs font-bold text-ink-900 bg-gold-sheen shadow-gold hover:-translate-y-0.5 px-4 py-1.5 rounded-lg transition-all flex items-center gap-1"
           >
             ⚡ All Deals
           </Link>
