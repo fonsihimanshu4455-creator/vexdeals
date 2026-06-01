@@ -95,6 +95,10 @@ export default function Navbar() {
                     )}
                     {isCustomer && (
                       <>
+                        <Link to="/account/profile" onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-ink-800 hover:bg-cream-100 hover:text-primary-700">
+                          <User size={16} /> Personal Info
+                        </Link>
                         <Link to="/account/orders" onClick={() => setDropdownOpen(false)}
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-ink-800 hover:bg-cream-100 hover:text-primary-700">
                           <Package size={16} /> My Orders
@@ -190,6 +194,10 @@ export default function Navbar() {
                   )}
                   {isCustomer && (
                     <>
+                      <Link to="/account/profile" onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-cream-100 text-ink-800 text-sm font-medium">
+                        <User size={15} /> Profile
+                      </Link>
                       <Link to="/account/orders" onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-cream-100 text-ink-800 text-sm font-medium">
                         <Package size={15} /> Orders

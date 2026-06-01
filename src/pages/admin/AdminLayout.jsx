@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, LogOut,
   Menu, X, Bell, ChevronRight, BarChart3, Tag, Shield,
-  Megaphone, Watch,
+  Megaphone, Watch, UserCircle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { VexLogoInline } from '../../components/Logo';
@@ -83,13 +83,17 @@ export default function AdminLayout() {
         </div>
 
         {/* Admin badge */}
-        <div className="mx-4 mt-4 bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-3">
+        <Link
+          to="/admin/profile"
+          onClick={() => setSidebarOpen(false)}
+          className="mx-4 mt-4 bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-3 hover:bg-white/10 transition-colors"
+        >
           <img src={user?.avatar} alt={user?.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-accent-500/40" />
           <div className="min-w-0">
             <p className="text-white text-sm font-semibold truncate">{user?.name}</p>
             <p className={`text-xs font-semibold ${roleBadgeColor}`}>{roleLabel}</p>
           </div>
-        </div>
+        </Link>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -117,6 +121,19 @@ export default function AdminLayout() {
 
         {/* Bottom */}
         <div className="px-3 pb-5 space-y-2 border-t border-primary-800 pt-3">
+          <NavLink
+            to="/admin/profile"
+            onClick={() => setSidebarOpen(false)}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-accent-500 text-primary-900 font-bold'
+                  : 'text-primary-300 hover:bg-white/10 hover:text-white'
+              }`
+            }
+          >
+            <UserCircle size={18} /> My Profile
+          </NavLink>
           <Link
             to="/"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary-300 hover:bg-white/10 hover:text-white transition-colors"
@@ -154,13 +171,13 @@ export default function AdminLayout() {
             <Bell size={20} className="text-gray-600" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
           </button>
-          <div className="flex items-center gap-2">
+          <Link to="/admin/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <img src={user?.avatar} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-accent-200" />
             <div className="hidden sm:block">
               <p className="text-sm font-semibold text-gray-800 leading-none">{user?.name}</p>
               <p className={`text-xs font-medium ${isAdmin ? 'text-accent-600' : 'text-primary-500'}`}>{roleLabel}</p>
             </div>
-          </div>
+          </Link>
         </header>
 
         {/* Page content */}

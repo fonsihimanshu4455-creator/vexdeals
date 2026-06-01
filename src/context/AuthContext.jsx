@@ -87,6 +87,20 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('vexdeals_user');
   };
 
+  // Update the signed-in user's profile fields (persisted to localStorage)
+  const updateUser = (updates) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const merged = normalizeUser({ ...prev, ...updates });
+      try {
+        localStorage.setItem('vexdeals_user', JSON.stringify(merged));
+      } catch {
+        // ignore storage failures
+      }
+      return merged;
+    });
+  };
+
   // role hierarchy
   const isAdmin    = user?.role === 'admin';
   const isSubAdmin = user?.role === 'subadmin';
@@ -102,6 +116,7 @@ export function AuthProvider({ children }) {
       user,
       login,
       logout,
+      updateUser,
       isAdmin,
       isSubAdmin,
       isStaff,
