@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { VexLogoInline } from '../../components/Logo';
+import AdminLogin from '../AdminLogin';
 
 // Full nav for main admin
 const adminNavItems = [
@@ -38,16 +39,8 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!isStaff) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-        <div className="text-6xl">🔒</div>
-        <h2 className="text-2xl font-bold text-gray-800">Access Denied</h2>
-        <p className="text-gray-500">You need admin or staff privileges to access this panel.</p>
-        <Link to="/admin-login" className="bg-primary-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-700">
-          Login as Admin →
-        </Link>
-      </div>
-    );
+    // /admin is the single entry point — show the staff sign-in form directly.
+    return <AdminLogin />;
   }
 
   // Pick nav items based on role
