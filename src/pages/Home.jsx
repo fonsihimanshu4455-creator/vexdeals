@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
 
