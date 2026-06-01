@@ -262,7 +262,7 @@ export default function Checkout() {
   // ── Empty cart ──────────────────────────────────────────────────────────
   if (items.length === 0 && !ordered) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-cream-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Your cart is empty</p>
           <Link to="/products" className="bg-primary-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-700">Shop Now</Link>
@@ -276,7 +276,7 @@ export default function Checkout() {
     const successTotal = placedOrder?.total ?? completedCheckout?.total ?? total;
 
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-cream-100 flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-lg p-10 max-w-md w-full text-center">
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check size={40} className="text-emerald-600" />
@@ -340,7 +340,7 @@ export default function Checkout() {
     `w-full border-2 ${errors[field] ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600 transition-colors`;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-cream-100 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Steps */}

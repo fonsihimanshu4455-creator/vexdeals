@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Star, Heart, Zap, BadgeCheck } from 'lucide-react';
+import { Star, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function ProductCard({ product }) {
@@ -11,107 +11,77 @@ export default function ProductCard({ product }) {
   };
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
-  const savings = product.originalPrice > product.price
-    ? product.originalPrice - product.price
-    : 0;
 
   return (
-    <Link
-      to={`/products/${product.id}`}
-      className="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-soft hover:border-accent-200 hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300 flex flex-col"
-    >
-      {/* Image container */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 aspect-square">
+    <Link to={`/products/${product.id}`} className="group flex flex-col">
+      {/* Image */}
+      <div className="relative overflow-hidden bg-cream-200 aspect-[4/5]">
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
-          style={{ '--tw-scale-x': 'var(--scale, 1)', '--tw-scale-y': 'var(--scale, 1)' }}
+          className="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]"
           loading="lazy"
         />
 
-        {/* Badge stack — top left */}
-        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
+        {/* Corner tags */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
           {product.discount > 0 && (
-            <span className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm shadow-red-500/30">
-              -{product.discount}%
-            </span>
-          )}
-          {product.isBestseller && (
-            <span className="bg-gradient-to-r from-amber-500 to-amber-400 text-white text-[11px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm shadow-amber-500/30">
-              <Zap size={9} fill="white" /> TOP PICK
+            <span className="bg-ink-900 text-cream-50 text-[10px] font-semibold tracking-widest2 uppercase px-2.5 py-1">
+              −{product.discount}%
             </span>
           )}
           {product.isNew && (
-            <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm shadow-emerald-500/20">
-              NEW
+            <span className="bg-accent-500 text-cream-50 text-[10px] font-semibold tracking-widest2 uppercase px-2.5 py-1">
+              New
+            </span>
+          )}
+          {product.isBestseller && !product.isNew && (
+            <span className="bg-cream-50 text-ink-900 text-[10px] font-semibold tracking-widest2 uppercase px-2.5 py-1">
+              Top Pick
             </span>
           )}
         </div>
 
-        {/* Wishlist — top right, subtle until hover */}
+        {/* Wishlist */}
         <button
           onClick={e => e.preventDefault()}
-          className="absolute top-2.5 right-2.5 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-sm flex items-center justify-center text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-white hover:scale-110 transition-all duration-200"
+          className="absolute top-3 right-3 w-9 h-9 bg-cream-50/90 backdrop-blur-sm flex items-center justify-center text-ink-700 opacity-0 group-hover:opacity-100 hover:text-accent-600 transition-all duration-300"
         >
-          <Heart size={14} />
+          <Heart size={15} strokeWidth={1.5} />
         </button>
 
-        {/* Slide-up Add to Cart */}
-        <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
-          <button
-            onClick={addToCart}
-            className="w-full bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white py-2.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all"
-          >
-            <ShoppingCart size={15} /> Add to Cart
-          </button>
-        </div>
+        {/* Add to cart bar */}
+        <button
+          onClick={addToCart}
+          className="absolute bottom-0 left-0 right-0 bg-ink-900 text-cream-50 py-3 text-[11px] font-semibold uppercase tracking-widest2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out hover:bg-accent-600"
+        >
+          Add to Cart
+        </button>
       </div>
 
       {/* Info */}
-      <div className="p-3 sm:p-4 flex flex-col gap-1.5 flex-1">
-        {/* Category pill */}
-        <span className="text-[10px] sm:text-xs text-primary-600 font-semibold bg-primary-50 border border-primary-100 px-2 py-0.5 rounded-full w-fit">
-          {product.category}
-        </span>
+      <div className="pt-3.5 flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] uppercase tracking-widest2 text-ink-700/50">{product.category}</span>
+          <div className="flex items-center gap-1 text-ink-700/60">
+            <Star size={11} className="fill-accent-500 text-accent-500" />
+            <span className="text-[11px]">{Number(product.rating).toFixed(1)}</span>
+          </div>
+        </div>
 
-        {/* Name */}
-        <h3 className="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug group-hover:text-primary-700 transition-colors">
+        <h3 className="font-display text-[15px] leading-snug text-ink-900 line-clamp-2 group-hover:text-accent-700 transition-colors">
           {product.name}
         </h3>
 
-        {/* Rating */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                size={11}
-                className={i < Math.floor(product.rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}
-              />
-            ))}
-          </div>
-          <span className="text-[11px] text-gray-400">({product.reviews.toLocaleString()})</span>
-        </div>
-
-        {/* Price row */}
-        <div className="mt-auto pt-1 flex items-baseline gap-2 flex-wrap">
-          <span className="text-base sm:text-lg font-black text-gray-900">{formatPrice(product.price)}</span>
+        <div className="flex items-baseline gap-2 pt-0.5">
+          <span className="text-[15px] font-semibold text-ink-900">{formatPrice(product.price)}</span>
           {product.originalPrice > product.price && (
-            <span className="text-xs sm:text-sm text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>
+            <span className="text-xs text-ink-700/40 line-through">{formatPrice(product.originalPrice)}</span>
           )}
         </div>
 
-        {/* Savings pill */}
-        {savings > 0 && (
-          <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-0.5">
-            <BadgeCheck size={12} className="shrink-0" /> Save {formatPrice(savings)}
-          </p>
-        )}
-
-        {/* Low stock */}
         {product.stock > 0 && product.stock < 10 && (
-          <p className="text-[11px] text-red-500 font-semibold">Only {product.stock} left!</p>
+          <p className="text-[11px] text-accent-600">Only {product.stock} left</p>
         )}
       </div>
     </Link>
