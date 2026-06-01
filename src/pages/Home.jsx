@@ -183,7 +183,7 @@ export default function Home() {
       {/* ── Sale ─────────────────────────────────────────────────────────── */}
       {saleProducts.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 reveal">
-          <div className="relative overflow-hidden rounded-[2rem] bg-brand-gradient bg-ink-mesh p-7 sm:p-10">
+          <div className="relative overflow-hidden rounded-[2rem] bg-ink-900 bg-ink-mesh p-7 sm:p-10">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-8">
               <div>
                 <span className="inline-flex items-center gap-2 glass-dark text-white text-xs font-semibold px-3 py-1.5 rounded-full">
