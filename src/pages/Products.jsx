@@ -59,12 +59,12 @@ export default function Products() {
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
 
-  const inputCls = 'w-full pl-9 pr-4 py-2.5 text-sm border border-ink-900/15 rounded-none bg-cream-50 outline-none focus:border-accent-500 transition-colors';
+  const inputCls = 'w-full pl-9 pr-4 py-2.5 text-sm border border-ink-900/15 rounded-xl bg-cream-50 outline-none focus:border-accent-500 transition-colors';
 
   return (
     <div className="min-h-screen bg-cream-100">
       {/* Page title */}
-      <div className="bg-cream-100 bg-paper-grain border-b border-ink-900/10">
+      <div className="bg-cream-100 bg-mesh border-b border-ink-900/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <p className="eyebrow mb-2">{category === 'All' ? 'The Collection' : category}</p>
           <h1 className="font-display text-4xl sm:text-5xl text-ink-900">
@@ -91,7 +91,7 @@ export default function Products() {
 
             <div className="relative">
               <select value={sort} onChange={e => setSort(e.target.value)}
-                className="appearance-none pl-4 pr-9 py-2.5 text-sm border border-ink-900/15 rounded-none bg-cream-50 outline-none focus:border-accent-500 cursor-pointer">
+                className="appearance-none pl-4 pr-9 py-2.5 text-sm border border-ink-900/15 rounded-xl bg-cream-50 outline-none focus:border-accent-500 cursor-pointer">
                 {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-700/50 pointer-events-none" />
@@ -107,8 +107,8 @@ export default function Products() {
           <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none">
             {categories.map(cat => (
               <button key={cat} onClick={() => handleCategoryChange(cat)}
-                className={`shrink-0 px-4 py-1.5 text-[12px] font-medium uppercase tracking-widest2 border transition-colors ${
-                  category === cat ? 'bg-ink-900 text-cream-50 border-ink-900' : 'bg-transparent text-ink-700 border-ink-900/15 hover:border-ink-900'
+                className={`shrink-0 px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${
+                  category === cat ? 'bg-brand-gradient text-white shadow-glow' : 'bg-cream-100 text-ink-700 hover:bg-primary-50 hover:text-primary-600'
                 }`}>
                 {cat}
               </button>
