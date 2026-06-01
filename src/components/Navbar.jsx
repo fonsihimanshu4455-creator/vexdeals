@@ -171,6 +171,12 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
+            to="/about"
+            className="text-xs font-semibold text-gray-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap"
+          >
+            About Us
+          </Link>
+          <Link
             to="/products"
             className="ml-auto text-xs font-bold text-white bg-accent-500 hover:bg-accent-600 px-4 py-1.5 rounded-lg transition-all flex items-center gap-1"
           >
@@ -220,6 +226,15 @@ export default function Navbar() {
             className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-accent-500 to-accent-400 text-gray-900 font-bold py-3 rounded-xl text-sm"
           >
             ⚡ View All Deals
+          </Link>
+
+          {/* About Us */}
+          <Link
+            to="/about"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center justify-center gap-2 w-full border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-gray-50"
+          >
+            About Us
           </Link>
 
           {/* Account section */}

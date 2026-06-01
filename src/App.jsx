@@ -15,6 +15,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
+import About from './pages/About';
 import CustomerOrders from './pages/customer/CustomerOrders';
 import CustomerTransactions from './pages/customer/CustomerTransactions';
 import CustomerAddresses from './pages/customer/CustomerAddresses';
@@ -69,6 +70,7 @@ export default function App() {
                   {/* Customer-facing routes */}
                   <Route path="/"                     element={<CustomerLayout><Home /></CustomerLayout>} />
                   <Route path="/products"             element={<CustomerLayout><Products /></CustomerLayout>} />
+                  <Route path="/about"                element={<CustomerLayout><About /></CustomerLayout>} />
                   <Route path="/products/:id"         element={<CustomerLayout><ProductDetail /></CustomerLayout>} />
                   <Route path="/cart"                 element={<CustomerLayout><Cart /></CustomerLayout>} />
                   <Route path="/checkout"             element={<CustomerLayout><Checkout /></CustomerLayout>} />
