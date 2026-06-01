@@ -1,8 +1,9 @@
 import { Link, Navigate, useLocation } from 'react-router-dom';
-import { CreditCard, MapPin, Package } from 'lucide-react';
+import { CreditCard, MapPin, Package, UserCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
+  { to: '/account/profile', label: 'Personal Information', Icon: UserCircle },
   { to: '/account/orders', label: 'My Orders', Icon: Package },
   { to: '/account/transactions', label: 'Transaction History', Icon: CreditCard },
   { to: '/account/addresses', label: 'Saved Addresses', Icon: MapPin },

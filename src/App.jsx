@@ -19,6 +19,7 @@ import About from './pages/About';
 import CustomerOrders from './pages/customer/CustomerOrders';
 import CustomerTransactions from './pages/customer/CustomerTransactions';
 import CustomerAddresses from './pages/customer/CustomerAddresses';
+import CustomerProfile from './pages/customer/CustomerProfile';
 
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -29,6 +30,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminSubAdmins from './pages/admin/AdminSubAdmins';
 import AdminMarketing from './pages/admin/AdminMarketing';
+import AdminProfile from './pages/admin/AdminProfile';
 
 function CustomerLayout({ children }) {
   return (
@@ -62,6 +64,7 @@ export default function App() {
                     <Route path="categories"  element={<AdminCategories />} />
                     <Route path="sub-admins"  element={<AdminSubAdmins />}  />
                     <Route path="marketing"   element={<AdminMarketing />}  />
+                    <Route path="profile"     element={<AdminProfile />}    />
                   </Route>
 
                   {/* Customer login — mobile only */}
@@ -77,6 +80,7 @@ export default function App() {
                   <Route path="/account/orders"       element={<CustomerLayout><CustomerOrders /></CustomerLayout>} />
                   <Route path="/account/transactions" element={<CustomerLayout><CustomerTransactions /></CustomerLayout>} />
                   <Route path="/account/addresses"    element={<CustomerLayout><CustomerAddresses /></CustomerLayout>} />
+                  <Route path="/account/profile"      element={<CustomerLayout><CustomerProfile /></CustomerLayout>} />
                 </Routes>
               </CartProvider>
             </CategoryProvider>
