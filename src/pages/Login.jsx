@@ -140,11 +140,6 @@ export default function Login() {
           &amp;{' '}
           <a href="#" className="text-primary-600 underline">Privacy Policy</a>
         </p>
-
-        <p className="text-center text-xs text-gray-400 mt-4">
-          Staff?{' '}
-          <Link to="/admin-login" className="text-primary-600 font-semibold underline">Admin Portal →</Link>
-        </p>
       </div>
     </div>
   );
