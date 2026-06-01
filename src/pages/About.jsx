@@ -52,7 +52,7 @@ export default function About() {
 
       {/* Contact */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="relative overflow-hidden rounded-[2rem] bg-brand-gradient bg-ink-mesh p-8 sm:p-12 grid lg:grid-cols-2 gap-10 items-center">
+        <div className="relative overflow-hidden rounded-[2rem] bg-ink-900 bg-ink-mesh p-8 sm:p-12 grid lg:grid-cols-2 gap-10 items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest2 text-white/70">Say hello</p>
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mt-2">Get in touch</h2>
