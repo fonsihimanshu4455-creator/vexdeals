@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Zap, Star } from 'lucide-react';
+import { ArrowRight, Zap, Star, ShieldCheck, RotateCcw, Lock, Sparkles } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
 
@@ -50,12 +51,71 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
 
+      {/* ── Premium Hero ────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-ink-900 bg-ink-radial">
+        <div className="absolute inset-0 bg-gradient-to-br from-ink-900 via-navy-800 to-primary-900 opacity-95" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            {/* Copy */}
+            <div className="max-w-xl animate-fade-up">
+              <span className="inline-flex items-center gap-2 glass border border-white/15 text-accent-300 text-[11px] font-bold px-4 py-1.5 rounded-full uppercase tracking-[0.18em]">
+                <Sparkles size={13} /> Premium Watches &amp; Eyewear
+              </span>
+              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.05]">
+                Timeless Style,{' '}
+                <span className="text-transparent bg-clip-text bg-gold-sheen">Smartly Priced</span>
+              </h1>
+              <p className="mt-4 text-primary-200/90 text-sm sm:text-lg leading-relaxed max-w-lg">
+                Hand-picked, 100% authentic watches &amp; eyewear from brands you love —
+                at deals you won't find anywhere else.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to="/products" className="btn-gold text-sm sm:text-base">
+                  Explore Collection <ArrowRight size={17} />
+                </Link>
+                <Link
+                  to="/about"
+                  className="inline-flex items-center justify-center gap-2 glass border border-white/20 text-white font-semibold rounded-2xl px-6 py-3 text-sm sm:text-base hover:bg-white/15 transition-colors"
+                >
+                  About Us
+                </Link>
+              </div>
+              {/* Trust chips */}
+              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3">
+                {[
+                  { Icon: ShieldCheck, label: '100% Authentic' },
+                  { Icon: RotateCcw,   label: '7-Day Returns' },
+                  { Icon: Lock,        label: 'Secure Payments' },
+                ].map(({ Icon, label }) => (
+                  <div key={label} className="flex items-center gap-2 text-primary-100/80 text-xs sm:text-sm font-medium">
+                    <Icon size={16} className="text-accent-400" /> {label}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Brand visual */}
+            <div className="hidden lg:flex justify-center animate-fade-in">
+              <div className="relative">
+                <div className="absolute inset-0 bg-accent-500/20 blur-3xl rounded-full scale-110" />
+                <div className="relative w-72 h-72 rounded-full glass border border-white/15 flex items-center justify-center shadow-premium animate-float">
+                  <VexLogoMark size={150} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Wave bottom edge */}
+        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gray-50" style={{ borderRadius: '50% 50% 0 0 / 100% 100% 0 0' }} />
+      </section>
+
       {/* ── Shop by Category ────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-end justify-between mb-5">
           <div>
+            <span className="section-eyebrow">Browse</span>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Shop by Category</h2>
-            <div className="mt-1 h-1 w-10 bg-accent-500 rounded-full" />
+            <div className="accent-bar" />
           </div>
           <Link to="/products" className="text-primary-600 text-sm font-semibold hover:text-primary-700 flex items-center gap-1 transition-colors">
             View All <ArrowRight size={14} />
@@ -69,18 +129,18 @@ export default function Home() {
               <Link
                 key={cat.id}
                 to={`/products?category=${encodeURIComponent(cat.name)}`}
-                className={`${cat.color} rounded-2xl p-4 text-center transition-all hover:scale-105 hover:shadow-md active:scale-95`}
+                className={`${cat.color} group rounded-2xl p-4 text-center border border-black/5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover active:scale-95`}
               >
-                <div className="text-3xl mb-2">{cat.icon}</div>
+                <div className="text-3xl mb-2 transition-transform duration-300 group-hover:scale-110">{cat.icon}</div>
                 <p className="text-xs sm:text-sm font-semibold text-gray-800 leading-tight">{cat.name}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{countForCat(cat.name) || '—'}</p>
               </Link>
             ))}
             <Link
               to="/products"
-              className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl p-4 text-center transition-all hover:scale-105 hover:shadow-lg active:scale-95"
+              className="group bg-gradient-to-br from-primary-700 to-navy-800 rounded-2xl p-4 text-center border border-white/10 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover active:scale-95"
             >
-              <div className="text-3xl mb-2">⚡</div>
+              <div className="text-3xl mb-2 transition-transform duration-300 group-hover:scale-110">⚡</div>
               <p className="text-xs sm:text-sm font-bold text-white">All Deals</p>
               <p className="text-xs text-primary-200 mt-0.5">{products.length} items</p>
             </Link>
@@ -143,10 +203,11 @@ export default function Home() {
       {/* ── Featured Products ────────────────────────────────────────────── */}
       {featuredProducts.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-end justify-between mb-5">
             <div>
+              <span className="section-eyebrow">Curated</span>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Products</h2>
-              <div className="mt-1 h-1 w-10 bg-primary-600 rounded-full" />
+              <div className="accent-bar" />
             </div>
             <Link to="/products" className="text-primary-600 text-sm font-semibold hover:text-primary-700 flex items-center gap-1">
               See All <ArrowRight size={14} />
