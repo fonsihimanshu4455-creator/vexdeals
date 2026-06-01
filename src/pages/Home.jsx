@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
 
@@ -65,7 +64,6 @@ export default function Home() {
   const newArrivals      = products.filter(p => p.isNew).slice(0, 4);
   const saleProducts     = products.filter(p => p.discount >= 20).slice(0, 6);
   const heroProduct      = featuredProducts[0] || bestsellers[0] || products[0];
-  const secondaryProduct = featuredProducts[1] || bestsellers[1] || products[1];
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
   const countForCat = (name) => products.filter(p => p.category === name).length;

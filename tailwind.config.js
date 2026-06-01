@@ -48,10 +48,6 @@ export default {
           800: '#161310',
           700: '#241e18',
         },
-        ink: {
-          900: '#05091c',   // near-black premium base
-          800: '#0a1230',
-        },
       },
       fontFamily: {
         sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
@@ -90,10 +86,6 @@ export default {
           '0%':   { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
-        'slow-zoom': {
-          '0%':   { transform: 'scale(1)' },
-          '100%': { transform: 'scale(1.08)' },
-        },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%':      { transform: 'translateY(-12px)' },
@@ -104,43 +96,6 @@ export default {
         'fade-in':  'fade-in 0.6s ease-out both',
         marquee:    'marquee 26s linear infinite',
         float:      'float 7s ease-in-out infinite',
-      },
-      screens: {
-        xs: '475px',
-      },
-      boxShadow: {
-        soft:        '0 2px 10px -3px rgba(16,24,64,0.08), 0 4px 18px -6px rgba(16,24,64,0.05)',
-        card:        '0 6px 24px -8px rgba(16,24,64,0.12)',
-        'card-hover':'0 18px 44px -14px rgba(30,58,138,0.28)',
-        gold:        '0 10px 28px -8px rgba(245,158,11,0.40)',
-        premium:     '0 26px 60px -20px rgba(7,14,42,0.55)',
-      },
-      backgroundImage: {
-        'gold-sheen':  'linear-gradient(110deg, #fcd34d 0%, #f59e0b 45%, #d97706 100%)',
-        'ink-radial':  'radial-gradient(1200px 600px at 70% -10%, rgba(245,158,11,0.14), transparent 60%), radial-gradient(900px 500px at 0% 110%, rgba(37,99,235,0.18), transparent 55%)',
-      },
-      keyframes: {
-        'fade-up': {
-          '0%':   { opacity: '0', transform: 'translateY(18px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        'fade-in': {
-          '0%':   { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%':      { transform: 'translateY(-10px)' },
-        },
-        shimmer: {
-          '100%': { transform: 'translateX(100%)' },
-        },
-      },
-      animation: {
-        'fade-up':  'fade-up 0.6s cubic-bezier(0.22,1,0.36,1) both',
-        'fade-in':  'fade-in 0.5s ease-out both',
-        float:      'float 6s ease-in-out infinite',
-        shimmer:    'shimmer 2.5s infinite',
       },
     },
   },
