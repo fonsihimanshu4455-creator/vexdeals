@@ -4,7 +4,7 @@ import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
 
 // Cloudinary (free, no card) — used for product video uploads.
-const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'testvex';
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dlgnlc3nm';
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'testvex';
 
 const createEmptyForm = (defaultCategory = 'Electronics') => ({
