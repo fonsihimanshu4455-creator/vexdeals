@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2 } from 'lucide-react';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../config/firebase';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
@@ -29,17 +29,29 @@ const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
 const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
-// Upload a product video to Firebase Storage and return its download URL.
-const uploadVideoToStorage = async (file) => {
-  if (!storage) {
-    throw new Error('Video upload unavailable. Paste a video link instead.');
-  }
-  const safeName = file.name.replace(/[^\w.\-]/g, '_');
-  const path = `product-videos/${Date.now()}-${safeName}`;
-  const fileRef = storageRef(storage, path);
-  await uploadBytes(fileRef, file);
-  return getDownloadURL(fileRef);
-};
+// Upload a product video to Firebase Storage (resumable, with progress) and
+// return its download URL. `onProgress` receives 0–100.
+const uploadVideoToStorage = (file, onProgress) =>
+  new Promise((resolve, reject) => {
+    if (!storage) {
+      reject(new Error('Video upload unavailable. Paste a video link instead.'));
+      return;
+    }
+    const safeName = file.name.replace(/[^\w.\-]/g, '_');
+    const path = `product-videos/${Date.now()}-${safeName}`;
+    const task = uploadBytesResumable(storageRef(storage, path), file, { contentType: file.type });
+    task.on(
+      'state_changed',
+      (snap) => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      (err) => reject(new Error(err?.code === 'storage/unauthorized'
+        ? 'Upload blocked by Storage rules. Enable Firebase Storage & allow writes (or paste a video URL).'
+        : (err?.message || 'Video upload failed.'))),
+      async () => {
+        try { resolve(await getDownloadURL(task.snapshot.ref)); }
+        catch (e) { reject(e); }
+      }
+    );
+  });
 const normalizeShippingCharge = (value) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
@@ -86,8 +98,10 @@ export default function AdminProducts() {
   const fileInputRef = useRef(null);
   // Video state
   const [videoUploading, setVideoUploading] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
   const [videoUrlInput, setVideoUrlInput] = useState('');
   const [editVideoUploading, setEditVideoUploading] = useState(false);
+  const [editVideoProgress, setEditVideoProgress] = useState(0);
   const [editVideoUrlInput, setEditVideoUrlInput] = useState('');
 
   const formatPrice = (price) => `₹${Number(price).toLocaleString('en-IN')}`;
@@ -179,7 +193,8 @@ export default function AdminProducts() {
     if (file.size > MAX_VIDEO_SIZE_BYTES) { setEditError(`Video too large. Max ${formatFileSize(MAX_VIDEO_SIZE_BYTES)}.`); event.target.value = ''; return; }
     try {
       setEditVideoUploading(true);
-      const url = await uploadVideoToStorage(file);
+      setEditVideoProgress(0);
+      const url = await uploadVideoToStorage(file, setEditVideoProgress);
       setEditData(c => ({ ...c, video: url }));
       setEditError('');
     } catch (err) { setEditError(err.message || 'Video upload failed.'); }
@@ -297,7 +312,8 @@ export default function AdminProducts() {
     if (file.size > MAX_VIDEO_SIZE_BYTES) { setFormError(`Video too large. Max ${formatFileSize(MAX_VIDEO_SIZE_BYTES)}.`); event.target.value = ''; return; }
     try {
       setVideoUploading(true);
-      const url = await uploadVideoToStorage(file);
+      setVideoProgress(0);
+      const url = await uploadVideoToStorage(file, setVideoProgress);
       setAddForm((current) => ({ ...current, video: url }));
       setFormError('');
     } catch (error) { setFormError(error.message || 'Video upload failed.'); }
@@ -753,10 +769,20 @@ export default function AdminProducts() {
                     </button>
                   </div>
                 ) : (
+                  videoUploading ? (
+                    <div className="border-2 border-dashed border-primary-300 rounded-xl px-4 py-4 bg-primary-50/40">
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary-700 mb-2">
+                        <Loader2 size={16} className="animate-spin" /> Uploading… {videoProgress}%
+                      </div>
+                      <div className="h-2 w-full bg-primary-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary-600 transition-all duration-200" style={{ width: `${videoProgress}%` }} />
+                      </div>
+                    </div>
+                  ) : (
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <label className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-3 py-3 text-sm cursor-pointer hover:border-primary-400 ${videoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
-                      {videoUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Film size={16} /> Upload video (MP4/WEBM/MOV · max 100MB)</>}
-                      <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={addVideoFile} disabled={videoUploading} />
+                    <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-3 py-3 text-sm cursor-pointer hover:border-primary-400">
+                      <Film size={16} /> Upload video (MP4/WEBM/MOV · max 100MB)
+                      <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={addVideoFile} />
                     </label>
                     <div className="flex gap-2">
                       <input type="text" value={videoUrlInput} onChange={e => setVideoUrlInput(e.target.value)}
@@ -767,6 +793,7 @@ export default function AdminProducts() {
                         className="px-4 rounded-xl bg-primary-600 text-white text-sm font-medium disabled:opacity-50">Add</button>
                     </div>
                   </div>
+                  )
                 )}
               </div>
 
@@ -996,10 +1023,20 @@ export default function AdminProducts() {
                     </button>
                   </div>
                 ) : (
+                  editVideoUploading ? (
+                    <div className="border-2 border-dashed border-primary-300 rounded-xl px-4 py-4 bg-primary-50/40">
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary-700 mb-2">
+                        <Loader2 size={16} className="animate-spin" /> Uploading… {editVideoProgress}%
+                      </div>
+                      <div className="h-2 w-full bg-primary-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary-600 transition-all duration-200" style={{ width: `${editVideoProgress}%` }} />
+                      </div>
+                    </div>
+                  ) : (
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <label className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-3 py-3 text-sm cursor-pointer hover:border-primary-400 ${editVideoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
-                      {editVideoUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Film size={16} /> Upload video (MP4/WEBM/MOV · max 100MB)</>}
-                      <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={addEditVideoFile} disabled={editVideoUploading} />
+                    <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-3 py-3 text-sm cursor-pointer hover:border-primary-400">
+                      <Film size={16} /> Upload video (MP4/WEBM/MOV · max 100MB)
+                      <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={addEditVideoFile} />
                     </label>
                     <div className="flex gap-2">
                       <input type="text" value={editVideoUrlInput} onChange={e => setEditVideoUrlInput(e.target.value)}
@@ -1010,6 +1047,7 @@ export default function AdminProducts() {
                         className="px-4 rounded-xl bg-primary-600 text-white text-sm font-medium disabled:opacity-50">Add</button>
                     </div>
                   </div>
+                  )
                 )}
               </div>
 
