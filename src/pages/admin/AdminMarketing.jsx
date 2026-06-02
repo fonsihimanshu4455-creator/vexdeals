@@ -230,7 +230,11 @@ export default function AdminMarketing() {
       return updated;
     }));
   };
-  const isExpired    = (expiry) => expiry && new Date(expiry) < new Date();
+  const isExpired = (expiry) => {
+    if (!expiry) return false;
+    const endOfDay = new Date(`${expiry}T23:59:59`);
+    return Number.isFinite(endOfDay.getTime()) && endOfDay.getTime() < Date.now();
+  };
 
   const copyCode = (code) => {
     navigator.clipboard.writeText(code).catch(() => {});
@@ -645,8 +649,9 @@ export default function AdminMarketing() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Expiry Date</label>
-                <input type="date" value={promoForm.expiry} onChange={e => setPromoForm(f => ({ ...f, expiry: e.target.value }))}
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Expiry Date <span className="text-gray-400 font-normal">(blank = never expires)</span></label>
+                <input type="date" value={promoForm.expiry} min={new Date().toISOString().split('T')[0]}
+                  onChange={e => setPromoForm(f => ({ ...f, expiry: e.target.value }))}
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-600" />
               </div>
               <div>
