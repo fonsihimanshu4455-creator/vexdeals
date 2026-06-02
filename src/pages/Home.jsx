@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, ShieldCheck, Truck, RefreshCw, Sparkles } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import MarketingPosters from '../components/MarketingPosters';
 import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
@@ -151,6 +152,9 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* ── Marketing posters ────────────────────────────────────────────── */}
+      <MarketingPosters />
 
       {/* ── Categories ───────────────────────────────────────────────────── */}
       {activeCategories.length > 0 && (
