@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useReducer, useState } from 'react';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useProducts } from './ProductContext';
 
@@ -221,12 +221,12 @@ export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [], promoCode: '' });
   const [promoCatalog, setPromoCatalog] = useState(() => readLocalPromoCatalog());
 
-  // Live promo catalog from Firestore — updates as admin creates/disables codes
+  // Live promo catalog from Firestore — updates as admin creates/disables codes.
+  // No orderBy: that would silently drop promos missing a `createdAt` field.
   useEffect(() => {
     if (!db) return;
 
-    const q = query(collection(db, 'promos'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snap) => {
+    return onSnapshot(collection(db, 'promos'), (snap) => {
       if (snap.empty) return; // keep local catalog if Firestore empty
 
       const fsPromos = snap.docs
