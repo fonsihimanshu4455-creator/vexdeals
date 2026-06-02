@@ -141,6 +141,23 @@ export default function ProductDetail() {
                   ))}
                 </div>
               )}
+
+              {/* Product video */}
+              {product.video && (
+                <div className="rounded-2xl overflow-hidden border border-gray-100 bg-black">
+                  {/(youtube\.com|youtu\.be)/.test(product.video) ? (
+                    <iframe
+                      className="w-full aspect-video"
+                      src={product.video.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/')}
+                      title="Product video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video src={product.video} controls playsInline className="w-full max-h-[420px] object-contain bg-black" />
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Product info in next sibling — lightbox is rendered outside the grid */}
