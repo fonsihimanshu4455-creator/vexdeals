@@ -15,6 +15,29 @@ const getPromoCodes = () => {
 const savePosters = (d) => localStorage.setItem('vexdeals_posters', JSON.stringify(d));
 const savePromos  = (d) => localStorage.setItem('vexdeals_promos', JSON.stringify(d));
 
+// Cloudinary (free, no card) — poster images upload here so the stored value is
+// a small URL (base64 images blow past Firestore's 1MB doc limit).
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dlgnlc3nm';
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'testvex';
+const uploadImageToCloudinary = (file) =>
+  new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(d => d.secure_url ? resolve(d.secure_url) : reject(new Error(d.error?.message || 'Upload failed')))
+      .catch(() => reject(new Error('Network error during upload')));
+  });
+
+// Mirror posters to the shared Firestore `posters` collection so customers see them.
+const syncPosterToCloud = (poster) => {
+  if (db) setDoc(doc(db, 'posters', String(poster.id)), poster).catch(() => {});
+};
+const deletePosterFromCloud = (id) => {
+  if (db) deleteDoc(doc(db, 'posters', String(id))).catch(() => {});
+};
+
 const generateCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return 'VEX' + Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -36,6 +59,7 @@ export default function AdminMarketing() {
   const [posterImgMode, setPosterImgMode] = useState('url'); // 'url' | 'upload'
   const [posterImgPreview, setPosterImgPreview] = useState('');
   const [posterError, setPosterError]     = useState('');
+  const [posterUploading, setPosterUploading] = useState(false);
   const posterFileRef = useRef();
 
   // promo state
@@ -53,6 +77,19 @@ export default function AdminMarketing() {
 
   useEffect(() => { savePosters(posters); }, [posters]);
   useEffect(() => { savePromos(promos);   }, [promos]);
+
+  // Real-time poster sync from Firestore (+ migrate existing URL posters once)
+  useEffect(() => {
+    if (!db) return;
+    getPosters()
+      .filter(p => p.imageUrl && !p.imageUrl.startsWith('data:'))
+      .forEach(syncPosterToCloud);
+    const q = query(collection(db, 'posters'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      if (snap.empty) return;
+      setPosters(snap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id })));
+    }, () => {});
+  }, []);
 
   // Real-time promo sync from Firestore
   useEffect(() => {
@@ -95,19 +132,24 @@ export default function AdminMarketing() {
     setShowPoster(true);
   };
 
-  const handlePosterImageUpload = (e) => {
+  const handlePosterImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setPosterError('Image too large. Max 2 MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      setPosterError('Image too large. Max 10 MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setPosterImgPreview(ev.target.result);
-      setPosterForm(f => ({ ...f, imageUrl: ev.target.result }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      setPosterUploading(true);
+      setPosterError('');
+      const url = await uploadImageToCloudinary(file);
+      setPosterImgPreview(url);
+      setPosterForm(f => ({ ...f, imageUrl: url }));
+    } catch (err) {
+      setPosterError(err.message || 'Image upload failed.');
+    } finally {
+      setPosterUploading(false);
+    }
   };
 
   const handleSavePoster = () => {
@@ -116,21 +158,33 @@ export default function AdminMarketing() {
       return;
     }
     if (editPosterId) {
-      setPosters(prev => prev.map(p => p.id === editPosterId ? { ...p, ...posterForm, title: posterForm.title.trim() } : p));
+      setPosters(prev => prev.map(p => {
+        if (p.id !== editPosterId) return p;
+        const updated = { ...p, ...posterForm, title: posterForm.title.trim() };
+        syncPosterToCloud(updated);
+        return updated;
+      }));
     } else {
-      setPosters(prev => [...prev, {
+      const newPoster = {
         id: Date.now(),
         ...posterForm,
         title: posterForm.title.trim(),
         active: true,
-        createdAt: new Date().toISOString().split('T')[0],
-      }]);
+        createdAt: new Date().toISOString(),
+      };
+      setPosters(prev => [...prev, newPoster]);
+      syncPosterToCloud(newPoster);
     }
     setShowPoster(false);
     setPosterError('');
   };
 
-  const togglePoster = (id) => setPosters(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+  const togglePoster = (id) => setPosters(prev => prev.map(p => {
+    if (p.id !== id) return p;
+    const updated = { ...p, active: !p.active };
+    syncPosterToCloud(updated);
+    return updated;
+  }));
 
   // ── Promo helpers ─────────────────────────────────────────────────────────
   const handleAddPromo = () => {
@@ -460,10 +514,15 @@ export default function AdminMarketing() {
                   />
                 ) : (
                   <div
-                    onClick={() => posterFileRef.current?.click()}
+                    onClick={() => !posterUploading && posterFileRef.current?.click()}
                     className="border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors"
                   >
-                    {posterImgPreview ? (
+                    {posterUploading ? (
+                      <div className="py-6 flex flex-col items-center gap-2 text-primary-600">
+                        <Upload size={26} className="animate-pulse" />
+                        <p className="text-sm font-medium">Uploading…</p>
+                      </div>
+                    ) : posterImgPreview ? (
                       <div className="flex flex-col items-center gap-2">
                         <img src={posterImgPreview} alt="preview" className="w-full max-h-36 object-cover rounded-xl border" />
                         <p className="text-xs text-primary-600 font-medium">Click to change</p>
@@ -472,7 +531,7 @@ export default function AdminMarketing() {
                       <div className="py-4">
                         <Upload size={28} className="text-gray-300 mx-auto mb-2" />
                         <p className="text-sm text-gray-500">Click to upload poster image</p>
-                        <p className="text-xs text-gray-400 mt-1">JPG / PNG / WebP · Max 2 MB</p>
+                        <p className="text-xs text-gray-400 mt-1">JPG / PNG / WebP · Max 10 MB</p>
                         <p className="text-xs text-gray-400">Recommended: <strong>1200×630 px</strong> (landscape)</p>
                       </div>
                     )}
@@ -632,7 +691,7 @@ export default function AdminMarketing() {
             <p className="text-gray-500 text-sm mb-5">This cannot be undone.</p>
             <div className="flex gap-3">
               <button onClick={() => setDeletePosterId(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl hover:bg-gray-50">Cancel</button>
-              <button onClick={() => { setPosters(prev => prev.filter(p => p.id !== deletePosterId)); setDeletePosterId(null); }}
+              <button onClick={() => { deletePosterFromCloud(deletePosterId); setPosters(prev => prev.filter(p => p.id !== deletePosterId)); setDeletePosterId(null); }}
                 className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Delete</button>
             </div>
           </div>
