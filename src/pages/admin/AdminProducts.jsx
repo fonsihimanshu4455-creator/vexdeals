@@ -30,7 +30,8 @@ const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
 const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 // Upload a product video to Firebase Storage (resumable, with progress) and
-// return its download URL. `onProgress` receives 0–100.
+// return its download URL. `onProgress` receives 0–100. Aborts if the upload
+// stalls (e.g. Storage not enabled / rules block writes) so the UI never hangs.
 const uploadVideoToStorage = (file, onProgress) =>
   new Promise((resolve, reject) => {
     if (!storage) {
@@ -40,13 +41,30 @@ const uploadVideoToStorage = (file, onProgress) =>
     const safeName = file.name.replace(/[^\w.\-]/g, '_');
     const path = `product-videos/${Date.now()}-${safeName}`;
     const task = uploadBytesResumable(storageRef(storage, path), file, { contentType: file.type });
+
+    const STALL_MS = 25000;
+    let timer;
+    const armTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        try { task.cancel(); } catch { /* ignore */ }
+        reject(new Error('Upload stuck. Firebase Storage isn’t enabled or its rules block uploads. Enable Storage in Firebase (Build → Storage) & allow writes — or paste a video URL instead.'));
+      }, STALL_MS);
+    };
+    armTimer();
+
     task.on(
       'state_changed',
-      (snap) => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-      (err) => reject(new Error(err?.code === 'storage/unauthorized'
-        ? 'Upload blocked by Storage rules. Enable Firebase Storage & allow writes (or paste a video URL).'
-        : (err?.message || 'Video upload failed.'))),
+      (snap) => { armTimer(); onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)); },
+      (err) => {
+        clearTimeout(timer);
+        if (err?.code === 'storage/canceled') return; // handled by stall timeout
+        reject(new Error(err?.code === 'storage/unauthorized'
+          ? 'Upload blocked by Storage rules. In Firebase → Storage → Rules, allow writes (or paste a video URL).'
+          : (err?.message || 'Video upload failed.')));
+      },
       async () => {
+        clearTimeout(timer);
         try { resolve(await getDownloadURL(task.snapshot.ref)); }
         catch (e) { reject(e); }
       }
