@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import { VexLogoMark } from '../components/Logo';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
 
@@ -97,6 +98,11 @@ export default function ProductDetail() {
                 {/* Zoom hint */}
                 <div className="absolute top-3 right-3 bg-black/40 text-white rounded-xl px-2 py-1 text-xs flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   <ZoomIn size={12} /> Tap to zoom
+                </div>
+                {/* Brand watermark */}
+                <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 bg-white/75 backdrop-blur-sm rounded-full pl-1.5 pr-3 py-1 shadow-sm pointer-events-none">
+                  <VexLogoMark size={18} />
+                  <span className="text-[11px] font-bold text-gray-900 tracking-tight">VexDeals</span>
                 </div>
                 {/* Prev / Next on hover */}
                 {totalImgs > 1 && selectedImg > 0 && (

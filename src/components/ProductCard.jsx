@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Star, Heart, Plus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { VexLogoMark } from './Logo';
 
 export default function ProductCard({ product }) {
   const { dispatch } = useCart();
@@ -48,6 +49,12 @@ export default function ProductCard({ product }) {
         >
           <Heart size={15} />
         </button>
+
+        {/* Brand watermark */}
+        <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1 bg-white/75 backdrop-blur-sm rounded-full pl-1 pr-2 py-0.5 shadow-sm pointer-events-none">
+          <VexLogoMark size={14} />
+          <span className="text-[9px] font-bold text-ink-900 tracking-tight">VexDeals</span>
+        </div>
 
         {/* Quick add */}
         <button
