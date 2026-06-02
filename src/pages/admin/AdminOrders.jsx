@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { Search, Eye, X, ShoppingBag, RefreshCw, Wifi, WifiOff } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { Search, Eye, X, ShoppingBag, RefreshCw, Wifi, WifiOff, Trash2, AlertTriangle } from 'lucide-react';
+import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAdminOrders } from '../../hooks/useAdminData';
+import { useAuth } from '../../context/AuthContext';
+
+const ORDER_STORE_KEY = 'vexdeals_customer_orders';
+const TRANSACTION_STORE_KEY = 'vexdeals_customer_transactions';
 
 const statusColors = {
   Delivered:  'bg-emerald-100 text-emerald-700',
@@ -19,9 +23,32 @@ const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
 
 export default function AdminOrders() {
   const { orders, setOrders, loading, liveSync } = useAdminOrders();
+  const { isAdmin } = useAuth();
   const [search, setSearch]           = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [viewOrder, setViewOrder]     = useState(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing]       = useState(false);
+
+  // ── Clear ALL sales (orders + transactions) — main admin only ───────────────
+  const clearAllSales = async () => {
+    setClearing(true);
+    try {
+      if (db) {
+        const snap = await getDocs(collection(db, 'orders'));
+        await Promise.all(snap.docs.map(d => deleteDoc(doc(db, 'orders', d.id)).catch(() => {})));
+      }
+    } catch {
+      // ignore — still clear local cache below
+    }
+    try {
+      localStorage.removeItem(ORDER_STORE_KEY);
+      localStorage.removeItem(TRANSACTION_STORE_KEY);
+    } catch { /* ignore */ }
+    setOrders([]);
+    setClearing(false);
+    setConfirmClear(false);
+  };
 
   // ── Update order status ────────────────────────────────────────────────────
   const updateStatus = async (orderId, newStatus) => {
@@ -59,6 +86,38 @@ export default function AdminOrders() {
 
   return (
     <div className="space-y-5">
+      {/* Clear-all confirmation */}
+      {confirmClear && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+              <AlertTriangle size={24} className="text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Clear all sales?</h3>
+            <p className="text-sm text-gray-500 mt-2">
+              This permanently deletes <strong>all {orders.length} orders</strong> and transaction
+              history for every customer. Revenue & analytics will reset to zero. This cannot be undone.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setConfirmClear(false)}
+                disabled={clearing}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={clearAllSales}
+                disabled={clearing}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {clearing ? <><RefreshCw size={15} className="animate-spin" /> Clearing…</> : <><Trash2 size={15} /> Yes, clear all</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -76,8 +135,18 @@ export default function AdminOrders() {
             )}
           </div>
         </div>
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-sm">
-          <span className="text-emerald-600 font-semibold">Revenue: {formatPrice(totalRevenue)}</span>
+        <div className="flex items-center gap-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-sm">
+            <span className="text-emerald-600 font-semibold">Revenue: {formatPrice(totalRevenue)}</span>
+          </div>
+          {isAdmin && orders.length > 0 && (
+            <button
+              onClick={() => setConfirmClear(true)}
+              className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 rounded-xl px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              <Trash2 size={15} /> Clear all sales
+            </button>
+          )}
         </div>
       </div>
 
