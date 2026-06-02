@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, ShieldCheck, Truck, RefreshCw, Sparkles } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
 
@@ -202,6 +203,10 @@ export default function Home() {
                   <div className="relative aspect-square overflow-hidden">
                     <img src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     <span className="absolute top-2.5 left-2.5 bg-ink-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">−{p.discount}%</span>
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-white/75 backdrop-blur-sm rounded-full pl-1 pr-2 py-0.5 shadow-sm pointer-events-none">
+                      <VexLogoMark size={13} />
+                      <span className="text-[8px] font-bold text-ink-900 tracking-tight">VexDeals</span>
+                    </div>
                   </div>
                   <div className="p-3">
                     <p className="font-medium text-sm text-ink-900 line-clamp-1">{p.name}</p>
