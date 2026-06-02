@@ -39,9 +39,11 @@ export default function AdminSubAdmins() {
 
   useEffect(() => { saveSubAdmins(subAdmins); }, [subAdmins]);
 
-  // Pull the shared list from Firestore on mount and merge (cloud wins by email)
+  // On mount: migrate any browser-only sub-admins to Firestore, then pull the
+  // shared list and merge (cloud wins by email) so login works on any device.
   useEffect(() => {
     if (!db) return;
+    getSubAdmins().forEach(syncSubAdminToCloud); // mirror existing local records
     getDocs(collection(db, 'subadmins'))
       .then(snap => {
         const cloud = snap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id }));

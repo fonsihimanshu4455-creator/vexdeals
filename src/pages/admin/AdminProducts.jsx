@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2 } from 'lucide-react';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../config/firebase';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
 
@@ -11,6 +13,7 @@ const createEmptyForm = (defaultCategory = 'Electronics') => ({
   stock: '',
   shippingCharge: 0,
   images: [],
+  video: '',
   description: '',
   featured: true,
   isNew: false,
@@ -22,6 +25,21 @@ const MAX_IMAGES = 6;
 const MAX_IMAGE_SIZE_BYTES = 500 * 1024;
 const RECOMMENDED_IMAGE_SIZE = '1000 x 1000 px';
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+
+// Upload a product video to Firebase Storage and return its download URL.
+const uploadVideoToStorage = async (file) => {
+  if (!storage) {
+    throw new Error('Video upload unavailable. Paste a video link instead.');
+  }
+  const safeName = file.name.replace(/[^\w.\-]/g, '_');
+  const path = `product-videos/${Date.now()}-${safeName}`;
+  const fileRef = storageRef(storage, path);
+  await uploadBytes(fileRef, file);
+  return getDownloadURL(fileRef);
+};
 const normalizeShippingCharge = (value) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
@@ -66,6 +84,11 @@ export default function AdminProducts() {
   const [formError, setFormError] = useState('');
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef(null);
+  // Video state
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+  const [editVideoUploading, setEditVideoUploading] = useState(false);
+  const [editVideoUrlInput, setEditVideoUrlInput] = useState('');
 
   const formatPrice = (price) => `₹${Number(price).toLocaleString('en-IN')}`;
   const categoryChoices = useMemo(() => {
@@ -106,10 +129,12 @@ export default function AdminProducts() {
       isNew: product.isNew ?? false,
       isBestseller: product.isBestseller ?? false,
       images: product.images?.length ? product.images : (product.image ? [product.image] : []),
+      video: product.video || '',
     });
     setEditOpen(true);
     setEditError('');
     setEditUrlInput('');
+    setEditVideoUrlInput('');
   };
 
   const closeEditModal = () => {
@@ -145,6 +170,29 @@ export default function AdminProducts() {
   };
 
   const removeEditImage = (idx) => setEditData(c => ({ ...c, images: (c.images || []).filter((_, i) => i !== idx) }));
+
+  // ── Video (edit) ─────────────────────────────────────────────────────────
+  const addEditVideoFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!ACCEPTED_VIDEO_TYPES.includes(file.type)) { setEditError('Upload an MP4, WEBM or MOV video.'); event.target.value = ''; return; }
+    if (file.size > MAX_VIDEO_SIZE_BYTES) { setEditError(`Video too large. Max ${formatFileSize(MAX_VIDEO_SIZE_BYTES)}.`); event.target.value = ''; return; }
+    try {
+      setEditVideoUploading(true);
+      const url = await uploadVideoToStorage(file);
+      setEditData(c => ({ ...c, video: url }));
+      setEditError('');
+    } catch (err) { setEditError(err.message || 'Video upload failed.'); }
+    finally { setEditVideoUploading(false); event.target.value = ''; }
+  };
+  const addEditVideoUrl = () => {
+    const url = editVideoUrlInput.trim();
+    if (!url) return;
+    setEditData(c => ({ ...c, video: url }));
+    setEditVideoUrlInput('');
+    setEditError('');
+  };
+  const removeEditVideo = () => setEditData(c => ({ ...c, video: '' }));
 
   const moveEditImage = (from, to) => {
     setEditData(c => {
@@ -240,6 +288,29 @@ export default function AdminProducts() {
   const removeImage = (idx) => {
     setAddForm((current) => ({ ...current, images: current.images.filter((_, i) => i !== idx) }));
   };
+
+  // ── Video (add) ──────────────────────────────────────────────────────────
+  const addVideoFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!ACCEPTED_VIDEO_TYPES.includes(file.type)) { setFormError('Upload an MP4, WEBM or MOV video.'); event.target.value = ''; return; }
+    if (file.size > MAX_VIDEO_SIZE_BYTES) { setFormError(`Video too large. Max ${formatFileSize(MAX_VIDEO_SIZE_BYTES)}.`); event.target.value = ''; return; }
+    try {
+      setVideoUploading(true);
+      const url = await uploadVideoToStorage(file);
+      setAddForm((current) => ({ ...current, video: url }));
+      setFormError('');
+    } catch (error) { setFormError(error.message || 'Video upload failed.'); }
+    finally { setVideoUploading(false); event.target.value = ''; }
+  };
+  const addVideoUrl = () => {
+    const url = videoUrlInput.trim();
+    if (!url) return;
+    setAddForm((current) => ({ ...current, video: url }));
+    setVideoUrlInput('');
+    setFormError('');
+  };
+  const removeVideo = () => setAddForm((current) => ({ ...current, video: '' }));
 
   const moveImage = (from, to) => {
     setAddForm((current) => {
@@ -668,6 +739,37 @@ export default function AdminProducts() {
                 )}
               </div>
 
+              {/* ── Product Video (optional) ── */}
+              <div className="sm:col-span-2">
+                <p className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                  <Video size={15} /> Product Video <span className="text-gray-400 font-normal">(optional)</span>
+                </p>
+                {addForm.video ? (
+                  <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-black">
+                    <video src={addForm.video} controls className="w-full max-h-56 object-contain bg-black" />
+                    <button type="button" onClick={removeVideo}
+                      className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 hover:bg-red-700">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <label className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-3 py-3 text-sm cursor-pointer hover:border-primary-400 ${videoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                      {videoUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Film size={16} /> Upload video (MP4/WEBM/MOV · max 50MB)</>}
+                      <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={addVideoFile} disabled={videoUploading} />
+                    </label>
+                    <div className="flex gap-2">
+                      <input type="text" value={videoUrlInput} onChange={e => setVideoUrlInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addVideoUrl()}
+                        placeholder="…or paste video URL"
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                      <button type="button" onClick={addVideoUrl} disabled={!videoUrlInput.trim()}
+                        className="px-4 rounded-xl bg-primary-600 text-white text-sm font-medium disabled:opacity-50">Add</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <label className="sm:col-span-2 text-sm text-gray-700">
                 <span className="block mb-1 font-medium">Description</span>
                 <textarea
@@ -875,6 +977,37 @@ export default function AdminProducts() {
                         <input ref={editFileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
                           onChange={addEditImageFile} className="hidden" />
                       </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Product Video (optional) ── */}
+              <div className="sm:col-span-2">
+                <p className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                  <Video size={15} /> Product Video <span className="text-gray-400 font-normal">(optional)</span>
+                </p>
+                {editData.video ? (
+                  <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-black">
+                    <video src={editData.video} controls className="w-full max-h-56 object-contain bg-black" />
+                    <button type="button" onClick={removeEditVideo}
+                      className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 hover:bg-red-700">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <label className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-3 py-3 text-sm cursor-pointer hover:border-primary-400 ${editVideoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                      {editVideoUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Film size={16} /> Upload video (MP4/WEBM/MOV · max 50MB)</>}
+                      <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={addEditVideoFile} disabled={editVideoUploading} />
+                    </label>
+                    <div className="flex gap-2">
+                      <input type="text" value={editVideoUrlInput} onChange={e => setEditVideoUrlInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addEditVideoUrl()}
+                        placeholder="…or paste video URL"
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                      <button type="button" onClick={addEditVideoUrl} disabled={!editVideoUrlInput.trim()}
+                        className="px-4 rounded-xl bg-primary-600 text-white text-sm font-medium disabled:opacity-50">Add</button>
                     </div>
                   </div>
                 )}
