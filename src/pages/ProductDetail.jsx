@@ -143,21 +143,37 @@ export default function ProductDetail() {
               )}
 
               {/* Product video */}
-              {product.video && (
-                <div className="rounded-2xl overflow-hidden border border-gray-100 bg-black">
-                  {/(youtube\.com|youtu\.be)/.test(product.video) ? (
-                    <iframe
-                      className="w-full aspect-video"
-                      src={product.video.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/')}
-                      title="Product video"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <video src={product.video} controls playsInline className="w-full max-h-[420px] object-contain bg-black" />
-                  )}
-                </div>
-              )}
+              {product.video && (() => {
+                const v = product.video.trim();
+                const isYouTube = /(youtube\.com|youtu\.be)/.test(v);
+                const driveMatch = v.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+                let embedSrc = null;
+                if (isYouTube) {
+                  embedSrc = v.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/');
+                } else if (driveMatch) {
+                  embedSrc = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+                }
+                return (
+                  <div>
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+                      <Zap size={15} className="text-primary-600" /> Product Video
+                    </p>
+                    <div className="rounded-2xl overflow-hidden border border-gray-100 bg-black">
+                      {embedSrc ? (
+                        <iframe
+                          className="w-full aspect-video"
+                          src={embedSrc}
+                          title="Product video"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video src={v} controls playsInline preload="metadata" className="w-full max-h-[420px] object-contain bg-black" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Product info in next sibling — lightbox is rendered outside the grid */}
