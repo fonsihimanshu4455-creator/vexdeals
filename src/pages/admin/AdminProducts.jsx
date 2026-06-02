@@ -1,9 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2 } from 'lucide-react';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../config/firebase';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
+
+// Cloudinary (free, no card) — used for product video uploads.
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'testvex';
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'testvex';
 
 const createEmptyForm = (defaultCategory = 'Electronics') => ({
   name: '',
@@ -29,46 +31,36 @@ const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
 const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
-// Upload a product video to Firebase Storage (resumable, with progress) and
-// return its download URL. `onProgress` receives 0–100. Aborts if the upload
-// stalls (e.g. Storage not enabled / rules block writes) so the UI never hangs.
+// Upload a product video to Cloudinary (unsigned, with progress) and return
+// its secure URL. `onProgress` receives 0–100.
 const uploadVideoToStorage = (file, onProgress) =>
   new Promise((resolve, reject) => {
-    if (!storage) {
-      reject(new Error('Video upload unavailable. Paste a video link instead.'));
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      reject(new Error('Video upload not configured. Paste a video URL instead.'));
       return;
     }
-    const safeName = file.name.replace(/[^\w.\-]/g, '_');
-    const path = `product-videos/${Date.now()}-${safeName}`;
-    const task = uploadBytesResumable(storageRef(storage, path), file, { contentType: file.type });
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-    const STALL_MS = 25000;
-    let timer;
-    const armTimer = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        try { task.cancel(); } catch { /* ignore */ }
-        reject(new Error('Upload stuck. Firebase Storage isn’t enabled or its rules block uploads. Enable Storage in Firebase (Build → Storage) & allow writes — or paste a video URL instead.'));
-      }, STALL_MS);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
     };
-    armTimer();
-
-    task.on(
-      'state_changed',
-      (snap) => { armTimer(); onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)); },
-      (err) => {
-        clearTimeout(timer);
-        if (err?.code === 'storage/canceled') return; // handled by stall timeout
-        reject(new Error(err?.code === 'storage/unauthorized'
-          ? 'Upload blocked by Storage rules. In Firebase → Storage → Rules, allow writes (or paste a video URL).'
-          : (err?.message || 'Video upload failed.')));
-      },
-      async () => {
-        clearTimeout(timer);
-        try { resolve(await getDownloadURL(task.snapshot.ref)); }
-        catch (e) { reject(e); }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText).secure_url); }
+        catch { reject(new Error('Upload succeeded but response was invalid.')); }
+      } else {
+        let msg = `Upload failed (${xhr.status}).`;
+        try { msg = JSON.parse(xhr.responseText).error?.message || msg; } catch { /* ignore */ }
+        reject(new Error(msg));
       }
-    );
+    };
+    xhr.onerror = () => reject(new Error('Network error during upload. Check your connection.'));
+    xhr.send(formData);
   });
 const normalizeShippingCharge = (value) => {
   const parsed = Number(value);
