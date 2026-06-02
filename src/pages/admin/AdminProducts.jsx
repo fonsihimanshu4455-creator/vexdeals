@@ -26,7 +26,7 @@ const MAX_IMAGE_SIZE_BYTES = 500 * 1024;
 const RECOMMENDED_IMAGE_SIZE = '1000 x 1000 px';
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
 const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 // Upload a product video to Firebase Storage and return its download URL.
@@ -755,7 +755,7 @@ export default function AdminProducts() {
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-2">
                     <label className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-3 py-3 text-sm cursor-pointer hover:border-primary-400 ${videoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
-                      {videoUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Film size={16} /> Upload video (MP4/WEBM/MOV · max 50MB)</>}
+                      {videoUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Film size={16} /> Upload video (MP4/WEBM/MOV · max 100MB)</>}
                       <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={addVideoFile} disabled={videoUploading} />
                     </label>
                     <div className="flex gap-2">
@@ -998,7 +998,7 @@ export default function AdminProducts() {
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-2">
                     <label className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-3 py-3 text-sm cursor-pointer hover:border-primary-400 ${editVideoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
-                      {editVideoUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Film size={16} /> Upload video (MP4/WEBM/MOV · max 50MB)</>}
+                      {editVideoUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Film size={16} /> Upload video (MP4/WEBM/MOV · max 100MB)</>}
                       <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={addEditVideoFile} disabled={editVideoUploading} />
                     </label>
                     <div className="flex gap-2">
