@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
 
 export default function AdminLogin() {
-  const { login, user } = useAuth();
+  const { loginStaff, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -22,14 +22,9 @@ export default function AdminLogin() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const result = login(email, password);
+    const result = await loginStaff(email, password);
     setLoading(false);
     if (result.success) {
-      if (result.user.role === 'customer') {
-        setError('This portal is for admin and staff only. Customers please use the main site login.');
-        return;
-      }
       navigate('/admin');
     } else {
       setError(result.message);

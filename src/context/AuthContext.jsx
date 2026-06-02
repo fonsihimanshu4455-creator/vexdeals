@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { users as staticUsers } from '../data/users';
 
 const AuthContext = createContext();
@@ -82,6 +84,55 @@ export function AuthProvider({ children }) {
     return { success: false, message: 'Invalid email or password' };
   };
 
+  // Staff (admin + sub-admin) sign-in. Checks static admins, this browser's
+  // localStorage sub-admins, AND the shared Firestore `subadmins` collection
+  // so staff can log in from ANY device.
+  const loginStaff = async (email, password) => {
+    const e = String(email || '').trim().toLowerCase();
+
+    // 1) Static admins / sub-admins
+    const found = staticUsers.find(u => u.email?.toLowerCase() === e && u.password === password
+      && (u.role === 'admin' || u.role === 'subadmin'));
+    if (found) {
+      const { password: _, ...safe } = found;
+      const normalized = normalizeUser(safe);
+      setUser(normalized);
+      localStorage.setItem('vexdeals_user', JSON.stringify(normalized));
+      return { success: true, user: normalized };
+    }
+
+    // 2) Local sub-admins (same browser as the admin who created them)
+    const localSub = getSubAdmins().find(u => u.email?.toLowerCase() === e && u.password === password && u.active);
+    if (localSub) {
+      const { password: _, ...safe } = localSub;
+      const normalized = normalizeUser(safe);
+      setUser(normalized);
+      localStorage.setItem('vexdeals_user', JSON.stringify(normalized));
+      return { success: true, user: normalized };
+    }
+
+    // 3) Shared Firestore sub-admins (works on any device)
+    if (db) {
+      try {
+        const snap = await getDocs(query(collection(db, 'subadmins'), where('email', '==', e)));
+        const match = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .find(u => u.password === password && u.active !== false);
+        if (match) {
+          const { password: _, ...safe } = match;
+          const normalized = normalizeUser({ ...safe, role: 'subadmin' });
+          setUser(normalized);
+          localStorage.setItem('vexdeals_user', JSON.stringify(normalized));
+          return { success: true, user: normalized };
+        }
+      } catch {
+        // network/permission issue — fall through to error
+      }
+    }
+
+    return { success: false, message: 'Invalid email or password' };
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('vexdeals_user');
@@ -115,6 +166,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user,
       login,
+      loginStaff,
       logout,
       updateUser,
       isAdmin,

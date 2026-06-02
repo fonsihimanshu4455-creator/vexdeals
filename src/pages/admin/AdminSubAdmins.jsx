@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Eye, EyeOff, Shield, Users, Package, Megaphone, X, Check, AlertTriangle } from 'lucide-react';
+import { collection, getDocs, setDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+
+// Mirror a sub-admin record into the shared Firestore `subadmins` collection
+// so staff can sign in from any device (not just the admin's browser).
+const syncSubAdminToCloud = (sub) => {
+  if (!db) return;
+  setDoc(doc(db, 'subadmins', String(sub.id)), sub).catch(() => {});
+};
+const deleteSubAdminFromCloud = (id) => {
+  if (!db) return;
+  deleteDoc(doc(db, 'subadmins', String(id))).catch(() => {});
+};
 
 const DEPARTMENTS = [
   { value: 'products',   label: 'Products',   Icon: Package,    desc: 'Can add & edit products'           },
@@ -25,6 +38,23 @@ export default function AdminSubAdmins() {
   const [formError, setFormError] = useState('');
 
   useEffect(() => { saveSubAdmins(subAdmins); }, [subAdmins]);
+
+  // Pull the shared list from Firestore on mount and merge (cloud wins by email)
+  useEffect(() => {
+    if (!db) return;
+    getDocs(collection(db, 'subadmins'))
+      .then(snap => {
+        const cloud = snap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id }));
+        if (cloud.length === 0) return;
+        setSubAdmins(prev => {
+          const byEmail = new Map();
+          prev.forEach(s => byEmail.set(s.email?.toLowerCase(), s));
+          cloud.forEach(s => byEmail.set(s.email?.toLowerCase(), s));
+          return Array.from(byEmail.values());
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   if (!isAdmin) {
     return (
@@ -65,17 +95,24 @@ export default function AdminSubAdmins() {
       avatar: `https://picsum.photos/seed/${Date.now()}/100/100`,
     };
     setSubAdmins(prev => [...prev, newSub]);
+    syncSubAdminToCloud(newSub);
     setForm({ name: '', email: '', password: '', department: 'products' });
     setFormError('');
     setShowAdd(false);
   };
 
   const toggleActive = (id) => {
-    setSubAdmins(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s));
+    setSubAdmins(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const updated = { ...s, active: !s.active };
+      syncSubAdminToCloud(updated);
+      return updated;
+    }));
   };
 
   const handleDelete = (id) => {
     setSubAdmins(prev => prev.filter(s => s.id !== id));
+    deleteSubAdminFromCloud(id);
     setDeleteId(null);
   };
 
