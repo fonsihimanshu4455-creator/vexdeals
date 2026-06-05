@@ -4,6 +4,7 @@ import { Check, Smartphone, RefreshCw, AlertTriangle, MapPin, Tag } from 'lucide
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCustomerData } from '../context/CustomerDataContext';
+import { trackEvent } from '../lib/pixel';
 
 // ── Load Razorpay script dynamically ────────────────────────────────────────
 const loadRazorpay = () =>
@@ -69,6 +70,17 @@ export default function Checkout() {
   useEffect(() => {
     setPromoInput(promoCode);
   }, [promoCode]);
+
+  useEffect(() => {
+    if (items.length === 0) return;
+    trackEvent('InitiateCheckout', {
+      value: total,
+      currency: 'INR',
+      content_ids: items.map((i) => i.id),
+      num_items: items.reduce((n, i) => n + (i.qty || 1), 0),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const applySavedAddress = (address) => {
     if (!address) return;
@@ -140,6 +152,13 @@ export default function Checkout() {
     setPlacedOrder(savedOrder);
     setCompletedCheckout({ subtotal, shipping, total });
     setPayInfo({ method, paymentId, promoCode, discount });
+    trackEvent('Purchase', {
+      value: total,
+      currency: 'INR',
+      content_ids: items.map((i) => i.id),
+      content_type: 'product',
+      num_items: items.reduce((n, i) => n + (i.qty || 1), 0),
+    });
     setOrdered(true);
     clearCart();
     setTimeout(() => navigate(savedOrder ? '/account/orders' : '/'), 4000);

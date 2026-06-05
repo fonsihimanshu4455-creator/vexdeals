@@ -1,9 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { CategoryProvider } from './context/CategoryContext';
 import { ProductProvider } from './context/ProductContext';
 import { CustomerDataProvider } from './context/CustomerDataContext';
+import { initPixel, trackPageView } from './lib/pixel';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -32,6 +34,14 @@ import AdminSubAdmins from './pages/admin/AdminSubAdmins';
 import AdminMarketing from './pages/admin/AdminMarketing';
 import AdminProfile from './pages/admin/AdminProfile';
 
+// Fires Meta Pixel PageView on every route change
+function PixelTracker() {
+  const location = useLocation();
+  useEffect(() => { initPixel(); }, []);
+  useEffect(() => { trackPageView(); }, [location.pathname]);
+  return null;
+}
+
 function CustomerLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col">
@@ -50,6 +60,7 @@ export default function App() {
           <ProductProvider>
             <CategoryProvider>
               <CartProvider>
+                <PixelTracker />
                 <Routes>
                   {/* Admin portal login — desktop accessible */}
                   <Route path="/admin-login" element={<AdminLogin />} />

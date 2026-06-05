@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Star, Heart, Plus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { VexLogoMark } from './Logo';
+import { trackEvent } from '../lib/pixel';
 
 export default function ProductCard({ product }) {
   const { dispatch } = useCart();
@@ -9,6 +10,13 @@ export default function ProductCard({ product }) {
   const addToCart = (e) => {
     e.preventDefault();
     dispatch({ type: 'ADD_ITEM', payload: product });
+    trackEvent('AddToCart', {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      value: product.price,
+      currency: 'INR',
+    });
   };
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
