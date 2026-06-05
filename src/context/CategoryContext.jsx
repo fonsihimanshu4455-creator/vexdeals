@@ -59,6 +59,7 @@ const normalizeCategoryList = (list) => {
       name: String(category?.name || '').trim(),
       icon: String(category?.icon || '🛍️').trim() || '🛍️',
       color: String(category?.color || 'bg-blue-50 hover:bg-blue-100').trim() || 'bg-blue-50 hover:bg-blue-100',
+      image: typeof category?.image === 'string' ? category.image.trim() : '',
       active: Boolean(category?.active),
       sortOrder: Number(category?.sortOrder) || index + 1 || total,
     }))
@@ -274,7 +275,7 @@ export function CategoryProvider({ children }) {
     [categories]
   );
 
-  const addCategory = async (name, icon) => {
+  const addCategory = async (name, icon, image = '') => {
     const baselineCategories = categoriesRef.current;
     const colors = [
       'bg-blue-50 hover:bg-blue-100',
@@ -293,6 +294,7 @@ export function CategoryProvider({ children }) {
       id: nextId,
       name,
       icon,
+      image,
       color: colors[baselineCategories.length % colors.length],
       active: true,
       sortOrder: nextSortOrder,

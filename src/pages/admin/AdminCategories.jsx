@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Plus, Trash2, ToggleLeft, ToggleRight, Edit2, Save, X, Tag } from 'lucide-react';
+import { Plus, Trash2, ToggleLeft, ToggleRight, Edit2, Save, X, Tag, Upload, Loader2 } from 'lucide-react';
 import { useCategories } from '../../context/CategoryContext';
+import { uploadToCloudinary } from '../../lib/cloudinary';
 
 const EMOJI_OPTIONS = ['⌚','🕶️','💻','👗','🏠','🏋️','✨','📱','🎵','📚','🍎','🚗','💊','🎮','👟','💍','🌿','🎒'];
 
@@ -22,18 +23,35 @@ export default function AdminCategories() {
   const [editIcon, setEditIcon]     = useState('');
   const [deleteId, setDeleteId]     = useState(null);
   const [customEmoji, setCustomEmoji] = useState('');
+  const [newImage, setNewImage]     = useState('');
+  const [editImage, setEditImage]   = useState('');
+  const [imgUploading, setImgUploading] = useState(false);
+
+  const uploadImage = async (file, setter) => {
+    if (!file) return;
+    try {
+      setImgUploading(true);
+      const url = await uploadToCloudinary(file, 'image');
+      setter(url);
+    } catch {
+      alert('Image upload failed. Try again.');
+    } finally {
+      setImgUploading(false);
+    }
+  };
 
   const handleAdd = () => {
     if (!newName.trim()) return;
-    addCategory(newName.trim(), newIcon);
+    addCategory(newName.trim(), newIcon, newImage);
     setNewName('');
     setNewIcon('🛍️');
+    setNewImage('');
     setShowAdd(false);
   };
 
   const handleEditSave = () => {
     if (!editName.trim()) return;
-    updateCategory(editId, { name: editName.trim(), icon: editIcon });
+    updateCategory(editId, { name: editName.trim(), icon: editIcon, image: editImage });
     setEditId(null);
   };
 
@@ -120,25 +138,39 @@ export default function AdminCategories() {
                 <tr key={cat.id} className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                   <td className="px-5 py-3.5">
                     {editId === cat.id ? (
-                      <div className="flex flex-wrap gap-1 max-w-48">
-                        {EMOJI_OPTIONS.map(e => (
-                          <button
-                            key={e}
-                            onClick={() => setEditIcon(e)}
-                            className={`text-lg p-1 rounded ${editIcon === e ? 'bg-primary-100 ring-2 ring-primary-400' : 'hover:bg-gray-100'}`}
-                          >
-                            {e}
-                          </button>
-                        ))}
-                        <input
-                          value={customEmoji}
-                          onChange={e => { setCustomEmoji(e.target.value); if (e.target.value) setEditIcon(e.target.value); }}
-                          placeholder="or type"
-                          className="border rounded px-2 py-1 text-xs w-16"
-                        />
+                      <div className="max-w-56 space-y-2">
+                        <div className="flex flex-wrap gap-1">
+                          {EMOJI_OPTIONS.map(e => (
+                            <button
+                              key={e}
+                              onClick={() => setEditIcon(e)}
+                              className={`text-lg p-1 rounded ${editIcon === e ? 'bg-primary-100 ring-2 ring-primary-400' : 'hover:bg-gray-100'}`}
+                            >
+                              {e}
+                            </button>
+                          ))}
+                          <input
+                            value={customEmoji}
+                            onChange={e => { setCustomEmoji(e.target.value); if (e.target.value) setEditIcon(e.target.value); }}
+                            placeholder="or type"
+                            className="border rounded px-2 py-1 text-xs w-16"
+                          />
+                        </div>
+                        {/* Photo upload */}
+                        <div className="flex items-center gap-2">
+                          {editImage && <img src={editImage} alt="" className="w-10 h-10 rounded-lg object-cover border" />}
+                          <label className="flex items-center gap-1 text-xs font-medium text-primary-600 cursor-pointer hover:text-primary-700">
+                            {imgUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                            {editImage ? 'Change photo' : 'Add photo'}
+                            <input type="file" accept="image/*" className="hidden" onChange={e => uploadImage(e.target.files?.[0], setEditImage)} />
+                          </label>
+                          {editImage && <button onClick={() => setEditImage('')} className="text-xs text-red-500 hover:text-red-600">Remove</button>}
+                        </div>
                       </div>
                     ) : (
-                      <span className="text-2xl">{cat.icon}</span>
+                      cat.image
+                        ? <img src={cat.image} alt={cat.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100" />
+                        : <span className="text-2xl">{cat.icon}</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5">
@@ -187,7 +219,7 @@ export default function AdminCategories() {
                       ) : (
                         <>
                           <button
-                            onClick={() => { setEditId(cat.id); setEditName(cat.name); setEditIcon(cat.icon); setCustomEmoji(''); }}
+                            onClick={() => { setEditId(cat.id); setEditName(cat.name); setEditIcon(cat.icon); setCustomEmoji(''); setEditImage(cat.image || ''); }}
                             className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
                             title="Edit"
                           >
@@ -253,6 +285,22 @@ export default function AdminCategories() {
                   onChange={e => { if (e.target.value) setNewIcon(e.target.value); }}
                 />
                 <p className="text-xs text-gray-400 mt-1">Selected: <span className="text-xl">{newIcon}</span></p>
+              </div>
+
+              {/* Category photo (optional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Category Photo <span className="text-gray-400 font-normal">(optional — shows instead of emoji)</span></label>
+                {newImage ? (
+                  <div className="flex items-center gap-3">
+                    <img src={newImage} alt="" className="w-16 h-16 rounded-xl object-cover border" />
+                    <button onClick={() => setNewImage('')} className="text-sm text-red-500 hover:text-red-600 font-medium">Remove</button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-4 py-4 text-sm cursor-pointer hover:border-primary-400 text-gray-500">
+                    {imgUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Upload size={16} /> Upload photo</>}
+                    <input type="file" accept="image/*" className="hidden" onChange={e => uploadImage(e.target.files?.[0], setNewImage)} />
+                  </label>
+                )}
               </div>
             </div>
 
