@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2 } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
+import { uploadToCloudinary } from '../../lib/cloudinary';
 
 // Cloudinary (free, no card) — used for product video uploads.
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dlgnlc3nm';
@@ -24,7 +25,7 @@ const createEmptyForm = (defaultCategory = 'Electronics') => ({
 
 const MAX_IMAGES = 6;
 
-const MAX_IMAGE_SIZE_BYTES = 500 * 1024;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const RECOMMENDED_IMAGE_SIZE = '1000 x 1000 px';
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -106,6 +107,7 @@ export default function AdminProducts() {
   const [formError, setFormError] = useState('');
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef(null);
+  const [imgUploading, setImgUploading] = useState(false);
   // Video state
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -177,11 +179,12 @@ export default function AdminProducts() {
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) { setEditError('Please upload a JPG, PNG, or WEBP image.'); event.target.value = ''; return; }
     if (file.size > MAX_IMAGE_SIZE_BYTES) { setEditError(`Image too large. Max ${formatFileSize(MAX_IMAGE_SIZE_BYTES)}.`); event.target.value = ''; return; }
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setEditData(c => ({ ...c, images: [...(c.images || []), dataUrl] }));
+      setImgUploading(true);
       setEditError('');
-    } catch (err) { setEditError(err.message || 'Could not read image.'); }
-    event.target.value = '';
+      const url = await uploadToCloudinary(file, 'image');
+      setEditData(c => ({ ...c, images: [...(c.images || []), url] }));
+    } catch (err) { setEditError(err.message || 'Image upload failed.'); }
+    finally { setImgUploading(false); event.target.value = ''; }
   };
 
   const addEditImageUrl = () => {
@@ -289,13 +292,16 @@ export default function AdminProducts() {
     }
 
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setAddForm((current) => ({ ...current, images: [...current.images, dataUrl] }));
+      setImgUploading(true);
       setFormError('');
+      const url = await uploadToCloudinary(file, 'image');
+      setAddForm((current) => ({ ...current, images: [...current.images, url] }));
     } catch (error) {
-      setFormError(error.message || 'Could not read the selected image.');
+      setFormError(error.message || 'Image upload failed.');
+    } finally {
+      setImgUploading(false);
+      event.target.value = '';
     }
-    event.target.value = '';
   };
 
   const addImageUrl = () => {
@@ -748,7 +754,8 @@ export default function AdminProducts() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-900">Upload from device</p>
-                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 500 KB per image</p>
+                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 5 MB per image</p>
+                        {imgUploading && <p className="text-xs text-primary-600 font-medium flex items-center gap-1 mt-0.5"><Loader2 size={11} className="animate-spin" /> Uploading…</p>}
                       </div>
                       <label className="shrink-0 cursor-pointer bg-primary-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-primary-700">
                         Choose File
@@ -1007,7 +1014,8 @@ export default function AdminProducts() {
                       <div className="rounded-xl bg-white p-2 text-primary-600 shadow-sm shrink-0"><Upload size={16} /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-900">Upload from device</p>
-                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 500 KB</p>
+                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 5 MB</p>
+                        {imgUploading && <p className="text-xs text-primary-600 font-medium flex items-center gap-1 mt-0.5"><Loader2 size={11} className="animate-spin" /> Uploading…</p>}
                       </div>
                       <label className="shrink-0 cursor-pointer bg-primary-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-primary-700">
                         Choose File
