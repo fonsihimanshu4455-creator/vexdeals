@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, ShieldCheck, Truck, RefreshCw, Sparkles } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import MarketingPosters from '../components/MarketingPosters';
+import InstagramReels from '../components/InstagramReels';
 import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
@@ -175,6 +176,9 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* ── Instagram reels (product videos) ─────────────────────────────── */}
+      <InstagramReels />
 
       {/* ── Featured ─────────────────────────────────────────────────────── */}
       {featuredProducts.length > 0 && (
