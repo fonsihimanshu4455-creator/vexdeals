@@ -24,7 +24,7 @@ const readStore = (key) => {
 
 const writeStore = (key, value) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(key, JSON.stringify(value));
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota / private mode */ }
 };
 
 const getUserKey = (user) => String(user?.email || user?.id || '');
