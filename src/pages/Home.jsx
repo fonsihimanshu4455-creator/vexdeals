@@ -80,63 +80,8 @@ export default function Home() {
   return (
     <div ref={containerRef} className="bg-cream-100">
 
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-cream-100 bg-mesh">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="animate-fade-up">
-              <span className="inline-flex items-center gap-2 bg-white shadow-soft text-primary-700 text-xs font-semibold px-4 py-2 rounded-full">
-                <Sparkles size={14} className="text-accent-500" /> New season, new arrivals
-              </span>
-              <h1 className="mt-6 font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.03] text-ink-900">
-                Watches &amp; eyewear, <span className="text-gradient">reimagined.</span>
-              </h1>
-              <p className="mt-5 text-ink-700/70 text-base sm:text-lg max-w-md leading-relaxed">
-                100% authentic, hand-picked pieces at prices that actually make sense.
-                Discover the drop everyone&apos;s talking about.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/products" className="btn-grad text-sm">
-                  Shop Now <ArrowRight size={16} />
-                </Link>
-                <Link to="/about" className="btn-outline text-sm">Our Story</Link>
-              </div>
-              {/* mini stats */}
-              <div className="mt-10 flex gap-8">
-                {[['10k+', 'Happy buyers'], ['100%', 'Authentic'], ['4.8★', 'Avg rating']].map(([n, l]) => (
-                  <div key={l}>
-                    <p className="font-display text-2xl font-bold text-ink-900">{n}</p>
-                    <p className="text-xs text-ink-700/50 mt-0.5">{l}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Visual */}
-            {heroProduct && (
-              <div className="relative animate-fade-in">
-                <div className="absolute -inset-6 bg-brand-gradient opacity-20 blur-3xl rounded-full" />
-                <Link to={`/products/${heroProduct.id}`} className="group relative block rounded-[2rem] overflow-hidden shadow-premium bg-white">
-                  <div className="aspect-[4/3] overflow-hidden">
-                    <img src={heroProduct.image} alt={heroProduct.name}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4 glass rounded-2xl p-4 flex items-center justify-between">
-                    <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-widest2 text-primary-600 font-bold">Featured</p>
-                      <p className="font-display font-semibold text-ink-900 truncate">{heroProduct.name}</p>
-                      <p className="text-sm font-bold text-ink-900 mt-0.5">{formatPrice(heroProduct.price)}</p>
-                    </div>
-                    <span className="w-11 h-11 bg-ink-900 text-white rounded-full flex items-center justify-center shrink-0 group-hover:bg-primary-600 transition-colors">
-                      <ArrowUpRight size={20} />
-                    </span>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      {/* ── Instagram reels (top of page) ────────────────────────────────── */}
+      <InstagramReels />
 
       {/* ── Marquee ──────────────────────────────────────────────────────── */}
       <div className="overflow-hidden bg-ink-900 py-3.5">
@@ -176,9 +121,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* ── Instagram reels (product videos) ─────────────────────────────── */}
-      <InstagramReels />
 
       {/* ── Featured ─────────────────────────────────────────────────────── */}
       {featuredProducts.length > 0 && (
