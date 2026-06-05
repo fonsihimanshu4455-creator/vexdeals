@@ -241,7 +241,7 @@ export function CartProvider({ children }) {
       ];
 
       // Persist to localStorage so offline / fallback still works
-      localStorage.setItem(PROMO_STORE_KEY, JSON.stringify(fsPromos));
+      try { localStorage.setItem(PROMO_STORE_KEY, JSON.stringify(fsPromos)); } catch { /* ignore */ }
       setPromoCatalog(merged);
     }, () => {/* silent fail — keep local catalog */});
   }, []);
@@ -271,7 +271,7 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(CART_STORE_KEY, JSON.stringify(state.items));
+    try { localStorage.setItem(CART_STORE_KEY, JSON.stringify(state.items)); } catch { /* quota / private mode */ }
   }, [state.items]);
 
   useEffect(() => {
@@ -301,12 +301,13 @@ export function CartProvider({ children }) {
   }, [products, state.items]);
 
   useEffect(() => {
-    if (state.promoCode) {
-      localStorage.setItem(CART_PROMO_KEY, state.promoCode);
-      return;
-    }
-
-    localStorage.removeItem(CART_PROMO_KEY);
+    try {
+      if (state.promoCode) {
+        localStorage.setItem(CART_PROMO_KEY, state.promoCode);
+        return;
+      }
+      localStorage.removeItem(CART_PROMO_KEY);
+    } catch { /* ignore */ }
   }, [state.promoCode]);
 
   const totalItems = state.items.reduce((acc, i) => acc + i.qty, 0);

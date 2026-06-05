@@ -103,7 +103,7 @@ export function CategoryProvider({ children }) {
     if (snapshot === lastSnapshotRef.current) return;
 
     lastSnapshotRef.current = snapshot;
-    localStorage.setItem(STORAGE_KEY, snapshot);
+    try { localStorage.setItem(STORAGE_KEY, snapshot); } catch { /* quota / private mode */ }
     channelRef.current?.postMessage(snapshot);
   }, [categories]);
 

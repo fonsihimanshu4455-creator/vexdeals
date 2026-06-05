@@ -145,7 +145,26 @@ export function ProductProvider({ children }) {
     if (snapshot === lastSnapshotRef.current) return;
 
     lastSnapshotRef.current = snapshot;
-    localStorage.setItem(STORAGE_KEY, snapshot);
+    // localStorage has a ~5MB quota. Old products stored base64 images that can
+    // blow past it → setItem throws QuotaExceededError → app crash. Persist
+    // safely, and on overflow fall back to a "light" cache without base64 blobs
+    // (Firestore remains the source of truth and refills them on load).
+    try {
+      localStorage.setItem(STORAGE_KEY, snapshot);
+    } catch {
+      try {
+        const isData = (s) => typeof s === 'string' && s.startsWith('data:');
+        const light = products.map((p) => ({
+          ...p,
+          image: isData(p.image) ? '' : p.image,
+          images: Array.isArray(p.images) ? p.images.filter((i) => !isData(i)) : [],
+          video: isData(p.video) ? '' : p.video,
+        }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
+      } catch {
+        try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+      }
+    }
     channelRef.current?.postMessage(snapshot);
   }, [products]);
 
