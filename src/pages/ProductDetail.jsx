@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard';
 import { VexLogoMark } from '../components/Logo';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
+import { trackEvent } from '../lib/pixel';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -28,6 +29,17 @@ export default function ProductDetail() {
   const openLightbox = () => { setLightboxOpen(true); setZoomLevel(1); };
   const closeLightbox = () => { setLightboxOpen(false); setZoomLevel(1); };
   const cycleZoom = () => setZoomLevel(z => z >= 3 ? 1 : z + 1);
+
+  useEffect(() => {
+    if (!product) return;
+    trackEvent('ViewContent', {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      value: product.price,
+      currency: 'INR',
+    });
+  }, [product?.id]);
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -60,6 +72,13 @@ export default function ProductDetail() {
     for (let i = 0; i < qty; i++) {
       dispatch({ type: 'ADD_ITEM', payload: product });
     }
+    trackEvent('AddToCart', {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      value: product.price * qty,
+      currency: 'INR',
+    });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
