@@ -38,15 +38,15 @@ export default function ProductCard({ product }) {
         {/* Tags */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
           {product.discount > 0 && (
-            <span className="bg-brand-gradient text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-glow">
-              −{product.discount}%
+            <span className="bg-accent-500 text-ink-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+              {product.discount}% OFF
             </span>
           )}
           {product.isNew && (
-            <span className="glass text-ink-900 text-[11px] font-bold px-2.5 py-1 rounded-full">New</span>
+            <span className="bg-primary-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">New</span>
           )}
           {product.isBestseller && !product.isNew && (
-            <span className="glass text-ink-900 text-[11px] font-bold px-2.5 py-1 rounded-full">★ Top</span>
+            <span className="bg-ink-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">★ Top</span>
           )}
         </div>
 

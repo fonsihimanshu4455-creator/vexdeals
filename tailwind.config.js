@@ -4,88 +4,80 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── Modern palette ──────────────────────────────────────────────
-        // `primary` remapped to indigo, `accent` to violet so every existing
-        // primary-*/accent-* class adopts the modern look.
+        // ── Lenskart-style palette ──────────────────────────────────────
+        // `primary` = teal/cyan-blue, `accent` = yellow, `navy`/`ink` = deep blue,
+        // `cream` = clean light surfaces. Existing classes inherit these.
         primary: {
-          50:  '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',   // main CTA indigo
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#1e1b4b',
+          50:  '#e7f6fa',
+          100: '#c3e9f1',
+          200: '#8ad7e6',
+          300: '#4ec3d9',
+          400: '#1fadc9',
+          500: '#0b97b4',
+          600: '#009fb7',   // main teal CTA
+          700: '#007e91',
+          800: '#0a5e6c',
+          900: '#0b3f49',
         },
-        // `accent` remapped to cognac / terracotta.
         accent: {
-          50:  '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',   // violet
-          600: '#7c3aed',
-          700: '#6d28d9',
+          50:  '#fff8e1',
+          100: '#ffecb3',
+          200: '#ffe083',
+          300: '#ffd54f',
+          400: '#ffca28',   // bright yellow
+          500: '#ffc107',   // main yellow accent
+          600: '#e0a800',
+          700: '#b88700',
         },
         navy: {
-          900: '#0b0b14',
-          800: '#13131f',
-          700: '#1c1c2b',
+          900: '#0b2340',
+          800: '#11304f',
+          700: '#1a3a5c',
         },
-        // `cream` repurposed as light surfaces, `ink` as dark slate, so the
-        // existing markup keeps working with a modern light/dark scheme.
         cream: {
-          DEFAULT: '#f6f7fb',
+          DEFAULT: '#f5f6f8',
           50:  '#ffffff',
-          100: '#f6f7fb',
-          200: '#eceefb',
-          300: '#dfe3f5',
+          100: '#f5f6f8',
+          200: '#eceef2',
+          300: '#dde1e8',
         },
         ink: {
-          DEFAULT: '#0f1020',
-          900: '#0b0b14',
-          800: '#13131f',
-          700: '#1f2030',
-        },
-        slate2: {
-          500: '#64748b',
-          700: '#334155',
-          900: '#0f172a',
+          DEFAULT: '#11233f',
+          900: '#0b1f37',
+          800: '#11233f',
+          700: '#33425a',
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['"Space Grotesk"', 'Inter', 'sans-serif'],
+        display: ['Poppins', 'Inter', 'sans-serif'],
       },
       screens: {
         xs: '475px',
       },
       letterSpacing: {
-        widest2: '0.2em',
+        widest2: '0.18em',
       },
       borderRadius: {
         '4xl': '2rem',
         '5xl': '2.5rem',
       },
       boxShadow: {
-        soft:        '0 2px 8px -2px rgba(17,17,40,0.06), 0 12px 28px -10px rgba(17,17,40,0.10)',
-        card:        '0 8px 30px -10px rgba(17,17,40,0.14)',
-        'card-hover':'0 24px 50px -16px rgba(79,70,229,0.30)',
-        glow:        '0 16px 40px -10px rgba(124,58,237,0.45)',
-        premium:     '0 30px 70px -24px rgba(11,11,20,0.6)',
+        soft:        '0 1px 3px rgba(17,35,63,0.06), 0 8px 24px -12px rgba(17,35,63,0.12)',
+        card:        '0 6px 24px -10px rgba(17,35,63,0.14)',
+        'card-hover':'0 18px 40px -14px rgba(0,159,183,0.28)',
+        glow:        '0 12px 30px -10px rgba(0,159,183,0.40)',
+        premium:     '0 26px 60px -22px rgba(11,35,64,0.45)',
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(120deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%)',
-        'brand-soft':     'linear-gradient(120deg, #eef2ff 0%, #f5f3ff 100%)',
-        'mesh':           'radial-gradient(800px 420px at 85% -10%, rgba(124,58,237,0.20), transparent 60%), radial-gradient(700px 420px at -10% 110%, rgba(79,70,229,0.18), transparent 55%)',
-        'ink-mesh':       'radial-gradient(900px 500px at 80% -10%, rgba(124,58,237,0.28), transparent 60%), radial-gradient(800px 460px at -5% 110%, rgba(79,70,229,0.22), transparent 55%)',
+        'brand-gradient': 'linear-gradient(120deg, #00b3cc 0%, #009fb7 60%, #007e91 100%)',
+        'brand-soft':     'linear-gradient(120deg, #e7f6fa 0%, #fff8e1 100%)',
+        'mesh':           'radial-gradient(760px 380px at 88% -10%, rgba(0,159,183,0.16), transparent 60%), radial-gradient(680px 380px at -8% 110%, rgba(255,193,7,0.14), transparent 55%)',
+        'ink-mesh':       'radial-gradient(840px 460px at 82% -10%, rgba(0,179,204,0.22), transparent 60%), radial-gradient(760px 420px at -6% 110%, rgba(255,193,7,0.14), transparent 55%)',
       },
       keyframes: {
         'fade-up': {
-          '0%':   { opacity: '0', transform: 'translateY(22px)' },
+          '0%':   { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         'fade-in': {
@@ -98,11 +90,7 @@ export default {
         },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
-          '50%':      { transform: 'translateY(-14px)' },
-        },
-        'gradient-x': {
-          '0%, 100%': { backgroundPosition: '0% 50%' },
-          '50%':      { backgroundPosition: '100% 50%' },
+          '50%':      { transform: 'translateY(-12px)' },
         },
       },
       animation: {
@@ -110,7 +98,6 @@ export default {
         'fade-in':  'fade-in 0.6s ease-out both',
         marquee:    'marquee 26s linear infinite',
         float:      'float 7s ease-in-out infinite',
-        'gradient-x': 'gradient-x 6s ease infinite',
       },
     },
   },

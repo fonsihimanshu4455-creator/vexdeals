@@ -13,17 +13,17 @@
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    color: #1f2030;
-    background-color: #f6f7fb;
+    color: #11233f;
+    background-color: #f5f6f8;
   }
 
   h1, h2, h3, h4 {
-    font-family: '"Space Grotesk"', Inter, sans-serif;
+    font-family: 'Poppins', Inter, sans-serif;
     letter-spacing: -0.01em;
   }
 
   ::selection {
-    background-color: #7c3aed;
+    background-color: #009fb7;
     color: #ffffff;
   }
 
@@ -32,15 +32,15 @@
     height: 11px;
   }
   ::-webkit-scrollbar-track {
-    background: #eceefb;
+    background: #eceef2;
   }
   ::-webkit-scrollbar-thumb {
-    background: #c4b5fd;
+    background: #8ad7e6;
     border-radius: 999px;
-    border: 3px solid #eceefb;
+    border: 3px solid #eceef2;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #7c3aed;
+    background: #009fb7;
   }
 }
 
@@ -48,7 +48,7 @@
   /* Gradient primary CTA */
   .btn-cognac,
   .btn-grad {
-    @apply inline-flex items-center justify-center gap-2 bg-brand-gradient text-white font-semibold rounded-full px-7 py-3.5 shadow-glow transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_-12px_rgba(124,58,237,0.6)];
+    @apply inline-flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-full px-7 py-3.5 shadow-glow transition-all duration-300 hover:-translate-y-0.5;
   }
   /* Solid dark pill */
   .btn-ink {
@@ -58,9 +58,9 @@
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 border border-ink-900/15 text-ink-800 font-semibold rounded-full px-7 py-3.5 transition-all duration-300 hover:border-primary-600 hover:text-primary-600 hover:-translate-y-0.5;
   }
-  /* Eyebrow label — gradient text */
+  /* Eyebrow label */
   .eyebrow {
-    @apply text-[11px] font-bold uppercase tracking-widest2 text-transparent bg-clip-text bg-brand-gradient;
+    @apply text-[11px] font-bold uppercase tracking-widest2 text-primary-600;
   }
   .card-modern {
     @apply bg-white rounded-3xl border border-ink-900/5 shadow-soft transition-all duration-300;
@@ -107,7 +107,7 @@
     -webkit-box-orient: vertical;
   }
   .font-display {
-    font-family: '"Space Grotesk"', Inter, sans-serif;
+    font-family: 'Poppins', Inter, sans-serif;
   }
   .glass {
     background: rgba(255, 255, 255, 0.7);
