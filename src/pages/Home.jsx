@@ -164,8 +164,10 @@ export default function Home() {
             {activeCategories.map(cat => (
               <Link key={cat.id} to={`/products?category=${encodeURIComponent(cat.name)}`}
                 className="group bg-white rounded-3xl border border-ink-900/5 shadow-soft p-5 text-center hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-brand-soft flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300">
-                  {cat.icon}
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-brand-soft flex items-center justify-center text-2xl overflow-hidden group-hover:scale-110 transition-transform duration-300">
+                  {cat.image
+                    ? <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                    : cat.icon}
                 </div>
                 <p className="font-display font-semibold text-ink-900 text-sm mt-3">{cat.name}</p>
                 <p className="text-xs text-ink-700/50 mt-0.5">{countForCat(cat.name) || 0} items</p>
