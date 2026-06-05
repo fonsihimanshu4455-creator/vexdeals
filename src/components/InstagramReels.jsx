@@ -58,6 +58,8 @@ function Reel({ product }) {
             autoPlay
             playsInline
             preload="auto"
+            onLoadedData={(e) => { e.currentTarget.muted = true; e.currentTarget.play?.().catch(() => {}); }}
+            onCanPlay={(e) => { e.currentTarget.muted = true; e.currentTarget.play?.().catch(() => {}); }}
             className="w-full h-full object-cover"
           />
         )}
