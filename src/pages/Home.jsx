@@ -160,17 +160,16 @@ export default function Home() {
       {activeCategories.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 reveal">
           <Heading eyebrow="Browse" title="Shop by Category" to="/products" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-x-3 gap-y-5">
             {activeCategories.map(cat => (
               <Link key={cat.id} to={`/products?category=${encodeURIComponent(cat.name)}`}
-                className="group bg-white rounded-3xl border border-ink-900/5 shadow-soft p-5 text-center hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-brand-soft flex items-center justify-center text-2xl overflow-hidden group-hover:scale-110 transition-transform duration-300">
+                className="group flex flex-col items-center gap-2 text-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-brand-soft ring-1 ring-ink-900/5 flex items-center justify-center text-2xl sm:text-3xl group-hover:ring-2 group-hover:ring-primary-500 group-hover:-translate-y-1 transition-all duration-300">
                   {cat.image
                     ? <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
                     : cat.icon}
                 </div>
-                <p className="font-display font-semibold text-ink-900 text-sm mt-3">{cat.name}</p>
-                <p className="text-xs text-ink-700/50 mt-0.5">{countForCat(cat.name) || 0} items</p>
+                <p className="text-xs sm:text-sm font-medium text-ink-800 line-clamp-1 group-hover:text-primary-600 transition-colors">{cat.name}</p>
               </Link>
             ))}
           </div>
