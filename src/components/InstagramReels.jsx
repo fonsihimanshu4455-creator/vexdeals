@@ -15,16 +15,21 @@ const formatPrice = (p) => `₹${Number(p).toLocaleString('en-IN')}`;
 function Reel({ product }) {
   const ref = useRef(null);
 
-  // Play only while in view (saves data + battery)
+  // Autoplay muted (set the muted *property* imperatively — React's `muted`
+  // attribute alone doesn't always apply it, which makes browsers block autoplay)
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    el.muted = true;
+    el.setAttribute('muted', '');
+    const tryPlay = () => el.play?.().catch(() => {});
+    tryPlay();
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) el.play?.().catch(() => {});
+        if (entry.isIntersecting) { el.muted = true; tryPlay(); }
         else el.pause?.();
       },
-      { threshold: 0.5 }
+      { threshold: 0.25 }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -52,7 +57,7 @@ function Reel({ product }) {
             loop
             autoPlay
             playsInline
-            preload="metadata"
+            preload="auto"
             className="w-full h-full object-cover"
           />
         )}
