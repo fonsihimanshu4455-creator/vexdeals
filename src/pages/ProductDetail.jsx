@@ -108,11 +108,11 @@ export default function ProductDetail() {
             {/* Image gallery */}
             <div className="space-y-3">
               {/* Main image */}
-              <div className="relative group aspect-square rounded-2xl overflow-hidden bg-gray-50 cursor-zoom-in" onClick={openLightbox}>
+              <div className="relative group aspect-square rounded-2xl overflow-hidden bg-white border border-gray-100 cursor-zoom-in" onClick={openLightbox}>
                 <img
                   src={images[selectedImg]}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain p-4"
                 />
                 {/* Zoom hint */}
                 <div className="absolute top-3 right-3 bg-black/40 text-white rounded-xl px-2 py-1 text-xs flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
