@@ -293,7 +293,10 @@ export function ProductProvider({ children }) {
     const baselineProducts = productsRef.current;
     const nextId = baselineProducts.reduce((maxId, product) => Math.max(maxId, product.id), 0) + 1;
     const nextSortOrder = baselineProducts.reduce((maxSortOrder, product) => Math.max(maxSortOrder, product.sortOrder || 0), 0) + 1;
-    const normalized = normalizeProduct({ ...draftProduct, id: nextId, sortOrder: nextSortOrder }, nextId, nextSortOrder);
+    // Admin-set priority (higher = shows first) overrides the auto order.
+    const priority = Number(draftProduct.sortOrder);
+    const sortOrder = Number.isFinite(priority) && priority > 0 ? priority : nextSortOrder;
+    const normalized = normalizeProduct({ ...draftProduct, id: nextId, sortOrder }, nextId, sortOrder);
 
     if (!normalized) return null;
 
@@ -321,10 +324,12 @@ export function ProductProvider({ children }) {
       currentProducts.map((product) => {
         if (product.id !== productId) return product;
 
+        const priority = Number(updates.sortOrder);
+        const sortOrder = Number.isFinite(priority) && priority > 0 ? priority : product.sortOrder;
         nextProduct = normalizeProduct(
-          { ...product, ...updates, id: product.id, sortOrder: product.sortOrder },
+          { ...product, ...updates, id: product.id, sortOrder },
           product.id,
-          product.sortOrder
+          sortOrder
         ) || product;
 
         return nextProduct;

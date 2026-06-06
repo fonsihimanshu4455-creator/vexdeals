@@ -15,6 +15,7 @@ const createEmptyForm = (defaultCategory = 'Electronics') => ({
   originalPrice: '',
   stock: '',
   shippingCharge: 0,
+  sortOrder: '',
   images: [],
   video: '',
   description: '',
@@ -150,6 +151,7 @@ export default function AdminProducts() {
       stock: product.stock,
       category: product.category,
       shippingCharge: product.shippingCharge ?? 0,
+      sortOrder: product.sortOrder ?? '',
       description: product.description || '',
       featured: product.featured ?? false,
       isNew: product.isNew ?? false,
@@ -669,6 +671,19 @@ export default function AdminProducts() {
                 </div>
               </label>
 
+              <label className="text-sm text-gray-700">
+                <span className="block mb-1 font-medium">Priority <span className="text-gray-400 font-normal">(higher shows first)</span></span>
+                <input
+                  type="number"
+                  min="0"
+                  value={addForm.sortOrder}
+                  onChange={(e) => setAddForm((current) => ({ ...current, sortOrder: e.target.value }))}
+                  placeholder="Auto (leave blank)"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">Bड़ा number = Flash Sale / Featured / listings me upar dikhega.</p>
+              </label>
+
               {/* ── Multi-image upload ───────────────────────────────────── */}
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-2">
@@ -908,6 +923,14 @@ export default function AdminProducts() {
               <label className="text-sm text-gray-700">
                 <span className="block mb-1 font-medium">Stock</span>
                 <input type="number" value={editData.stock ?? ''} onChange={e => setEditData(c => ({ ...c, stock: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500" />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                <span className="block mb-1 font-medium">Priority <span className="text-gray-400 font-normal">(higher first)</span></span>
+                <input type="number" min="0" value={editData.sortOrder ?? ''}
+                  onChange={e => setEditData(c => ({ ...c, sortOrder: e.target.value }))}
+                  placeholder="Auto"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500" />
               </label>
 
