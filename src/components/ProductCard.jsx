@@ -27,11 +27,11 @@ export default function ProductCard({ product }) {
       className="group bg-white rounded-3xl border border-ink-900/5 shadow-soft hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300 flex flex-col overflow-hidden"
     >
       {/* Image */}
-      <div className="relative overflow-hidden rounded-3xl m-2 bg-cream-200 aspect-square">
+      <div className="relative overflow-hidden rounded-3xl m-2 bg-white aspect-square">
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+          className="w-full h-full object-contain p-2 transition-transform duration-700 ease-out group-hover:scale-105"
           loading="lazy"
         />
 

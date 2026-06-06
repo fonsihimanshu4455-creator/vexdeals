@@ -34,11 +34,14 @@ import AdminSubAdmins from './pages/admin/AdminSubAdmins';
 import AdminMarketing from './pages/admin/AdminMarketing';
 import AdminProfile from './pages/admin/AdminProfile';
 
-// Fires Meta Pixel PageView on every route change
+// Fires Meta Pixel PageView + scrolls to top on every route change
 function PixelTracker() {
   const location = useLocation();
   useEffect(() => { initPixel(); }, []);
-  useEffect(() => { trackPageView(); }, [location.pathname]);
+  useEffect(() => {
+    trackPageView();
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
   return null;
 }
 
