@@ -11,3 +11,10 @@ createRoot(document.getElementById('root')).render(
     </AppErrorBoundary>
   </StrictMode>,
 )
+
+// Register service worker → makes the site installable as an app (PWA)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}
