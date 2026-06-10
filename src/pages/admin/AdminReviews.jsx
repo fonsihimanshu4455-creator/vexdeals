@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Star, Trash2, Search, MessageSquare, Wifi, WifiOff, RefreshCw } from 'lucide-react';
-import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { Star, Trash2, Search, MessageSquare, Wifi, WifiOff, RefreshCw, Plus, X } from 'lucide-react';
+import { collection, onSnapshot, deleteDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useProducts } from '../../context/ProductContext';
+
+const BLANK = { productId: '', userName: '', rating: 5, comment: '' };
 
 function Stars({ value, size = 13 }) {
   return (
@@ -22,6 +24,34 @@ export default function AdminReviews() {
   const [search, setSearch] = useState('');
   const [minStars, setMinStars] = useState(0);
   const [deleteId, setDeleteId] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState(BLANK);
+  const [addError, setAddError] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const submitReview = async () => {
+    if (!addForm.productId) { setAddError('Select a product.'); return; }
+    if (!addForm.userName.trim()) { setAddError('Enter a reviewer name.'); return; }
+    if (!addForm.comment.trim()) { setAddError('Write a review.'); return; }
+    if (!db) { setAddError('Cloud not available.'); return; }
+    try {
+      setAdding(true);
+      setAddError('');
+      await addDoc(collection(db, 'reviews'), {
+        productId: String(addForm.productId),
+        userName: addForm.userName.trim(),
+        rating: Number(addForm.rating),
+        comment: addForm.comment.trim(),
+        createdAt: serverTimestamp(),
+      });
+      setAddForm(BLANK);
+      setShowAdd(false);
+    } catch {
+      setAddError('Could not add review. Try again.');
+    } finally {
+      setAdding(false);
+    }
+  };
 
   useEffect(() => {
     if (!db) { setLoading(false); return undefined; }
@@ -69,9 +99,15 @@ export default function AdminReviews() {
             )}
           </div>
         </div>
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm flex items-center gap-2">
-          <Star size={15} className="text-amber-500 fill-amber-500" />
-          <span className="font-semibold text-amber-700">{avg ? avg.toFixed(1) : '—'} average</span>
+        <div className="flex items-center gap-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm flex items-center gap-2">
+            <Star size={15} className="text-amber-500 fill-amber-500" />
+            <span className="font-semibold text-amber-700">{avg ? avg.toFixed(1) : '—'} average</span>
+          </div>
+          <button onClick={() => { setAddForm(BLANK); setAddError(''); setShowAdd(true); }}
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-primary-700 text-sm">
+            <Plus size={18} /> Add Review
+          </button>
         </div>
       </div>
 
@@ -135,6 +171,62 @@ export default function AdminReviews() {
             ))}
           </div>
         )
+      )}
+
+      {/* Add review modal */}
+      {showAdd && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Add Review</h3>
+              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+
+            {addError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-2.5 text-sm mb-4">{addError}</div>}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Product *</label>
+                <select value={addForm.productId} onChange={e => setAddForm(f => ({ ...f, productId: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 bg-white">
+                  <option value="">Select a product…</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Reviewer name *</label>
+                <input type="text" value={addForm.userName} onChange={e => setAddForm(f => ({ ...f, userName: e.target.value }))}
+                  placeholder="e.g. Rohan M." className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Rating</label>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button key={n} type="button" onClick={() => setAddForm(f => ({ ...f, rating: n }))}>
+                      <Star size={26} className={n <= addForm.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300 fill-gray-300'} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Review *</label>
+                <textarea rows={3} value={addForm.comment} onChange={e => setAddForm(f => ({ ...f, comment: e.target.value }))}
+                  placeholder="Great product, fast delivery…" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 resize-none" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowAdd(false)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">Cancel</button>
+              <button onClick={submitReview} disabled={adding}
+                className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 disabled:opacity-60 flex items-center justify-center gap-2">
+                {adding ? <><RefreshCw size={16} className="animate-spin" /> Adding…</> : 'Add Review'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Delete confirm */}
