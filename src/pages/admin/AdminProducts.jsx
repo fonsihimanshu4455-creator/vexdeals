@@ -58,7 +58,7 @@ const SECTIONS = [
 
 const MAX_IMAGES = 6;
 
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const RECOMMENDED_IMAGE_SIZE = '1000 x 1000 px';
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -824,7 +824,7 @@ export default function AdminProducts() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-900">Upload from device</p>
-                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 5 MB per image</p>
+                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 10 MB per image</p>
                         {imgUploading && <p className="text-xs text-primary-600 font-medium flex items-center gap-1 mt-0.5"><Loader2 size={11} className="animate-spin" /> Uploading…</p>}
                       </div>
                       <label className="shrink-0 cursor-pointer bg-primary-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-primary-700">
@@ -1110,7 +1110,7 @@ export default function AdminProducts() {
                       <div className="rounded-xl bg-white p-2 text-primary-600 shadow-sm shrink-0"><Upload size={16} /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-900">Upload from device</p>
-                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 5 MB</p>
+                        <p className="text-xs text-gray-500">JPG / PNG / WEBP · max 10 MB</p>
                         {imgUploading && <p className="text-xs text-primary-600 font-medium flex items-center gap-1 mt-0.5"><Loader2 size={11} className="animate-spin" /> Uploading…</p>}
                       </div>
                       <label className="shrink-0 cursor-pointer bg-primary-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-primary-700">
