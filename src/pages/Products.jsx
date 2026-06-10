@@ -207,7 +207,7 @@ export default function Products() {
             <div className="text-center py-24">
               <h3 className="font-display text-2xl text-ink-900 mb-2">Nothing here yet</h3>
               <p className="text-ink-700/60 mb-7">Try adjusting your search or filters.</p>
-              <button onClick={() => { setSearch(''); setCategory('All'); setMaxPrice(200000); }}
+              <button onClick={() => { setSearch(''); setBrand('All'); setMaxPrice(200000); setSort('featured'); handleCategoryChange('All'); }}
                 className="btn-ink text-xs uppercase tracking-widest2">
                 Clear filters
               </button>
