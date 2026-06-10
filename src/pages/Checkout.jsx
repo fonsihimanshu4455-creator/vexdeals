@@ -4,7 +4,7 @@ import { Check, Smartphone, RefreshCw, AlertTriangle, MapPin, Tag } from 'lucide
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCustomerData } from '../context/CustomerDataContext';
-import { trackEvent } from '../lib/pixel';
+import { trackInitiateCheckout, trackPurchase } from '../utils/pixel';
 
 // ── Load Razorpay script dynamically ────────────────────────────────────────
 const loadRazorpay = () =>
@@ -73,10 +73,9 @@ export default function Checkout() {
 
   useEffect(() => {
     if (items.length === 0) return;
-    trackEvent('InitiateCheckout', {
+    trackInitiateCheckout({
       value: total,
       currency: 'INR',
-      content_ids: items.map((i) => i.id),
       num_items: items.reduce((n, i) => n + (i.qty || 1), 0),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -152,12 +151,12 @@ export default function Checkout() {
     setPlacedOrder(savedOrder);
     setCompletedCheckout({ subtotal, shipping, total });
     setPayInfo({ method, paymentId, promoCode, discount });
-    trackEvent('Purchase', {
+    // Fires only here — placeOrder is reached solely after a verified Razorpay payment.
+    trackPurchase({
       value: total,
       currency: 'INR',
-      content_ids: items.map((i) => i.id),
-      content_type: 'product',
-      num_items: items.reduce((n, i) => n + (i.qty || 1), 0),
+      order_id: savedOrder?.id || paymentId,
+      contents: items.map((i) => ({ id: i.id, quantity: i.qty || 1 })),
     });
     setOrdered(true);
     clearCart();
