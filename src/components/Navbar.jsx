@@ -135,9 +135,16 @@ export default function Navbar() {
 
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu — full screen */}
       {menuOpen && (
-        <div className="md:hidden bg-white border-t border-ink-900/5 px-4 py-5 space-y-5">
+        <div className="md:hidden fixed inset-0 z-[60] bg-white flex flex-col">
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 h-16 border-b border-ink-900/10 shrink-0">
+            <Link to="/" onClick={() => setMenuOpen(false)}><VexLogoInline size="md" /></Link>
+            <button onClick={() => setMenuOpen(false)} className="p-2 -mr-2 text-ink-800" aria-label="Close menu"><X size={26} /></button>
+          </div>
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
           <form onSubmit={handleSearch} className="flex items-center bg-cream-100 rounded-full px-4">
             <Search size={16} className="text-ink-700/50" />
             <input type="text" placeholder="Search products…" value={searchQuery}
@@ -210,6 +217,7 @@ export default function Navbar() {
                 <User size={15} /> Sign In
               </Link>
             )}
+          </div>
           </div>
         </div>
       )}
