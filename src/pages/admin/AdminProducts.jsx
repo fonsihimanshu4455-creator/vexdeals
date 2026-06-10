@@ -3,6 +3,7 @@ import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, Che
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
 import { uploadToCloudinary } from '../../lib/cloudinary';
+import ImageCropper from '../../components/ImageCropper';
 
 // Cloudinary (free, no card) — used for product video uploads.
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dlgnlc3nm';
@@ -109,6 +110,7 @@ export default function AdminProducts() {
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef(null);
   const [imgUploading, setImgUploading] = useState(false);
+  const [cropper, setCropper] = useState(null); // { url, target: 'add' | 'edit' }
   // Video state
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -174,19 +176,36 @@ export default function AdminProducts() {
     if (editFileInputRef.current) editFileInputRef.current.value = '';
   };
 
-  const addEditImageFile = async (event) => {
+  const addEditImageFile = (event) => {
     const file = event.target.files?.[0];
+    event.target.value = '';
     if (!file) return;
-    if ((editData.images || []).length >= MAX_IMAGES) { setEditError(`Maximum ${MAX_IMAGES} images allowed.`); event.target.value = ''; return; }
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) { setEditError('Please upload a JPG, PNG, or WEBP image.'); event.target.value = ''; return; }
-    if (file.size > MAX_IMAGE_SIZE_BYTES) { setEditError(`Image too large. Max ${formatFileSize(MAX_IMAGE_SIZE_BYTES)}.`); event.target.value = ''; return; }
+    if ((editData.images || []).length >= MAX_IMAGES) { setEditError(`Maximum ${MAX_IMAGES} images allowed.`); return; }
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) { setEditError('Please upload a JPG, PNG, or WEBP image.'); return; }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) { setEditError(`Image too large. Max ${formatFileSize(MAX_IMAGE_SIZE_BYTES)}.`); return; }
+    setEditError('');
+    setCropper({ url: URL.createObjectURL(file), target: 'edit' });
+  };
+
+  const closeCropper = () => {
+    setCropper((c) => { if (c?.url) URL.revokeObjectURL(c.url); return null; });
+  };
+
+  const handleCropped = async (blob) => {
+    const target = cropper?.target;
     try {
       setImgUploading(true);
-      setEditError('');
+      const file = new File([blob], `vex-${Date.now()}.jpg`, { type: 'image/jpeg' });
       const url = await uploadToCloudinary(file, 'image');
-      setEditData(c => ({ ...c, images: [...(c.images || []), url] }));
-    } catch (err) { setEditError(err.message || 'Image upload failed.'); }
-    finally { setImgUploading(false); event.target.value = ''; }
+      if (target === 'edit') setEditData((c) => ({ ...c, images: [...(c.images || []), url] }));
+      else setAddForm((c) => ({ ...c, images: [...c.images, url] }));
+    } catch (err) {
+      if (target === 'edit') setEditError(err.message || 'Image upload failed.');
+      else setFormError(err.message || 'Image upload failed.');
+    } finally {
+      setImgUploading(false);
+      closeCropper();
+    }
   };
 
   const addEditImageUrl = () => {
@@ -273,37 +292,15 @@ export default function AdminProducts() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const addImageFile = async (event) => {
+  const addImageFile = (event) => {
     const file = event.target.files?.[0];
+    event.target.value = '';
     if (!file) return;
-
-    if (addForm.images.length >= MAX_IMAGES) {
-      setFormError(`Maximum ${MAX_IMAGES} images allowed.`);
-      event.target.value = '';
-      return;
-    }
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      setFormError('Please upload a JPG, PNG, or WEBP image.');
-      event.target.value = '';
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setFormError(`Image too large. Keep each image under ${formatFileSize(MAX_IMAGE_SIZE_BYTES)}.`);
-      event.target.value = '';
-      return;
-    }
-
-    try {
-      setImgUploading(true);
-      setFormError('');
-      const url = await uploadToCloudinary(file, 'image');
-      setAddForm((current) => ({ ...current, images: [...current.images, url] }));
-    } catch (error) {
-      setFormError(error.message || 'Image upload failed.');
-    } finally {
-      setImgUploading(false);
-      event.target.value = '';
-    }
+    if (addForm.images.length >= MAX_IMAGES) { setFormError(`Maximum ${MAX_IMAGES} images allowed.`); return; }
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) { setFormError('Please upload a JPG, PNG, or WEBP image.'); return; }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) { setFormError(`Image too large. Keep each image under ${formatFileSize(MAX_IMAGE_SIZE_BYTES)}.`); return; }
+    setFormError('');
+    setCropper({ url: URL.createObjectURL(file), target: 'add' });
   };
 
   const addImageUrl = () => {
@@ -405,6 +402,14 @@ export default function AdminProducts() {
 
   return (
     <div className="space-y-5">
+      {cropper && (
+        <ImageCropper
+          src={cropper.url}
+          uploading={imgUploading}
+          onCancel={closeCropper}
+          onCropped={handleCropped}
+        />
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Products</h2>
