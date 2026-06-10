@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { User, Mail, Phone, Pencil, Check, X, Shield, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { User, Mail, Phone, Pencil, Check, X, Shield, Users, Package, MapPin, CreditCard, LogOut, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 /* Single editable field row */
-function EditableRow({ Icon, label, value, displayValue, placeholder, type = 'text', onSave }) {
+function EditableRow({ Icon, label, value, placeholder, type = 'text', onSave }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || '');
 
@@ -26,6 +27,7 @@ function EditableRow({ Icon, label, value, displayValue, placeholder, type = 'te
               value={draft}
               onChange={e => setDraft(e.target.value)}
               placeholder={placeholder}
+              onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }}
               className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-primary-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-200"
             />
             <button onClick={save} className="w-8 h-8 rounded-lg bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 shrink-0">
@@ -37,7 +39,7 @@ function EditableRow({ Icon, label, value, displayValue, placeholder, type = 'te
           </div>
         ) : (
           <p className="text-sm font-semibold text-gray-900 mt-0.5 truncate">
-            {displayValue || value || <span className="text-gray-300 font-normal">{placeholder}</span>}
+            {value || <span className="text-gray-300 font-normal">{placeholder}</span>}
           </p>
         )}
       </div>
@@ -51,13 +53,23 @@ function EditableRow({ Icon, label, value, displayValue, placeholder, type = 'te
 }
 
 export default function ProfilePanel() {
-  const { user, updateUser, isStaff, isAdmin, isSubAdmin } = useAuth();
+  const { user, updateUser, logout, isAdmin, isSubAdmin, isCustomer } = useAuth();
+  const [saved, setSaved] = useState(false);
   if (!user) return null;
+
+  const flashSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 1800); };
+  const update = (patch) => { updateUser(patch); flashSaved(); };
 
   const gender = user.gender || '';
   const roleLabel = isAdmin ? 'Main Admin'
     : isSubAdmin ? (user.department === 'marketing' ? 'Marketing Staff' : 'Products Staff')
     : 'Customer';
+
+  const accountLinks = [
+    { to: '/account/orders', label: 'My Orders', Icon: Package },
+    { to: '/account/transactions', label: 'Transaction History', Icon: CreditCard },
+    { to: '/account/addresses', label: 'Saved Addresses', Icon: MapPin },
+  ];
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -75,7 +87,10 @@ export default function ProfilePanel() {
 
       {/* Personal information */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-        <h3 className="text-base font-bold text-gray-900 mb-2">Personal Information</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-base font-bold text-gray-900">Personal Information</h3>
+          {saved && <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1"><Check size={13} /> Saved</span>}
+        </div>
 
         <div className="divide-y divide-gray-100">
           <EditableRow
@@ -83,7 +98,7 @@ export default function ProfilePanel() {
             label="Full Name"
             value={user.name === user.fullName ? user.name : user.fullName}
             placeholder="Add your name"
-            onSave={(v) => updateUser({ name: v, fullName: v })}
+            onSave={(v) => update({ name: v, fullName: v })}
           />
 
           {/* Gender row */}
@@ -92,13 +107,13 @@ export default function ProfilePanel() {
               <Users size={18} className="text-primary-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Your Gender</p>
-              <div className="flex gap-2 mt-2">
-                {['Male', 'Female'].map((val) => (
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Gender</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {['Male', 'Female', 'Other'].map((val) => (
                   <button
                     key={val}
-                    onClick={() => updateUser({ gender: val })}
-                    className={`px-5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                    onClick={() => update({ gender: val })}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                       gender === val
                         ? 'bg-primary-600 text-white border-primary-600'
                         : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
@@ -117,7 +132,7 @@ export default function ProfilePanel() {
             value={user.email}
             type="email"
             placeholder="Add your email"
-            onSave={(v) => updateUser({ email: v })}
+            onSave={(v) => update({ email: v })}
           />
 
           <EditableRow
@@ -126,10 +141,33 @@ export default function ProfilePanel() {
             value={user.phone}
             type="tel"
             placeholder="Add your mobile number"
-            onSave={(v) => updateUser({ phone: v })}
+            onSave={(v) => update({ phone: v })}
           />
         </div>
       </div>
+
+      {/* Account quick links (customers) */}
+      {isCustomer && (
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-2">
+          {accountLinks.map(({ to, label, Icon }) => (
+            <Link key={to} to={to}
+              className="flex items-center gap-3 px-4 py-3.5 rounded-2xl hover:bg-gray-50 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
+                <Icon size={17} className="text-primary-600" />
+              </div>
+              <span className="flex-1 text-sm font-medium text-gray-800">{label}</span>
+              <ChevronRight size={17} className="text-gray-300" />
+            </Link>
+          ))}
+          <button onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl hover:bg-red-50 transition-colors text-left">
+            <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+              <LogOut size={17} className="text-red-500" />
+            </div>
+            <span className="flex-1 text-sm font-medium text-red-600">Logout</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
