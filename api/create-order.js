@@ -18,8 +18,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid amount' });
   }
 
-  const keyId     = 'rzp_live_ScXgUdoUvOk0Vj';
-  const keySecret = 'w0C0Y84Qiw0hauP6kFECAWhH';
+  const keyId     = process.env.RAZORPAY_KEY_ID     || 'rzp_live_ScXgUdoUvOk0Vj';
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'w0C0Y84Qiw0hauP6kFECAWhH';
 
   try {
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
