@@ -275,7 +275,7 @@ export function CategoryProvider({ children }) {
     [categories]
   );
 
-  const addCategory = async (name, icon, image = '') => {
+  const addCategory = async (name, icon, image = '', priority) => {
     const baselineCategories = categoriesRef.current;
     const colors = [
       'bg-blue-50 hover:bg-blue-100',
@@ -290,6 +290,8 @@ export function CategoryProvider({ children }) {
 
     const nextId = baselineCategories.reduce((maxId, category) => Math.max(maxId, category.id), 0) + 1;
     const nextSortOrder = baselineCategories.reduce((maxSortOrder, category) => Math.max(maxSortOrder, category.sortOrder || 0), 0) + 1;
+    const p = Number(priority);
+    const sortOrder = Number.isFinite(p) && p > 0 ? p : nextSortOrder;
     const normalized = normalizeCategoryList([{
       id: nextId,
       name,
@@ -297,7 +299,7 @@ export function CategoryProvider({ children }) {
       image,
       color: colors[baselineCategories.length % colors.length],
       active: true,
-      sortOrder: nextSortOrder,
+      sortOrder,
     }])[0];
 
     if (!normalized) return null;

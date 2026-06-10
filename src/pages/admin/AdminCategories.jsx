@@ -25,6 +25,8 @@ export default function AdminCategories() {
   const [customEmoji, setCustomEmoji] = useState('');
   const [newImage, setNewImage]     = useState('');
   const [editImage, setEditImage]   = useState('');
+  const [newPriority, setNewPriority] = useState('');
+  const [editPriority, setEditPriority] = useState('');
   const [imgUploading, setImgUploading] = useState(false);
 
   const uploadImage = async (file, setter) => {
@@ -42,16 +44,20 @@ export default function AdminCategories() {
 
   const handleAdd = () => {
     if (!newName.trim()) return;
-    addCategory(newName.trim(), newIcon, newImage);
+    addCategory(newName.trim(), newIcon, newImage, newPriority);
     setNewName('');
     setNewIcon('🛍️');
     setNewImage('');
+    setNewPriority('');
     setShowAdd(false);
   };
 
   const handleEditSave = () => {
     if (!editName.trim()) return;
-    updateCategory(editId, { name: editName.trim(), icon: editIcon, image: editImage });
+    const updates = { name: editName.trim(), icon: editIcon, image: editImage };
+    const p = Number(editPriority);
+    if (Number.isFinite(p) && p > 0) updates.sortOrder = p;
+    updateCategory(editId, updates);
     setEditId(null);
   };
 
@@ -175,14 +181,30 @@ export default function AdminCategories() {
                   </td>
                   <td className="px-5 py-3.5">
                     {editId === cat.id ? (
-                      <input
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        className="border-2 border-primary-300 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary-600 w-40"
-                        autoFocus
-                      />
+                      <div className="space-y-2">
+                        <input
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                          className="border-2 border-primary-300 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary-600 w-40"
+                          autoFocus
+                        />
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-gray-500">Order:</span>
+                          <input
+                            type="number" min="1"
+                            value={editPriority}
+                            onChange={e => setEditPriority(e.target.value)}
+                            placeholder="#"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-16 outline-none focus:border-primary-500"
+                          />
+                          <span className="text-[11px] text-gray-400">(lower = first)</span>
+                        </div>
+                      </div>
                     ) : (
-                      <span className="font-semibold text-gray-800">{cat.name}</span>
+                      <div>
+                        <span className="font-semibold text-gray-800">{cat.name}</span>
+                        <span className="ml-2 text-xs text-gray-400">#{cat.sortOrder}</span>
+                      </div>
                     )}
                   </td>
                   <td className="px-5 py-3.5">
@@ -219,7 +241,7 @@ export default function AdminCategories() {
                       ) : (
                         <>
                           <button
-                            onClick={() => { setEditId(cat.id); setEditName(cat.name); setEditIcon(cat.icon); setCustomEmoji(''); setEditImage(cat.image || ''); }}
+                            onClick={() => { setEditId(cat.id); setEditName(cat.name); setEditIcon(cat.icon); setCustomEmoji(''); setEditImage(cat.image || ''); setEditPriority(cat.sortOrder ?? ''); }}
                             className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
                             title="Edit"
                           >
@@ -301,6 +323,18 @@ export default function AdminCategories() {
                     <input type="file" accept="image/*" className="hidden" onChange={e => uploadImage(e.target.files?.[0], setNewImage)} />
                   </label>
                 )}
+              </div>
+
+              {/* Display order / priority */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Order <span className="text-gray-400 font-normal">(lower number shows first — blank = last)</span></label>
+                <input
+                  type="number" min="1"
+                  value={newPriority}
+                  onChange={e => setNewPriority(e.target.value)}
+                  placeholder="e.g. 1"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary-600"
+                />
               </div>
             </div>
 
