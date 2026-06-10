@@ -133,19 +133,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Category nav — desktop */}
-        <nav className="hidden md:flex items-center gap-1.5 pb-3">
-          {activeCategories.map(cat => (
-            <Link key={cat.id} to={`/products?category=${encodeURIComponent(cat.name)}`}
-              className="text-[13px] font-medium text-ink-700 hover:text-primary-600 hover:bg-primary-50 px-3.5 py-1.5 rounded-full transition-colors">
-              {cat.name}
-            </Link>
-          ))}
-          <Link to="/products"
-            className="ml-auto text-[13px] font-semibold text-white bg-ink-900 hover:bg-primary-600 px-4 py-1.5 rounded-full transition-colors">
-            All Deals →
-          </Link>
-        </nav>
       </div>
 
       {/* Mobile menu */}
