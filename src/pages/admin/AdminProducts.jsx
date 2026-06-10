@@ -42,7 +42,19 @@ const createEmptyForm = (defaultCategory = 'Electronics') => ({
   featured: true,
   isNew: false,
   isBestseller: false,
+  flashSale: false,
+  featuredOrder: '',
+  newOrder: '',
+  flashOrder: '',
 });
+
+// Home sections each product can appear in, with an optional order number.
+const SECTIONS = [
+  { key: 'featured',     label: 'Featured',     orderKey: 'featuredOrder' },
+  { key: 'isNew',        label: 'New Arrivals', orderKey: 'newOrder' },
+  { key: 'flashSale',    label: 'Flash Sale',   orderKey: 'flashOrder' },
+  { key: 'isBestseller', label: 'Bestsellers',  orderKey: null },
+];
 
 const MAX_IMAGES = 6;
 
@@ -178,6 +190,10 @@ export default function AdminProducts() {
       featured: product.featured ?? false,
       isNew: product.isNew ?? false,
       isBestseller: product.isBestseller ?? false,
+      flashSale: product.flashSale ?? false,
+      featuredOrder: product.featuredOrder ?? '',
+      newOrder: product.newOrder ?? '',
+      flashOrder: product.flashOrder ?? '',
       images: product.images?.length ? product.images : (product.image ? [product.image] : []),
       video: product.video || '',
     });
@@ -880,22 +896,29 @@ export default function AdminProducts() {
               </label>
             </div>
 
-            <div className="flex flex-wrap gap-3 mt-4">
-              {[
-                ['featured', 'Featured'],
-                ['isNew', 'New Arrival'],
-                ['isBestseller', 'Bestseller'],
-              ].map(([key, label]) => (
-                <label key={key} className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(addForm[key])}
-                    onChange={(e) => setAddForm((current) => ({ ...current, [key]: e.target.checked }))}
-                    className="accent-primary-600"
-                  />
-                  {label}
-                </label>
-              ))}
+            <div className="mt-4 rounded-2xl border border-gray-100 p-4">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Show in sections <span className="text-gray-400 font-normal">(toggle + order number, lower = first)</span></p>
+              <div className="space-y-2.5">
+                {SECTIONS.map(({ key, label, orderKey }) => (
+                  <div key={key} className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-700 w-40 shrink-0">
+                      <input type="checkbox" checked={Boolean(addForm[key])}
+                        onChange={(e) => setAddForm((c) => ({ ...c, [key]: e.target.checked }))}
+                        className="accent-primary-600 w-4 h-4" />
+                      {label}
+                    </label>
+                    {orderKey && addForm[key] && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">No.</span>
+                        <input type="number" min="1" value={addForm[orderKey] ?? ''}
+                          onChange={(e) => setAddForm((c) => ({ ...c, [orderKey]: e.target.value }))}
+                          placeholder="auto"
+                          className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-primary-500" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -1003,29 +1026,30 @@ export default function AdminProducts() {
 
               {/* ── Section visibility ───────────────────────────────────── */}
               <div className="sm:col-span-2">
-                <p className="text-sm font-medium text-gray-700 mb-3">Show on Homepage Sections</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {[
-                    { key: 'featured',     label: 'Featured Products', desc: 'Featured section on home' },
-                    { key: 'isNew',        label: 'New Arrivals',       desc: 'New Arrivals section'    },
-                    { key: 'isBestseller', label: 'Bestsellers',        desc: 'Bestsellers section'     },
-                  ].map(({ key, label, desc }) => (
-                    <label key={key} className={`flex items-start gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                      editData[key] ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                <p className="text-sm font-medium text-gray-700 mb-3">Show on Homepage Sections <span className="text-gray-400 font-normal">(toggle + order, lower number = first)</span></p>
+                <div className="space-y-2.5">
+                  {SECTIONS.map(({ key, label, orderKey }) => (
+                    <div key={key} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                      editData[key] ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-gray-50'
                     }`}>
-                      <input type="checkbox" checked={Boolean(editData[key])}
-                        onChange={e => setEditData(c => ({ ...c, [key]: e.target.checked }))}
-                        className="accent-primary-600 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs font-bold text-gray-800">{label}</p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>
-                      </div>
-                    </label>
+                      <label className="flex items-center gap-2.5 cursor-pointer flex-1">
+                        <input type="checkbox" checked={Boolean(editData[key])}
+                          onChange={e => setEditData(c => ({ ...c, [key]: e.target.checked }))}
+                          className="accent-primary-600 w-4 h-4 shrink-0" />
+                        <span className="text-sm font-semibold text-gray-800">{label}</span>
+                      </label>
+                      {orderKey && editData[key] && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-xs text-gray-500">No.</span>
+                          <input type="number" min="1" value={editData[orderKey] ?? ''}
+                            onChange={e => setEditData(c => ({ ...c, [orderKey]: e.target.value }))}
+                            placeholder="auto"
+                            className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-primary-500 bg-white" />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  Flash Sale section shows automatically when discount ≥ 20% (set via Original Price vs Selling Price).
-                </p>
               </div>
 
               {/* ── Images ──────────────────────────────────────────────── */}

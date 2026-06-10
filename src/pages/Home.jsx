@@ -58,10 +58,13 @@ export default function Home() {
   const { products } = useProducts();
   const containerRef = useRef(null);
 
-  const featuredProducts = products.filter(p => p.featured);
+  // Order each section by its admin-set number (lower = first; unset goes last)
+  const orderBy = (key) => (a, b) => (Number(a[key]) > 0 ? Number(a[key]) : 9999) - (Number(b[key]) > 0 ? Number(b[key]) : 9999);
+  const featuredProducts = products.filter(p => p.featured).sort(orderBy('featuredOrder'));
   const bestsellers      = products.filter(p => p.isBestseller).slice(0, 8);
-  const newArrivals      = products.filter(p => p.isNew).slice(0, 4);
-  const saleProducts     = products.filter(p => p.discount >= 20).slice(0, 6);
+  const newArrivals      = products.filter(p => p.isNew).sort(orderBy('newOrder')).slice(0, 4);
+  const flaggedSale      = products.filter(p => p.flashSale);
+  const saleProducts     = (flaggedSale.length ? flaggedSale : products.filter(p => p.discount >= 20)).sort(orderBy('flashOrder')).slice(0, 6);
   const heroProduct      = featuredProducts[0] || bestsellers[0] || products[0];
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;

@@ -95,6 +95,7 @@ const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
     featured: Boolean(rawProduct.featured),
     isNew: Boolean(rawProduct.isNew),
     isBestseller: Boolean(rawProduct.isBestseller),
+    flashSale: Boolean(rawProduct.flashSale),
   };
 };
 
