@@ -69,7 +69,7 @@ export default function Navbar() {
             <Link to="/cart" className="relative p-2.5 rounded-full hover:bg-cream-100 transition-colors group">
               <ShoppingBag size={21} className="text-ink-800 group-hover:text-primary-600 transition-colors" />
               {totalItems > 0 && (
-                <span className="absolute top-0.5 right-0.5 bg-brand-gradient text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold px-1">
+                <span key={totalItems} className="animate-bump absolute top-0.5 right-0.5 bg-brand-gradient text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold px-1">
                   {totalItems > 9 ? '9+' : totalItems}
                 </span>
               )}

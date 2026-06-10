@@ -10,6 +10,7 @@ import { trackVisit } from './utils/analytics';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import CartToast from './components/CartToast';
 
 import Home from './pages/Home';
 import Products from './pages/Products';
@@ -53,11 +54,13 @@ function PixelTracker() {
 }
 
 function CustomerLayout({ children }) {
+  const location = useLocation();
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main key={location.pathname} className="flex-1 animate-fade-in">{children}</main>
       <Footer />
+      <CartToast />
     </div>
   );
 }

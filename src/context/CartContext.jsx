@@ -161,10 +161,12 @@ const getPromoDiscount = (promo, cartTotal) => {
 const cartReducer = (state, action) => {
   switch (action.type) {
     case 'ADD_ITEM': {
+      const added = { lastAdded: action.payload, lastAddedAt: Date.now() };
       const existing = state.items.find(i => i.id === action.payload.id);
       if (existing) {
         return {
           ...state,
+          ...added,
           items: state.items.map(i =>
             i.id === action.payload.id
               ? {
@@ -179,6 +181,7 @@ const cartReducer = (state, action) => {
       }
       return {
         ...state,
+        ...added,
         items: [
           ...state.items,
           {
@@ -352,6 +355,8 @@ export function CartProvider({ children }) {
       value={{
         items: state.items,
         totalItems,
+        lastAdded: state.lastAdded,
+        lastAddedAt: state.lastAddedAt,
         subtotal,
         shipping,
         discount,
