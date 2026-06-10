@@ -3,10 +3,11 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, LogOut,
   Menu, X, Bell, ChevronRight, BarChart3, Tag, Shield,
-  Megaphone, Watch, UserCircle, Star, FileText, MousePointerClick,
+  Megaphone, Watch, UserCircle, Star, FileText, MousePointerClick, Settings,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { VexLogoInline } from '../../components/Logo';
+import NotificationBell from '../../components/NotificationBell';
 import AdminLogin from '../AdminLogin';
 
 // Full nav for main admin
@@ -22,6 +23,7 @@ const adminNavItems = [
   { to: '/admin/marketing',    label: 'Marketing',   Icon: Megaphone        },
   { to: '/admin/reviews',      label: 'Reviews',     Icon: Star             },
   { to: '/admin/about',        label: 'About Page',  Icon: FileText         },
+  { to: '/admin/settings',     label: 'Settings',    Icon: Settings         },
 ];
 
 // Sub-admin nav (filtered by department)
@@ -163,10 +165,7 @@ export default function AdminLayout() {
           <div className="flex-1">
             <h1 className="text-base font-bold text-primary-800">VexDeals Admin</h1>
           </div>
-          <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-            <Bell size={20} className="text-gray-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </button>
+          <NotificationBell />
           <Link to="/admin/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <img src={user?.avatar} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-accent-200" />
             <div className="hidden sm:block">

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2, Download, Percent, Copy } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
 import { uploadToCloudinary } from '../../lib/cloudinary';
@@ -142,6 +142,49 @@ export default function AdminProducts() {
   const fileInputRef = useRef(null);
   const [imgUploading, setImgUploading] = useState(false);
   const [cropper, setCropper] = useState(null); // { url, target: 'add' | 'edit' }
+  // Bulk discount
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkForm, setBulkForm] = useState({ category: 'All', percent: '' });
+  const [bulkMsg, setBulkMsg] = useState('');
+  const [bulkApplying, setBulkApplying] = useState(false);
+
+  // ── Bulk tools ─────────────────────────────────────────────────────────────
+  const exportProductsCSV = () => {
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const header = ['ID', 'Name', 'Brand', 'Category', 'Price', 'Original Price', 'Discount %', 'Stock', 'Shipping', 'Priority', 'Featured', 'New', 'Bestseller', 'Flash Sale'];
+    const lines = productList.map(p => [
+      p.id, p.name, p.brand || '', p.category, p.price, p.originalPrice, p.discount, p.stock,
+      p.shippingCharge ?? 0, p.sortOrder ?? '', p.featured ? 'Yes' : '', p.isNew ? 'Yes' : '', p.isBestseller ? 'Yes' : '', p.flashSale ? 'Yes' : '',
+    ].map(esc).join(','));
+    const blob = new Blob(['﻿' + [header.map(esc).join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `vexdeals-products-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const duplicateProduct = (product) => {
+    const { id: _id, ...rest } = product;
+    addProduct({ ...rest, name: `${product.name} (Copy)`, featured: false, isNew: false, isBestseller: false, flashSale: false });
+  };
+
+  const applyBulkDiscount = async () => {
+    const pct = Number(bulkForm.percent);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 90) { setBulkMsg('Enter a discount between 0 and 90%.'); return; }
+    const targets = productList.filter(p =>
+      (bulkForm.category === 'All' || p.category === bulkForm.category) && Number(p.originalPrice) > 0
+    );
+    if (!targets.length) { setBulkMsg('No products match this category.'); return; }
+    setBulkApplying(true);
+    for (const p of targets) {
+      const newPrice = Math.max(1, Math.round(p.originalPrice * (1 - pct / 100)));
+      // eslint-disable-next-line no-await-in-loop
+      await updateProduct(p.id, { price: newPrice });
+    }
+    setBulkApplying(false);
+    setBulkMsg(`✓ ${pct}% discount applied to ${targets.length} product${targets.length > 1 ? 's' : ''}.`);
+  };
   // Video state
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -446,17 +489,70 @@ export default function AdminProducts() {
           onCropped={handleCropped}
         />
       )}
+
+      {/* Bulk discount modal */}
+      {bulkOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Bulk Discount</h3>
+              <button onClick={() => setBulkOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+                <select value={bulkForm.category} onChange={e => setBulkForm(f => ({ ...f, category: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 bg-white">
+                  <option>All</option>
+                  {editableCategoryNames.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Discount % <span className="text-gray-400 font-normal">(off original price)</span></label>
+                <input type="number" min="0" max="90" value={bulkForm.percent}
+                  onChange={e => setBulkForm(f => ({ ...f, percent: e.target.value }))}
+                  placeholder="e.g. 20"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                <p className="text-xs text-gray-400 mt-1">0% = discount hatao (price wapas original).</p>
+              </div>
+              {bulkMsg && <p className={`text-sm font-medium ${bulkMsg.startsWith('✓') ? 'text-emerald-600' : 'text-red-500'}`}>{bulkMsg}</p>}
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setBulkOpen(false)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">Close</button>
+              <button onClick={applyBulkDiscount} disabled={bulkApplying}
+                className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 disabled:opacity-60 flex items-center justify-center gap-2">
+                {bulkApplying ? <><Loader2 size={16} className="animate-spin" /> Applying…</> : 'Apply'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Products</h2>
           <p className="text-gray-500 text-sm">{productList.length} total products</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
-        >
-          <Plus size={16} /> Add Product
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={exportProductsCSV}
+            className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50"
+            title="Download as Excel/CSV"
+          >
+            <Download size={15} /> Export
+          </button>
+          <button
+            onClick={() => { setBulkForm({ category: 'All', percent: '' }); setBulkMsg(''); setBulkOpen(true); }}
+            className="flex items-center gap-2 bg-accent-500 text-ink-900 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-accent-400"
+          >
+            <Percent size={15} /> Bulk Discount
+          </button>
+          <button
+            onClick={openAddModal}
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
+          >
+            <Plus size={16} /> Add Product
+          </button>
+        </div>
       </div>
 
       <div
@@ -578,6 +674,9 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
+                      <button onClick={() => duplicateProduct(product)} className="p-1.5 bg-gray-50 text-gray-500 rounded-lg hover:bg-gray-100 transition-colors" title="Duplicate product">
+                        <Copy size={16} />
+                      </button>
                       <button onClick={() => startEdit(product)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors" title="Edit product">
                         <Edit2 size={14} />
                       </button>

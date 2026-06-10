@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Eye, X, Users, Shield, User, Wifi, WifiOff, RefreshCw, Edit2, Save } from 'lucide-react';
+import { Search, Eye, X, Users, Shield, User, Wifi, WifiOff, RefreshCw, Edit2, Save, MessageCircle, Download } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAdminUsers, getOrderStats } from '../../hooks/useAdminData';
@@ -70,6 +70,22 @@ export default function AdminUsers() {
             )}
           </div>
         </div>
+        <button
+          onClick={() => {
+            const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const header = ['Name', 'Email', 'Phone', 'Role', 'Joined', 'Status'];
+            const lines = filtered.map(u => [u.name, u.email || '', u.phone || '', u.role, u.joinDate || '', u.status || 'Active'].map(esc).join(','));
+            const blob = new Blob(['﻿' + [header.map(esc).join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `vexdeals-users-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+          }}
+          className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50"
+        >
+          <Download size={15} /> Export
+        </button>
       </div>
 
       {/* Stats */}
@@ -205,6 +221,16 @@ export default function AdminUsers() {
                             >
                               <Edit2 size={14} />
                             </button>
+                          )}
+                          {u.phone && (
+                            <a
+                              href={`https://wa.me/91${String(u.phone).replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(`Hi ${u.name || ''}! VexDeals se message kar rahe hain. 🛍️`)}`}
+                              target="_blank" rel="noreferrer"
+                              className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
+                              title="WhatsApp"
+                            >
+                              <MessageCircle size={14} />
+                            </a>
                           )}
                         </div>
                       </td>

@@ -5,11 +5,13 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCategories } from '../context/CategoryContext';
 import { VexLogoInline } from './Logo';
+import { useSiteSettings } from '../lib/settings';
 
 export default function Navbar() {
   const { totalItems } = useCart();
   const { user, logout, isStaff, isCustomer } = useAuth();
   const { activeCategories } = useCategories();
+  const settings = useSiteSettings();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,11 +39,12 @@ export default function Navbar() {
   return (
     <>
     <header className="sticky top-0 z-50 glass border-b border-ink-900/5">
-      {/* Announcement */}
-      <div className="bg-brand-gradient text-white text-center py-2 text-[11px] sm:text-xs font-medium px-3">
-        ✦ Free shipping over ₹1000 · Use code{' '}
-        <span className="font-bold">VEXFIRST</span> for 10% off
-      </div>
+      {/* Announcement — editable from Admin → Settings */}
+      {settings.announcement && (
+        <div className="bg-brand-gradient text-white text-center py-2 text-[11px] sm:text-xs font-medium px-3">
+          {settings.announcement}
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
