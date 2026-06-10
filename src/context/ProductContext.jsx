@@ -84,6 +84,7 @@ const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
     image,
     images: images.length ? images : [image],
     video: typeof rawProduct.video === 'string' ? rawProduct.video.trim() : '',
+    brand: typeof rawProduct.brand === 'string' ? rawProduct.brand.trim() : '',
     description: String(rawProduct.description || `${name} is now available on VexDeals.`).trim(),
     specs: Array.isArray(rawProduct.specs)
       ? rawProduct.specs.map((item) => String(item).trim()).filter(Boolean)

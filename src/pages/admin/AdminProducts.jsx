@@ -11,6 +11,7 @@ const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET |
 
 const createEmptyForm = (defaultCategory = 'Electronics') => ({
   name: '',
+  brand: '',
   category: defaultCategory,
   price: '',
   originalPrice: '',
@@ -148,6 +149,7 @@ export default function AdminProducts() {
     setEditId(product.id);
     setEditData({
       name: product.name,
+      brand: product.brand || '',
       price: product.price,
       originalPrice: product.originalPrice,
       stock: product.stock,
@@ -595,6 +597,20 @@ export default function AdminProducts() {
               </label>
 
               <label className="text-sm text-gray-700">
+                <span className="block mb-1 font-medium">Brand <span className="text-gray-400 font-normal">(optional)</span></span>
+                <input
+                  list="vex-brand-list"
+                  value={addForm.brand}
+                  onChange={(e) => setAddForm((current) => ({ ...current, brand: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500"
+                  placeholder="e.g. Ray-Ban, Fastrack"
+                />
+                <datalist id="vex-brand-list">
+                  {[...new Set(productList.map((p) => p.brand).filter(Boolean))].map((b) => <option key={b} value={b} />)}
+                </datalist>
+              </label>
+
+              <label className="text-sm text-gray-700">
                 <span className="block mb-1 font-medium">Category</span>
                 <select
                   value={addForm.category}
@@ -903,6 +919,16 @@ export default function AdminProducts() {
                 <span className="block mb-1 font-medium">Product Name</span>
                 <input value={editData.name || ''} onChange={e => setEditData(c => ({ ...c, name: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500" />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                <span className="block mb-1 font-medium">Brand <span className="text-gray-400 font-normal">(optional)</span></span>
+                <input list="vex-brand-list" value={editData.brand || ''} onChange={e => setEditData(c => ({ ...c, brand: e.target.value }))}
+                  placeholder="e.g. Ray-Ban, Fastrack"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500" />
+                <datalist id="vex-brand-list">
+                  {[...new Set(productList.map((p) => p.brand).filter(Boolean))].map((b) => <option key={b} value={b} />)}
+                </datalist>
               </label>
 
               <label className="text-sm text-gray-700">
