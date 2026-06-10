@@ -195,47 +195,9 @@ export function CategoryProvider({ children }) {
     );
   }, []);
 
-  // One-time migration: ensure newer default categories are present even on
-  // devices that cached an older list. Deferred so the cloud subscription has
-  // settled first; guarded by a version flag so it only runs once per device.
-  const seededRef = useRef(false);
-  useEffect(() => {
-    if (seededRef.current) return undefined;
-
-    let applied = 0;
-    try { applied = Number(localStorage.getItem(SEED_VERSION_KEY) || 0); } catch { applied = 0; }
-    if (applied >= SEED_VERSION) { seededRef.current = true; return undefined; }
-
-    const timer = window.setTimeout(() => {
-      seededRef.current = true;
-      try { localStorage.setItem(SEED_VERSION_KEY, String(SEED_VERSION)); } catch { /* ignore */ }
-
-      const current = categoriesRef.current;
-      const existingNames = new Set(current.map((category) => category.name.toLowerCase()));
-      const additions = NEW_SEED_CATEGORIES.filter((category) => !existingNames.has(category.name.toLowerCase()));
-      if (!additions.length) return;
-
-      const merged = normalizeCategoryList([...current, ...additions]);
-      setCategories(merged);
-
-      if (!db) return;
-
-      if (cloudHasDataRef.current) {
-        // Cloud already populated — just publish the new categories.
-        additions.forEach((category) => {
-          const full = merged.find((item) => item.name.toLowerCase() === category.name.toLowerCase());
-          if (full) setDoc(doc(db, CLOUD_COLLECTION, String(full.id)), serializeCategory(full)).catch(() => {});
-        });
-      } else {
-        // Cloud empty — publish the full merged catalog so nothing is dropped.
-        Promise.all(
-          merged.map((category) => setDoc(doc(db, CLOUD_COLLECTION, String(category.id)), serializeCategory(category)))
-        ).then(() => { cloudHasDataRef.current = true; }).catch(() => {});
-      }
-    }, 2000);
-
-    return () => window.clearTimeout(timer);
-  }, []);
+  // NOTE: The old "auto-seed newer default categories" migration was removed —
+  // it re-added (Eyeglasses/Sunglasses/Contacts) after an admin deleted them,
+  // making categories reappear. Firestore is now the single source of truth.
 
   const ensureCloudSeeded = async (baselineCategories) => {
     if (!db || cloudHasDataRef.current) return;
@@ -345,16 +307,16 @@ export function CategoryProvider({ children }) {
     if (!db) return;
 
     try {
+      // Always delete the category's cloud doc so it can never resync back.
+      await deleteDoc(doc(db, CLOUD_COLLECTION, String(id))).catch(() => {});
       if (!cloudHasDataRef.current) {
-        // Seed with the post-remove list so onSnapshot never reverts the optimistic removal
+        // Publish the remaining categories so the cloud reflects the new list.
         await Promise.all(
           fullUpdated.map((cat) =>
             setDoc(doc(db, CLOUD_COLLECTION, String(cat.id)), serializeCategory(cat))
           )
         );
         cloudHasDataRef.current = true;
-      } else {
-        await deleteDoc(doc(db, CLOUD_COLLECTION, String(id)));
       }
       setSyncState(buildSyncState({
         mode: 'cloud',
