@@ -30,15 +30,20 @@ export default function Products() {
   const [maxPrice, setMaxPrice] = useState(200000);
   const [filterOpen, setFilterOpen] = useState(false);
 
+  // "Premium Brands" is a special category: it shows every product that has a
+  // brand set (instead of matching a literal category name).
+  const isPremiumCat = (c) => String(c || '').trim().toLowerCase() === 'premium brands';
+  const inCategory = (p, c) => isPremiumCat(c) ? Boolean(p.brand && String(p.brand).trim()) : p.category === c;
+
   // Brands available within the chosen category
   const availableBrands = useMemo(() => {
-    const inCat = category === 'All' ? products : products.filter(p => p.category === category);
+    const inCat = category === 'All' ? products : products.filter(p => inCategory(p, category));
     return ['All', ...new Set(inCat.map(p => p.brand).filter(Boolean))];
   }, [products, category]);
 
   const filtered = useMemo(() => {
     let result = [...products];
-    if (category !== 'All') result = result.filter(p => p.category === category);
+    if (category !== 'All') result = result.filter(p => inCategory(p, category));
     if (brand !== 'All') result = result.filter(p => p.brand === brand);
     if (search) result = result.filter(p =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
