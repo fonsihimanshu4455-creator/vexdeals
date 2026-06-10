@@ -49,6 +49,11 @@ export default function CustomerOrders() {
                     {order.date} · {order.paymentMethod}
                   </p>
                   <p className="mt-2 text-sm text-gray-600">{order.address}</p>
+                  {order.trackingId && (
+                    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700">
+                      📦 {order.courierName || 'Courier'} · Tracking: {order.trackingId}
+                    </p>
+                  )}
                 </div>
                 <div className="text-left sm:text-right">
                   <p className="text-xs uppercase tracking-wide text-gray-400">Order total</p>

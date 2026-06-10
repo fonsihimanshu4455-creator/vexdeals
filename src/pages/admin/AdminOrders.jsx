@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Eye, X, ShoppingBag, RefreshCw, Wifi, WifiOff, Trash2, AlertTriangle, Truck } from 'lucide-react';
+import { Search, Eye, X, ShoppingBag, RefreshCw, Wifi, WifiOff, Trash2, AlertTriangle, Truck, Printer, Download, MessageCircle, Save } from 'lucide-react';
 import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAdminOrders } from '../../hooks/useAdminData';
@@ -18,8 +18,83 @@ const statusColors = {
 };
 
 const allStatuses = ['All', 'Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+const dateRanges = ['All time', 'Today', 'This week', 'This month'];
 
 const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
+const orderDate = (o) => new Date(o.createdAt || o.date || 0);
+
+const inDateRange = (o, range) => {
+  if (range === 'All time') return true;
+  const d = orderDate(o);
+  const now = new Date();
+  if (range === 'Today') {
+    return d.toDateString() === now.toDateString();
+  }
+  if (range === 'This week') {
+    const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+    return d >= weekAgo;
+  }
+  if (range === 'This month') {
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }
+  return true;
+};
+
+// Open a print-ready invoice in a new window (user prints / saves as PDF)
+const printInvoice = (order) => {
+  const items = order.products || order.items || [];
+  const addr = typeof order.address === 'string' ? order.address : '';
+  const rows = items.map((it, i) => `
+    <tr>
+      <td>${i + 1}</td><td>${it.name || ''}</td><td>${it.qty || 1}</td>
+      <td>₹${Number(it.price || 0).toLocaleString('en-IN')}</td>
+      <td>₹${Number((it.price || 0) * (it.qty || 1)).toLocaleString('en-IN')}</td>
+    </tr>`).join('');
+  const html = `<!doctype html><html><head><title>Invoice ${order.id}</title><style>
+    body{font-family:Arial,sans-serif;color:#111;margin:32px}
+    h1{font-size:20px;margin:0}.muted{color:#666;font-size:12px}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th,td{border:1px solid #ddd;padding:8px;font-size:13px;text-align:left}
+    th{background:#f5f6f8}.tot{text-align:right;margin-top:12px;font-size:14px}
+    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0b2340;padding-bottom:12px}
+  </style></head><body>
+    <div class="head">
+      <div><h1>VexDeals</h1><div class="muted">Premium Watches & Eyewear<br/>officialvexdeals@gmail.com</div></div>
+      <div style="text-align:right"><b>TAX INVOICE</b><div class="muted">Order: ${order.id}<br/>Date: ${order.date || new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN')}</div></div>
+    </div>
+    <p><b>Bill to:</b> ${order.userName || ''}<br/>
+    ${order.userEmail || ''}${order.phone ? ' · ' + order.phone : ''}<br/>${addr}</p>
+    <table><tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr>${rows}</table>
+    <div class="tot">
+      Subtotal: ₹${Number(order.subtotal || 0).toLocaleString('en-IN')}<br/>
+      Shipping: ${order.shipping === 0 ? 'FREE' : '₹' + Number(order.shipping || 0).toLocaleString('en-IN')}<br/>
+      <b>Total: ₹${Number(order.total || 0).toLocaleString('en-IN')}</b><br/>
+      <span class="muted">Payment: ${order.paymentMethod || order.payment?.method || '—'}</span>
+    </div>
+    <p class="muted" style="margin-top:32px">Thank you for shopping with VexDeals!</p>
+    <script>window.print()</script>
+  </body></html>`;
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+};
+
+// Download orders as CSV (opens in Excel)
+const exportOrdersCSV = (orders) => {
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const header = ['Order ID', 'Date', 'Customer', 'Email', 'Phone', 'Items', 'Subtotal', 'Shipping', 'Total', 'Payment', 'Status', 'Tracking'];
+  const lines = orders.map(o => [
+    o.id, o.date || '', o.userName || '', o.userEmail || '', o.phone || '',
+    (o.products || o.items || []).map(i => `${i.name} x${i.qty || 1}`).join('; '),
+    o.subtotal || 0, o.shipping || 0, o.total || 0,
+    o.paymentMethod || o.payment?.method || '', o.status || '', o.trackingId || '',
+  ].map(esc).join(','));
+  const blob = new Blob(['﻿' + [header.map(esc).join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `vexdeals-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
 
 export default function AdminOrders() {
   const { orders, setOrders, loading, liveSync } = useAdminOrders();
@@ -31,6 +106,19 @@ export default function AdminOrders() {
   const [clearing, setClearing]       = useState(false);
   const [shipping, setShipping]       = useState(false);
   const [shipMsg, setShipMsg]         = useState(null);
+  const [dateFilter, setDateFilter]   = useState('All time');
+  const [trackForm, setTrackForm]     = useState({ courier: '', trackingId: '' });
+  const [savingTrack, setSavingTrack] = useState(false);
+
+  // ── Save courier tracking on the order (customer sees it on My Orders) ────
+  const saveTracking = async (order) => {
+    setSavingTrack(true);
+    const updated = { ...order, courierName: trackForm.courier.trim(), trackingId: trackForm.trackingId.trim(), status: order.status === 'Pending' || order.status === 'Confirmed' ? 'Shipped' : order.status };
+    setOrders(list => list.map(o => o.id === order.id ? updated : o));
+    setViewOrder(updated);
+    if (db) await setDoc(doc(db, 'orders', order.id), updated).catch(() => {});
+    setSavingTrack(false);
+  };
 
   // ── Send order to Shiprocket ────────────────────────────────────────────────
   const sendToShiprocket = async (order) => {
@@ -104,7 +192,7 @@ export default function AdminOrders() {
       (o.id || '').toLowerCase().includes(q) ||
       (o.userName || '').toLowerCase().includes(q) ||
       (o.userEmail || '').toLowerCase().includes(q);
-    return matchStatus && matchSearch;
+    return matchStatus && matchSearch && inDateRange(o, dateFilter);
   });
 
   const totalRevenue = orders
@@ -165,10 +253,17 @@ export default function AdminOrders() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-sm">
             <span className="text-emerald-600 font-semibold">Revenue: {formatPrice(totalRevenue)}</span>
           </div>
+          <button
+            onClick={() => exportOrdersCSV(filtered)}
+            className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl px-4 py-2 text-sm font-semibold"
+            title="Download as Excel/CSV"
+          >
+            <Download size={15} /> Export
+          </button>
           {isAdmin && orders.length > 0 && (
             <button
               onClick={() => setConfirmClear(true)}
@@ -225,6 +320,18 @@ export default function AdminOrders() {
               {s}
             </button>
           ))}
+          <span className="w-px bg-gray-200 mx-1 hidden sm:block" />
+          {dateRanges.map(r => (
+            <button
+              key={r}
+              onClick={() => setDateFilter(r)}
+              className={`px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                dateFilter === r ? 'bg-ink-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -277,7 +384,7 @@ export default function AdminOrders() {
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={() => setViewOrder(order)}
+                        onClick={() => { setViewOrder(order); setTrackForm({ courier: order.courierName || '', trackingId: order.trackingId || '' }); }}
                         className="p-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors"
                       >
                         <Eye size={14} />
@@ -365,6 +472,54 @@ export default function AdminOrders() {
                   <span className="text-xs text-gray-400 font-mono ml-1">
                     {viewOrder.paymentId || viewOrder.payment?.paymentId}
                   </span>
+                )}
+              </div>
+
+              {/* Quick actions: invoice + WhatsApp */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => printInvoice(viewOrder)}
+                  className="flex-1 flex items-center justify-center gap-2 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50"
+                >
+                  <Printer size={15} /> Invoice / Bill
+                </button>
+                {viewOrder.phone && (
+                  <a
+                    href={`https://wa.me/91${String(viewOrder.phone).replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(`Hi ${viewOrder.userName || ''}! Aapka VexDeals order ${viewOrder.id} confirm ho gaya hai. Total: ₹${Number(viewOrder.total || 0).toLocaleString('en-IN')}. Dhanyavaad! 🛍️`)}`}
+                    target="_blank" rel="noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-600"
+                  >
+                    <MessageCircle size={15} /> WhatsApp
+                  </a>
+                )}
+              </div>
+
+              {/* Courier tracking */}
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Courier Tracking <span className="text-gray-400 font-normal">(customer ko dikhega)</span></p>
+                <div className="flex gap-2">
+                  <input
+                    type="text" placeholder="Courier (e.g. Delhivery)"
+                    value={trackForm.courier}
+                    onChange={e => setTrackForm(f => ({ ...f, courier: e.target.value }))}
+                    className="w-36 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500"
+                  />
+                  <input
+                    type="text" placeholder="Tracking number"
+                    value={trackForm.trackingId}
+                    onChange={e => setTrackForm(f => ({ ...f, trackingId: e.target.value }))}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500"
+                  />
+                  <button
+                    onClick={() => saveTracking(viewOrder)}
+                    disabled={savingTrack}
+                    className="px-4 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 disabled:opacity-60 flex items-center gap-1.5"
+                  >
+                    {savingTrack ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                  </button>
+                </div>
+                {viewOrder.trackingId && (
+                  <p className="text-xs text-emerald-600 font-medium mt-1.5">✓ {viewOrder.courierName || 'Courier'} · {viewOrder.trackingId}</p>
                 )}
               </div>
 

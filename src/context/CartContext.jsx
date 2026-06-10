@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useReducer, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useProducts } from './ProductContext';
+import { useAuth } from './AuthContext';
+import { useSiteSettings } from '../lib/settings';
 
 const CartContext = createContext();
 const CART_STORE_KEY = 'vexdeals_cart';
@@ -315,12 +317,33 @@ export function CartProvider({ children }) {
 
   const totalItems = state.items.reduce((acc, i) => acc + i.qty, 0);
   const subtotal = state.items.reduce((acc, i) => acc + i.price * i.qty, 0);
+
+  // Mirror logged-in customers' carts to Firestore so admin can see abandoned
+  // carts. Debounced; an emptied cart syncs too (drops off the abandoned list).
+  const { user, isCustomer } = useAuth() || {};
+  useEffect(() => {
+    if (!db || !isCustomer || !user) return undefined;
+    const key = String(user.email || user.id || '').replace(/[/#?[\]]/g, '_');
+    if (!key) return undefined;
+    const t = setTimeout(() => {
+      setDoc(doc(db, 'carts', key), {
+        userName: user.name || '',
+        userEmail: user.email || '',
+        phone: user.phone || '',
+        items: state.items.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty, image: i.image || '' })),
+        total: state.items.reduce((acc, i) => acc + i.price * i.qty, 0),
+        updatedAt: new Date().toISOString(),
+      }).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [state.items, user, isCustomer]);
   const rawShipping = state.items.reduce(
     (acc, item) => acc + normalizeShippingCharge(item.shippingCharge) * item.qty,
     0
   );
-  // Free delivery when subtotal ≥ ₹1000; otherwise per-product charges apply
-  const shipping = subtotal >= 1000 ? 0 : rawShipping;
+  // Free delivery above the admin-set threshold; otherwise per-product charges
+  const { freeShippingMin } = useSiteSettings();
+  const shipping = subtotal >= (Number(freeShippingMin) || 0) ? 0 : rawShipping;
   const promoValidation = getPromoValidation(state.promoCode, subtotal, promoCatalog);
   const appliedPromo = promoValidation.valid ? promoValidation.promo : null;
   const discount = appliedPromo ? getPromoDiscount(appliedPromo, subtotal + shipping) : 0;
