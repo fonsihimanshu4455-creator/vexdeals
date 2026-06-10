@@ -9,6 +9,24 @@ import ImageCropper from '../../components/ImageCropper';
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dlgnlc3nm';
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'testvex';
 
+// Luxury / popular watch & eyewear brands for the brand autocomplete.
+const LUXURY_BRANDS = [
+  // Watches
+  'Rolex', 'Omega', 'TAG Heuer', 'Cartier', 'Patek Philippe', 'Audemars Piguet',
+  'Hublot', 'Breitling', 'IWC Schaffhausen', 'Panerai', 'Jaeger-LeCoultre',
+  'Vacheron Constantin', 'Richard Mille', 'Zenith', 'Chopard', 'Bvlgari', 'Montblanc',
+  'Rado', 'Longines', 'Tissot', 'Tudor', 'Seiko', 'Citizen', 'Casio', 'G-Shock',
+  'Fossil', 'Daniel Wellington', 'Michael Kors', 'Emporio Armani', 'Tommy Hilfiger',
+  'Guess', 'Titan', 'Fastrack', 'Timex', 'Garmin', 'Apple', 'Samsung', 'Noise',
+  'boAt', 'Fire-Boltt', 'Amazfit',
+  // Eyewear & Sunglasses
+  'Ray-Ban', 'Oakley', 'Gucci', 'Prada', 'Versace', 'Dior', 'Tom Ford', 'Persol',
+  'Carrera', 'Police', 'Vogue Eyewear', 'Maui Jim', 'Burberry', 'Dolce & Gabbana',
+  'Armani Exchange', 'Hugo Boss', 'Calvin Klein', 'Lacoste', 'Saint Laurent',
+  'Chanel', 'Fendi', 'Givenchy', 'Coach', 'Serengeti', 'Costa Del Mar',
+  'Vincent Chase', 'John Jacobs', 'Lenskart Air', 'Idee', 'IDEE',
+].sort((a, b) => a.localeCompare(b));
+
 const createEmptyForm = (defaultCategory = 'Electronics') => ({
   name: '',
   brand: '',
@@ -606,7 +624,7 @@ export default function AdminProducts() {
                   placeholder="e.g. Ray-Ban, Fastrack"
                 />
                 <datalist id="vex-brand-list">
-                  {[...new Set(productList.map((p) => p.brand).filter(Boolean))].map((b) => <option key={b} value={b} />)}
+                  {[...new Set([...LUXURY_BRANDS, ...productList.map((p) => p.brand).filter(Boolean)])].map((b) => <option key={b} value={b} />)}
                 </datalist>
               </label>
 
@@ -927,7 +945,7 @@ export default function AdminProducts() {
                   placeholder="e.g. Ray-Ban, Fastrack"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500" />
                 <datalist id="vex-brand-list">
-                  {[...new Set(productList.map((p) => p.brand).filter(Boolean))].map((b) => <option key={b} value={b} />)}
+                  {[...new Set([...LUXURY_BRANDS, ...productList.map((p) => p.brand).filter(Boolean)])].map((b) => <option key={b} value={b} />)}
                 </datalist>
               </label>
 
