@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Search, Eye, X, Users, Shield, User, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Search, Eye, X, Users, Shield, User, Wifi, WifiOff, RefreshCw, Edit2, Save } from 'lucide-react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { useAdminUsers, getOrderStats } from '../../hooks/useAdminData';
 
 const formatPrice = (p) => `₹${Number(p || 0).toLocaleString('en-IN')}`;
@@ -9,6 +11,32 @@ export default function AdminUsers() {
   const [search, setSearch]         = useState('');
   const [filterRole, setFilterRole] = useState('All');
   const [viewUser, setViewUser]     = useState(null);
+  const [editUser, setEditUser]     = useState(null); // { ...user }
+  const [savingUser, setSavingUser] = useState(false);
+  const [editMsg, setEditMsg]       = useState('');
+
+  const saveUser = async () => {
+    if (!editUser?.id) { setEditMsg('This user cannot be edited.'); return; }
+    if (!db) { setEditMsg('Cloud not available.'); return; }
+    try {
+      setSavingUser(true);
+      setEditMsg('');
+      await setDoc(doc(db, 'users', String(editUser.id)), {
+        name: editUser.name?.trim() || 'Customer',
+        fullName: editUser.name?.trim() || 'Customer',
+        email: editUser.email?.trim() || '',
+        phone: editUser.phone?.trim() || '',
+        gender: editUser.gender || '',
+        status: editUser.status || 'Active',
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      setEditUser(null);
+    } catch {
+      setEditMsg('Could not save. Try again.');
+    } finally {
+      setSavingUser(false);
+    }
+  };
 
   const filtered = allUsers.filter(u => {
     const matchRole = filterRole === 'All' || u.role === filterRole;
@@ -161,12 +189,24 @@ export default function AdminUsers() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => setViewUser({ ...u, totalOrders: orders, totalSpent: spent })}
-                          className="p-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors"
-                        >
-                          <Eye size={14} />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setViewUser({ ...u, totalOrders: orders, totalSpent: spent })}
+                            className="p-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors"
+                            title="View"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          {u.role === 'customer' && u.id && (
+                            <button
+                              onClick={() => { setEditUser({ ...u }); setEditMsg(''); }}
+                              className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -179,6 +219,60 @@ export default function AdminUsers() {
                 <p className="text-gray-500">No users found</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit user modal */}
+      {editUser && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Edit User</h3>
+              <button onClick={() => setEditUser(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            {editMsg && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-2.5 text-sm mb-4">{editMsg}</div>}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+                <input value={editUser.name || ''} onChange={e => setEditUser(u => ({ ...u, name: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <input type="email" value={editUser.email || ''} onChange={e => setEditUser(u => ({ ...u, email: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
+                <input type="tel" value={editUser.phone || ''} onChange={e => setEditUser(u => ({ ...u, phone: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
+                  <select value={editUser.gender || ''} onChange={e => setEditUser(u => ({ ...u, gender: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 bg-white">
+                    <option value="">—</option>
+                    <option>Male</option><option>Female</option><option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                  <select value={editUser.status || 'Active'} onChange={e => setEditUser(u => ({ ...u, status: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 bg-white">
+                    <option>Active</option><option>Blocked</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setEditUser(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">Cancel</button>
+              <button onClick={saveUser} disabled={savingUser}
+                className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 disabled:opacity-60 flex items-center justify-center gap-2">
+                {savingUser ? <><RefreshCw size={16} className="animate-spin" /> Saving…</> : <><Save size={16} /> Save</>}
+              </button>
+            </div>
           </div>
         </div>
       )}
