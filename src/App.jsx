@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { CategoryProvider } from './context/CategoryContext';
 import { ProductProvider } from './context/ProductContext';
 import { CustomerDataProvider } from './context/CustomerDataContext';
-import { initPixel, trackPageView } from './lib/pixel';
+import { trackPageView } from './utils/pixel';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -34,13 +34,15 @@ import AdminSubAdmins from './pages/admin/AdminSubAdmins';
 import AdminMarketing from './pages/admin/AdminMarketing';
 import AdminProfile from './pages/admin/AdminProfile';
 
-// Fires Meta Pixel PageView + scrolls to top on every route change
+// Fires Meta Pixel PageView (for SPA route changes) + scrolls to top.
+// The initial PageView + pixel init happen in index.html.
 function PixelTracker() {
   const location = useLocation();
-  useEffect(() => { initPixel(); }, []);
+  const first = useRef(true);
   useEffect(() => {
-    trackPageView();
     window.scrollTo(0, 0);
+    if (first.current) { first.current = false; return; } // index.html already fired the first PageView
+    trackPageView();
   }, [location.pathname]);
   return null;
 }

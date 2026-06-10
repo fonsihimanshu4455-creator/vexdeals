@@ -6,7 +6,7 @@ import ProductReviews from '../components/ProductReviews';
 import { VexLogoMark } from '../components/Logo';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
-import { trackEvent } from '../lib/pixel';
+import { trackViewContent, trackAddToCart } from '../utils/pixel';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -57,13 +57,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!product) return;
-    trackEvent('ViewContent', {
-      content_ids: [product.id],
-      content_name: product.name,
-      content_type: 'product',
-      value: product.price,
-      currency: 'INR',
-    });
+    trackViewContent({ id: product.id, name: product.name, value: product.price, currency: 'INR' });
   }, [product?.id]);
 
   useEffect(() => {
@@ -97,13 +91,7 @@ export default function ProductDetail() {
     for (let i = 0; i < qty; i++) {
       dispatch({ type: 'ADD_ITEM', payload: product });
     }
-    trackEvent('AddToCart', {
-      content_ids: [product.id],
-      content_name: product.name,
-      content_type: 'product',
-      value: product.price * qty,
-      currency: 'INR',
-    });
+    trackAddToCart({ id: product.id, name: product.name, value: product.price * qty, currency: 'INR', quantity: qty });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
