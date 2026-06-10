@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Eye, X, ShoppingBag, RefreshCw, Wifi, WifiOff, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, Eye, X, ShoppingBag, RefreshCw, Wifi, WifiOff, Trash2, AlertTriangle, Truck } from 'lucide-react';
 import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAdminOrders } from '../../hooks/useAdminData';
@@ -29,6 +29,36 @@ export default function AdminOrders() {
   const [viewOrder, setViewOrder]     = useState(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing]       = useState(false);
+  const [shipping, setShipping]       = useState(false);
+  const [shipMsg, setShipMsg]         = useState(null);
+
+  // ── Send order to Shiprocket ────────────────────────────────────────────────
+  const sendToShiprocket = async (order) => {
+    setShipping(true);
+    setShipMsg(null);
+    try {
+      const res = await fetch('/api/shiprocket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setShipMsg({ type: 'success', text: `Sent to Shiprocket — Order #${data.orderId}, Shipment #${data.shipmentId}` });
+        const updated = { ...order, shiprocketOrderId: data.orderId, shiprocketShipmentId: data.shipmentId, status: 'Processing' };
+        setOrders(list => list.map(o => o.id === order.id ? updated : o));
+        setViewOrder(prev => prev?.id === order.id ? updated : prev);
+        if (db) setDoc(doc(db, 'orders', order.id), updated).catch(() => {});
+      } else {
+        setShipMsg({ type: 'error', text: data.error || 'Failed to send to Shiprocket.' });
+      }
+    } catch {
+      setShipMsg({ type: 'error', text: 'Network error contacting Shiprocket.' });
+    } finally {
+      setShipping(false);
+    }
+  };
+
 
   // ── Clear ALL sales (orders + transactions) — main admin only ───────────────
   const clearAllSales = async () => {
@@ -335,6 +365,26 @@ export default function AdminOrders() {
                   <span className="text-xs text-gray-400 font-mono ml-1">
                     {viewOrder.paymentId || viewOrder.payment?.paymentId}
                   </span>
+                )}
+              </div>
+
+              {/* Shiprocket */}
+              <div className="border-t border-gray-100 pt-4">
+                {viewOrder.shiprocketShipmentId ? (
+                  <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5">
+                    <Truck size={16} /> Sent to Shiprocket · Shipment #{viewOrder.shiprocketShipmentId}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => sendToShiprocket(viewOrder)}
+                    disabled={shipping}
+                    className="w-full flex items-center justify-center gap-2 bg-primary-600 text-white py-2.5 rounded-xl font-semibold hover:bg-primary-700 disabled:opacity-60 transition-colors"
+                  >
+                    {shipping ? <><RefreshCw size={16} className="animate-spin" /> Sending…</> : <><Truck size={16} /> Send to Shiprocket</>}
+                  </button>
+                )}
+                {shipMsg && (
+                  <p className={`mt-2 text-xs ${shipMsg.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>{shipMsg.text}</p>
                 )}
               </div>
 
