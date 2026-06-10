@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, ShieldCheck, Truck, RefreshCw, Sparkles } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import ProductGridSkeleton from '../components/ProductSkeleton';
 import MarketingPosters from '../components/MarketingPosters';
 import InstagramReels from '../components/InstagramReels';
 import { VexLogoMark } from '../components/Logo';
@@ -70,6 +71,11 @@ export default function Home() {
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
   const countForCat = (name) => products.filter(p => p.category === name).length;
 
+  // Show skeletons briefly while products load (premium fast-feel)
+  const [booted, setBooted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setBooted(true), 1200); return () => clearTimeout(t); }, []);
+  const showSkeleton = products.length === 0 && !booted;
+
   useEffect(() => {
     const els = containerRef.current?.querySelectorAll('.reveal') || [];
     const io = new IntersectionObserver(
@@ -101,6 +107,14 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* ── Skeleton (while products load) ──────────────────────────────── */}
+      {showSkeleton && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="skeleton h-8 w-48 rounded mb-7" />
+          <ProductGridSkeleton count={8} />
+        </section>
+      )}
 
       {/* ── Marketing posters ────────────────────────────────────────────── */}
       <MarketingPosters />

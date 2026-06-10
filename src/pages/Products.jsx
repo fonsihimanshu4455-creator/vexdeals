@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import ProductGridSkeleton from '../components/ProductSkeleton';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
 
@@ -29,6 +30,8 @@ export default function Products() {
   const [sort, setSort] = useState('featured');
   const [maxPrice, setMaxPrice] = useState(200000);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [booted, setBooted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setBooted(true), 1200); return () => clearTimeout(t); }, []);
 
   // "Premium Brands" is a special category: it shows every product that has a
   // brand set (instead of matching a literal category name).
@@ -208,7 +211,9 @@ export default function Products() {
 
         {/* Grid */}
         <div className="flex-1">
-          {filtered.length === 0 ? (
+          {products.length === 0 && !booted ? (
+            <ProductGridSkeleton count={9} className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-10" />
+          ) : filtered.length === 0 ? (
             <div className="text-center py-24">
               <h3 className="font-display text-2xl text-ink-900 mb-2">Nothing here yet</h3>
               <p className="text-ink-700/60 mb-7">Try adjusting your search or filters.</p>

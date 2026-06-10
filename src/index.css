@@ -123,3 +123,29 @@
     @apply text-transparent bg-clip-text bg-brand-gradient;
   }
 }
+
+/* ── Premium micro-interactions ─────────────────────────────────────────── */
+@keyframes cartbump {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.animate-bump { animation: cartbump 0.4s ease; }
+
+@keyframes shimmer-slide {
+  100% { transform: translateX(100%); }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e9ecf2;
+  border-radius: 0.75rem;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: shimmer-slide 1.4s infinite;
+}
