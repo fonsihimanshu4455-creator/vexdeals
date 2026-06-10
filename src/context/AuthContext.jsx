@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { users as staticUsers } from '../data/users';
 
@@ -138,15 +138,19 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('vexdeals_user');
   };
 
-  // Update the signed-in user's profile fields (persisted to localStorage)
+  // Update the signed-in user's profile fields. Persists to localStorage and,
+  // for customers, to the shared Firestore `users` doc (cross-device + admin).
   const updateUser = (updates) => {
     setUser(prev => {
       if (!prev) return prev;
       const merged = normalizeUser({ ...prev, ...updates });
       try {
         localStorage.setItem('vexdeals_user', JSON.stringify(merged));
-      } catch {
-        // ignore storage failures
+      } catch { /* ignore storage failures */ }
+      // Sync customer profile to Firestore so it saves permanently
+      if (db && merged.role === 'customer' && merged.id) {
+        const { password: _pw, ...safe } = merged;
+        setDoc(doc(db, 'users', String(merged.id)), { ...safe, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
       }
       return merged;
     });

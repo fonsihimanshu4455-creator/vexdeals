@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import ProductReviews from '../components/ProductReviews';
 import { VexLogoMark } from '../components/Logo';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
@@ -106,12 +107,6 @@ export default function ProductDetail() {
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
-
-  const reviews = [
-    { user: 'Rahul S.', rating: 5, comment: 'Absolutely amazing product! Exceeded all expectations. Highly recommended.', date: '2 days ago' },
-    { user: 'Priya P.', rating: 4, comment: 'Great product for the price. Build quality is excellent.', date: '5 days ago' },
-    { user: 'Amit K.', rating: 5, comment: 'Fast delivery and the product is exactly as described. Love it!', date: '1 week ago' },
-  ];
 
   return (
     <div className="min-h-screen bg-cream-100 py-6">
@@ -451,7 +446,7 @@ export default function ProductDetail() {
                     activeTab === tab ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  {tab === 'reviews' ? `Reviews (${product.reviews.toLocaleString()})` : tab}
+                  {tab === 'reviews' ? 'Reviews' : tab}
                 </button>
               ))}
             </div>
@@ -471,22 +466,7 @@ export default function ProductDetail() {
                 </div>
               )}
               {activeTab === 'reviews' && (
-                <div className="space-y-4">
-                  {reviews.map((review, i) => (
-                    <div key={i} className="bg-gray-50 rounded-2xl p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-gray-800">{review.user}</span>
-                        <span className="text-xs text-gray-500">{review.date}</span>
-                      </div>
-                      <div className="flex mb-2">
-                        {[...Array(5)].map((_, j) => (
-                          <Star key={j} size={13} className={j < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300 fill-gray-300'} />
-                        ))}
-                      </div>
-                      <p className="text-sm text-gray-600">{review.comment}</p>
-                    </div>
-                  ))}
-                </div>
+                <ProductReviews productId={product.id} baseRating={product.rating} />
               )}
             </div>
           </div>
