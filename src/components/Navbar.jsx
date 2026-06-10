@@ -35,6 +35,7 @@ export default function Navbar() {
   const avatar = user?.avatar || 'https://picsum.photos/seed/vexdeals-user/100/100';
 
   return (
+    <>
     <header className="sticky top-0 z-50 glass border-b border-ink-900/5">
       {/* Announcement */}
       <div className="bg-brand-gradient text-white text-center py-2 text-[11px] sm:text-xs font-medium px-3">
@@ -134,6 +135,7 @@ export default function Navbar() {
         </div>
 
       </div>
+      </header>
 
       {/* Mobile menu — full screen */}
       {menuOpen && (
@@ -221,6 +223,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }
