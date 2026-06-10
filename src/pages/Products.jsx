@@ -25,15 +25,24 @@ export default function Products() {
 
   const [search, setSearch] = useState(initialSearch);
   const [category, setCategory] = useState(initialCategory);
+  const [brand, setBrand] = useState('All');
   const [sort, setSort] = useState('featured');
   const [maxPrice, setMaxPrice] = useState(200000);
   const [filterOpen, setFilterOpen] = useState(false);
 
+  // Brands available within the chosen category
+  const availableBrands = useMemo(() => {
+    const inCat = category === 'All' ? products : products.filter(p => p.category === category);
+    return ['All', ...new Set(inCat.map(p => p.brand).filter(Boolean))];
+  }, [products, category]);
+
   const filtered = useMemo(() => {
     let result = [...products];
     if (category !== 'All') result = result.filter(p => p.category === category);
+    if (brand !== 'All') result = result.filter(p => p.brand === brand);
     if (search) result = result.filter(p =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.brand || '').toLowerCase().includes(search.toLowerCase()) ||
       p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
     );
     result = result.filter(p => p.price <= maxPrice);
@@ -47,10 +56,11 @@ export default function Products() {
       default: result.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
     return result;
-  }, [products, category, search, sort, maxPrice]);
+  }, [products, category, brand, search, sort, maxPrice]);
 
   const handleCategoryChange = (cat) => {
     setCategory(cat);
+    setBrand('All'); // brands differ per category
     const params = new URLSearchParams(searchParams);
     if (cat === 'All') params.delete('category');
     else params.set('category', cat);
@@ -114,6 +124,21 @@ export default function Products() {
               </button>
             ))}
           </div>
+
+          {/* Brand filter — appears once brands exist in the chosen category */}
+          {availableBrands.length > 1 && (
+            <div className="flex items-center gap-2 mt-2.5 overflow-x-auto pb-1 scrollbar-none">
+              <span className="shrink-0 text-[11px] font-bold uppercase tracking-widest2 text-ink-700/50 mr-1">Brand</span>
+              {availableBrands.map(b => (
+                <button key={b} onClick={() => setBrand(b)}
+                  className={`shrink-0 px-3.5 py-1 text-[12px] font-medium rounded-full border transition-colors ${
+                    brand === b ? 'bg-ink-900 text-white border-ink-900' : 'bg-white text-ink-700 border-ink-900/15 hover:border-primary-500 hover:text-primary-600'
+                  }`}>
+                  {b === 'All' ? 'All Brands' : b}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
