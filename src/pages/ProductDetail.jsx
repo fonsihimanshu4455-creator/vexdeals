@@ -7,6 +7,7 @@ import { VexLogoMark } from '../components/Logo';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
 import { trackViewContent, trackAddToCart } from '../utils/pixel';
+import { trackProductView, trackAddToCartHit } from '../utils/analytics';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -58,6 +59,7 @@ export default function ProductDetail() {
   useEffect(() => {
     if (!product) return;
     trackViewContent({ id: product.id, name: product.name, value: product.price, currency: 'INR' });
+    trackProductView(product.id);
   }, [product?.id]);
 
   useEffect(() => {
@@ -92,6 +94,7 @@ export default function ProductDetail() {
       dispatch({ type: 'ADD_ITEM', payload: product });
     }
     trackAddToCart({ id: product.id, name: product.name, value: product.price * qty, currency: 'INR', quantity: qty });
+    trackAddToCartHit();
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };

@@ -6,6 +6,7 @@ import { CategoryProvider } from './context/CategoryContext';
 import { ProductProvider } from './context/ProductContext';
 import { CustomerDataProvider } from './context/CustomerDataContext';
 import { trackPageView } from './utils/pixel';
+import { trackVisit } from './utils/analytics';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -35,12 +36,14 @@ import AdminMarketing from './pages/admin/AdminMarketing';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminReviews from './pages/admin/AdminReviews';
 import AdminAbout from './pages/admin/AdminAbout';
+import AdminTracking from './pages/admin/AdminTracking';
 
 // Fires Meta Pixel PageView (for SPA route changes) + scrolls to top.
 // The initial PageView + pixel init happen in index.html.
 function PixelTracker() {
   const location = useLocation();
   const first = useRef(true);
+  useEffect(() => { trackVisit(); }, []);
   useEffect(() => {
     window.scrollTo(0, 0);
     if (first.current) { first.current = false; return; } // index.html already fired the first PageView
@@ -84,6 +87,7 @@ export default function App() {
                     <Route path="marketing"   element={<AdminMarketing />}  />
                     <Route path="reviews"     element={<AdminReviews />}    />
                     <Route path="about"       element={<AdminAbout />}      />
+                    <Route path="tracking"    element={<AdminTracking />}   />
                     <Route path="profile"     element={<AdminProfile />}    />
                   </Route>
 

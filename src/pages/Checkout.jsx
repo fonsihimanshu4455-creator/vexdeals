@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCustomerData } from '../context/CustomerDataContext';
 import { trackInitiateCheckout, trackPurchase } from '../utils/pixel';
+import { trackCheckoutHit, trackPurchaseHit } from '../utils/analytics';
 
 // ── Load Razorpay script dynamically ────────────────────────────────────────
 const loadRazorpay = () =>
@@ -78,6 +79,7 @@ export default function Checkout() {
       currency: 'INR',
       num_items: items.reduce((n, i) => n + (i.qty || 1), 0),
     });
+    trackCheckoutHit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -158,6 +160,7 @@ export default function Checkout() {
       order_id: savedOrder?.id || paymentId,
       contents: items.map((i) => ({ id: i.id, quantity: i.qty || 1 })),
     });
+    trackPurchaseHit(total);
     setOrdered(true);
     clearCart();
     setTimeout(() => navigate(savedOrder ? '/account/orders' : '/'), 4000);
