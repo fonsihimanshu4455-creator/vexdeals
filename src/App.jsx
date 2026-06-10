@@ -33,6 +33,8 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminSubAdmins from './pages/admin/AdminSubAdmins';
 import AdminMarketing from './pages/admin/AdminMarketing';
 import AdminProfile from './pages/admin/AdminProfile';
+import AdminReviews from './pages/admin/AdminReviews';
+import AdminAbout from './pages/admin/AdminAbout';
 
 // Fires Meta Pixel PageView (for SPA route changes) + scrolls to top.
 // The initial PageView + pixel init happen in index.html.
@@ -80,6 +82,8 @@ export default function App() {
                     <Route path="categories"  element={<AdminCategories />} />
                     <Route path="sub-admins"  element={<AdminSubAdmins />}  />
                     <Route path="marketing"   element={<AdminMarketing />}  />
+                    <Route path="reviews"     element={<AdminReviews />}    />
+                    <Route path="about"       element={<AdminAbout />}      />
                     <Route path="profile"     element={<AdminProfile />}    />
                   </Route>
 
