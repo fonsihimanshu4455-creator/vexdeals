@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
@@ -29,6 +29,30 @@ export default function ProductDetail() {
   const openLightbox = () => { setLightboxOpen(true); setZoomLevel(1); };
   const closeLightbox = () => { setLightboxOpen(false); setZoomLevel(1); };
   const cycleZoom = () => setZoomLevel(z => z >= 3 ? 1 : z + 1);
+
+  // Touch swipe → next / prev image
+  const touchX = useRef(null);
+  const touchY = useRef(null);
+  const swipedRef = useRef(false);
+  const onTouchStart = (e) => {
+    touchX.current = e.touches[0].clientX;
+    touchY.current = e.touches[0].clientY;
+    swipedRef.current = false;
+  };
+  const onTouchEnd = (e) => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    const dy = e.changedTouches[0].clientY - touchY.current;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      swipedRef.current = true;
+      if (dx < 0) nextImg(); else prevImg();
+    }
+    touchX.current = null;
+  };
+  const handleMainClick = () => {
+    if (swipedRef.current) { swipedRef.current = false; return; } // ignore tap after swipe
+    openLightbox();
+  };
 
   useEffect(() => {
     if (!product) return;
@@ -108,7 +132,8 @@ export default function ProductDetail() {
             {/* Image gallery */}
             <div className="space-y-3">
               {/* Main image */}
-              <div className="relative group aspect-square rounded-2xl overflow-hidden bg-white border border-gray-100 cursor-zoom-in" onClick={openLightbox}>
+              <div className="relative group aspect-square rounded-2xl overflow-hidden bg-white border border-gray-100 cursor-zoom-in select-none touch-pan-y"
+                onClick={handleMainClick} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
                 <img
                   src={images[selectedImg]}
                   alt={product.name}
