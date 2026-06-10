@@ -5,17 +5,20 @@ import { AuthProvider } from './context/AuthContext';
 import { CategoryProvider } from './context/CategoryContext';
 import { ProductProvider } from './context/ProductContext';
 import { CustomerDataProvider } from './context/CustomerDataContext';
+import { WishlistProvider } from './context/WishlistContext';
 import { trackPageView } from './utils/pixel';
 import { trackVisit } from './utils/analytics';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartToast from './components/CartToast';
+import WhatsAppButton from './components/WhatsAppButton';
 
 import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
+import Wishlist from './pages/Wishlist';
 import Checkout from './pages/Checkout';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
@@ -62,6 +65,7 @@ function CustomerLayout({ children }) {
       <main key={location.pathname} className="flex-1 animate-fade-in">{children}</main>
       <Footer />
       <CartToast />
+      <WhatsAppButton />
     </div>
   );
 }
@@ -74,6 +78,7 @@ export default function App() {
           <ProductProvider>
             <CategoryProvider>
               <CartProvider>
+                <WishlistProvider>
                 <PixelTracker />
                 <Routes>
                   {/* Admin portal login — desktop accessible */}
@@ -110,7 +115,9 @@ export default function App() {
                   <Route path="/account/transactions" element={<CustomerLayout><CustomerTransactions /></CustomerLayout>} />
                   <Route path="/account/addresses"    element={<CustomerLayout><CustomerAddresses /></CustomerLayout>} />
                   <Route path="/account/profile"      element={<CustomerLayout><CustomerProfile /></CustomerLayout>} />
+                  <Route path="/wishlist"             element={<CustomerLayout><Wishlist /></CustomerLayout>} />
                 </Routes>
+                </WishlistProvider>
               </CartProvider>
             </CategoryProvider>
           </ProductProvider>

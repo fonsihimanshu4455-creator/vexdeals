@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Star, Heart, Plus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { VexLogoMark } from './Logo';
 import { trackAddToCart } from '../utils/pixel';
 import { trackAddToCartHit } from '../utils/analytics';
 
 export default function ProductCard({ product }) {
   const { dispatch } = useCart();
+  const { has, toggle } = useWishlist();
+  const wished = has(product.id);
 
   const addToCart = (e) => {
     e.preventDefault();
@@ -48,10 +51,13 @@ export default function ProductCard({ product }) {
 
         {/* Wishlist */}
         <button
-          onClick={e => e.preventDefault()}
-          className="absolute top-3 right-3 w-9 h-9 glass rounded-full flex items-center justify-center text-ink-700 opacity-0 group-hover:opacity-100 hover:text-accent-600 transition-all duration-300"
+          onClick={(e) => { e.preventDefault(); toggle(product.id); }}
+          aria-label="Add to wishlist"
+          className={`absolute top-3 right-3 w-9 h-9 glass rounded-full flex items-center justify-center transition-all duration-300 ${
+            wished ? 'opacity-100 text-red-500' : 'text-ink-700 opacity-0 group-hover:opacity-100 hover:text-red-500'
+          }`}
         >
-          <Heart size={15} />
+          <Heart size={15} className={wished ? 'fill-red-500' : ''} />
         </button>
 
         {/* Brand watermark */}

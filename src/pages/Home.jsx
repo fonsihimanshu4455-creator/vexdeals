@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard';
 import ProductGridSkeleton from '../components/ProductSkeleton';
 import MarketingPosters from '../components/MarketingPosters';
 import InstagramReels from '../components/InstagramReels';
+import RecentlyViewed from '../components/RecentlyViewed';
 import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
@@ -230,6 +231,9 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* ── Recently viewed ──────────────────────────────────────────────── */}
+      <RecentlyViewed />
 
     </div>
   );

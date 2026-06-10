@@ -6,14 +6,19 @@ import ProductReviews from '../components/ProductReviews';
 import { VexLogoMark } from '../components/Logo';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
+import { useWishlist } from '../context/WishlistContext';
 import { trackViewContent, trackAddToCart } from '../utils/pixel';
 import { trackProductView, trackAddToCartHit } from '../utils/analytics';
+import { addRecent } from '../lib/recentlyViewed';
+import RecentlyViewed from '../components/RecentlyViewed';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const { products } = useProducts();
   const product = products.find(p => p.id === Number(id));
   const { dispatch, items } = useCart();
+  const { has, toggle } = useWishlist();
+  const wished = product ? has(product.id) : false;
 
   const [selectedImg, setSelectedImg] = useState(0);
   const [qty, setQty] = useState(1);
@@ -60,6 +65,7 @@ export default function ProductDetail() {
     if (!product) return;
     trackViewContent({ id: product.id, name: product.name, value: product.price, currency: 'INR' });
     trackProductView(product.id);
+    addRecent(product.id);
   }, [product?.id]);
 
   useEffect(() => {
@@ -390,10 +396,19 @@ export default function ProductDetail() {
                 >
                   {added ? <><Check size={18} /> Added to Cart!</> : <><ShoppingCart size={18} /> Add to Cart</>}
                 </button>
-                <button className="w-12 h-12 border border-gray-200 rounded-xl flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors">
-                  <Heart size={18} />
+                <button
+                  onClick={() => toggle(product.id)}
+                  aria-label="Add to wishlist"
+                  className={`w-12 h-12 border rounded-xl flex items-center justify-center transition-colors ${
+                    wished ? 'border-red-200 bg-red-50 text-red-500' : 'border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-500'
+                  }`}
+                >
+                  <Heart size={18} className={wished ? 'fill-red-500' : ''} />
                 </button>
-                <button className="w-12 h-12 border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors">
+                <button
+                  onClick={() => { if (navigator.share) navigator.share({ title: product.name, url: window.location.href }).catch(() => {}); else { navigator.clipboard?.writeText(window.location.href); } }}
+                  className="w-12 h-12 border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors"
+                >
                   <Share2 size={18} />
                 </button>
               </div>
@@ -472,6 +487,8 @@ export default function ProductDetail() {
             </div>
           </div>
         )}
+
+        <RecentlyViewed excludeId={product.id} />
       </div>
     </div>
   );

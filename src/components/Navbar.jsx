@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Search, User, Menu, X, LogOut, LayoutDashboard, CreditCard, MapPin, Package } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, X, LogOut, LayoutDashboard, CreditCard, MapPin, Package, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCategories } from '../context/CategoryContext';
+import { useProducts } from '../context/ProductContext';
+import { useWishlist } from '../context/WishlistContext';
 import { VexLogoInline } from './Logo';
 import { useSiteSettings } from '../lib/settings';
 
@@ -11,7 +13,18 @@ export default function Navbar() {
   const { totalItems } = useCart();
   const { user, logout, isStaff, isCustomer } = useAuth();
   const { activeCategories } = useCategories();
+  const { products } = useProducts();
+  const { count: wishCount } = useWishlist();
   const settings = useSiteSettings();
+
+  // Live search suggestions
+  const suggestions = searchQuery.trim().length >= 1
+    ? products.filter(p => {
+        const q = searchQuery.toLowerCase();
+        return p.name.toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
+      }).slice(0, 6)
+    : [];
+  const goToProduct = (id) => { setSearchQuery(''); navigate(`/products/${id}`); };
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,22 +66,47 @@ export default function Navbar() {
           </Link>
 
           {/* Search — desktop */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md">
-            <div className="flex w-full items-center bg-cream-100 rounded-full border border-transparent focus-within:border-primary-300 focus-within:bg-white transition-colors px-4">
-              <Search size={17} className="text-ink-700/50" />
-              <input
-                type="text"
-                placeholder="Search watches, eyewear…"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent placeholder:text-ink-700/40"
-              />
-              <button type="submit" className="text-primary-600 hover:text-primary-700 font-semibold text-sm">Go</button>
-            </div>
-          </form>
+          <div className="hidden md:flex flex-1 max-w-md relative">
+            <form onSubmit={handleSearch} className="w-full">
+              <div className="flex w-full items-center bg-cream-100 rounded-full border border-transparent focus-within:border-primary-300 focus-within:bg-white transition-colors px-4">
+                <Search size={17} className="text-ink-700/50" />
+                <input
+                  type="text"
+                  placeholder="Search watches, eyewear…"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent placeholder:text-ink-700/40"
+                />
+                <button type="submit" className="text-primary-600 hover:text-primary-700 font-semibold text-sm">Go</button>
+              </div>
+            </form>
+            {suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-ink-900/5 shadow-card overflow-hidden z-50">
+                {suggestions.map(p => (
+                  <button key={p.id} onMouseDown={() => goToProduct(p.id)}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-cream-100 text-left">
+                    <img src={p.image} alt="" className="w-10 h-10 rounded-lg object-contain bg-cream-100 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-ink-900 truncate">{p.name}</p>
+                      <p className="text-xs text-ink-700/50">{p.category}</p>
+                    </div>
+                    <span className="text-sm font-bold text-ink-900 shrink-0">₹{Number(p.price).toLocaleString('en-IN')}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Right */}
           <div className="flex items-center gap-1 sm:gap-2">
+            <Link to="/wishlist" className="relative p-2.5 rounded-full hover:bg-cream-100 transition-colors group hidden sm:block">
+              <Heart size={20} className="text-ink-800 group-hover:text-red-500 transition-colors" />
+              {wishCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  {wishCount > 9 ? '9+' : wishCount}
+                </span>
+              )}
+            </Link>
             <Link to="/cart" className="relative p-2.5 rounded-full hover:bg-cream-100 transition-colors group">
               <ShoppingBag size={21} className="text-ink-800 group-hover:text-primary-600 transition-colors" />
               {totalItems > 0 && (
@@ -172,6 +210,9 @@ export default function Navbar() {
           </div>
 
           <Link to="/products" onClick={() => setMenuOpen(false)} className="btn-grad w-full text-sm">View All Deals</Link>
+          <Link to="/wishlist" onClick={() => setMenuOpen(false)} className="btn-outline w-full text-sm">
+            <Heart size={15} /> Wishlist{wishCount > 0 ? ` (${wishCount})` : ''}
+          </Link>
           <Link to="/about" onClick={() => setMenuOpen(false)} className="btn-outline w-full text-sm">About Us</Link>
 
           <div className="border-t border-ink-900/5 pt-4">

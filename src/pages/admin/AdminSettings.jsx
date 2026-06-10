@@ -27,6 +27,7 @@ export default function AdminSettings() {
       await setDoc(doc(db, 'site', 'settings'), {
         announcement: String(form.announcement || '').trim(),
         freeShippingMin: min,
+        whatsappNumber: String(form.whatsappNumber || '').replace(/\D/g, ''),
         updatedAt: new Date().toISOString(),
       }, { merge: true });
       setMsg('✓ Saved! Changes are live across the site.');
@@ -70,6 +71,17 @@ export default function AdminSettings() {
             className="w-48 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500"
           />
           <p className="text-xs text-gray-400 mt-1">Cart subtotal isse upar ho to shipping FREE. 0 = hamesha free shipping.</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">WhatsApp support number <span className="text-gray-400 font-normal">(country code ke saath, bina +)</span></label>
+          <input
+            value={form.whatsappNumber}
+            onChange={e => setForm(f => ({ ...f, whatsappNumber: e.target.value }))}
+            className="w-64 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500"
+            placeholder="919034948078"
+          />
+          <p className="text-xs text-gray-400 mt-1">Site pe floating WhatsApp button isi number pe message kholega. Khaali = button hide.</p>
         </div>
       </div>
 

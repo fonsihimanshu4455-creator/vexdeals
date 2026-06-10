@@ -7,6 +7,7 @@ import { db } from '../config/firebase';
 export const DEFAULT_SETTINGS = {
   announcement: '✦ Free shipping over ₹1000 · Use code VEXFIRST for 10% off',
   freeShippingMin: 1000,
+  whatsappNumber: '919034948078',
 };
 
 export function useSiteSettings() {
