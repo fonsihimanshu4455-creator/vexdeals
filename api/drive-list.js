@@ -28,6 +28,40 @@ function parseEmbeddedView(html) {
   return out;
 }
 
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
+
+// Strategy A: the public "embeddedfolderview" page (clean flip-entry markup).
+async function viaEmbeddedView(folderId) {
+  const url = `https://drive.google.com/embeddedfolderview?id=${encodeURIComponent(folderId)}#list`;
+  const r = await fetch(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9' } });
+  if (!r.ok) return { files: [], status: r.status };
+  return { files: parseEmbeddedView(await r.text()), status: 200 };
+}
+
+// Strategy B: the normal folder page, which embeds file rows as JS arrays like
+// ["<id>",["<parent>"],"<name>",..."image/jpeg"...]. We pull id+name pairs that
+// sit next to an image mime type.
+async function viaFolderPage(folderId) {
+  const url = `https://drive.google.com/drive/folders/${encodeURIComponent(folderId)}`;
+  const r = await fetch(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9' } });
+  if (!r.ok) return { files: [], status: r.status };
+  const html = await r.text();
+  const out = [];
+  const seen = new Set();
+  // Match: "ID","PARENT",["NAME"  ... up to an image mime nearby.
+  const re = /\["([\w-]{25,})"\s*,\s*\["[\w-]{10,}"\]\s*,\s*"((?:[^"\\]|\\.)*)"[\s\S]{0,400}?"(image\/[a-z+]+)"/g;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const id = m[1];
+    if (seen.has(id)) continue;
+    seen.add(id);
+    let name = '';
+    try { name = JSON.parse(`"${m[2]}"`); } catch { name = m[2]; }
+    out.push({ id, name });
+  }
+  return { files: out, status: 200 };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -37,16 +71,15 @@ export default async function handler(req, res) {
   if (!folderId) { res.status(400).json({ error: 'Missing folderId' }); return; }
 
   try {
-    const url = `https://drive.google.com/embeddedfolderview?id=${encodeURIComponent(folderId)}#list`;
-    const r = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-    if (!r.ok) { res.status(502).json({ error: `Drive returned ${r.status}. Folder ko "Anyone with the link" public karo.` }); return; }
-    const html = await r.text();
-    const files = parseEmbeddedView(html);
+    let { files, status } = await viaEmbeddedView(folderId);
+    if (!files.length) {
+      const b = await viaFolderPage(folderId);
+      if (b.files.length) { files = b.files; status = 200; }
+      else if (status >= 400 || b.status >= 400) {
+        res.status(502).json({ error: `Drive ne folder nahi diya (${status}/${b.status}). Folder ko "Anyone with the link" public karo.` });
+        return;
+      }
+    }
     // Keep image-like files; if names are missing we can't filter, so keep all.
     const imgs = files.filter((f) => !f.name || /\.(jpe?g|png|webp|gif|bmp|avif|heic)$/i.test(f.name));
     const result = imgs.length ? imgs : files;
