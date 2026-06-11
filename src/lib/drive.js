@@ -14,10 +14,28 @@ export const extractFileId = (link) => {
   return m ? m[1] : '';
 };
 
-export const driveImageUrl = (id) => `https://drive.google.com/uc?export=download&id=${id}`;
+// lh3 serves the raw image bytes for any public Drive file — Cloudinary can
+// fetch this reliably (uc?export=download often returns an HTML interstitial).
+export const driveImageUrl = (id) => `https://lh3.googleusercontent.com/d/${id}=w2000`;
 
-// Lists image files inside a PUBLIC Drive folder (requires Drive API enabled).
+// Lists image files inside a PUBLIC Drive folder.
+// Primary path: our serverless endpoint that reads Drive's public folder page —
+// needs NO API key, so it works even without Cloud-console access. The folder
+// just has to be shared as "Anyone with the link".
+// Fallback: the official Drive API (only works if a Drive-enabled key exists).
 export async function listFolderImages(folderId) {
+  // 1) Try the keyless serverless scraper first.
+  try {
+    const res = await fetch(`/api/drive-list?folderId=${encodeURIComponent(folderId)}`);
+    const data = await res.json();
+    if (res.ok && Array.isArray(data.files) && data.files.length) return data.files;
+    if (data.error && !DRIVE_KEY) throw new Error(data.error);
+  } catch (e) {
+    if (!DRIVE_KEY) throw e;
+    // otherwise fall through to the API attempt below
+  }
+
+  // 2) Fallback to the official Drive API (requires a Drive-enabled key).
   const out = [];
   let pageToken = '';
   do {
