@@ -16,6 +16,10 @@ export default function Navbar() {
   const { products } = useProducts();
   const { count: wishCount } = useWishlist();
   const settings = useSiteSettings();
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen]       = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Live search suggestions
   const suggestions = searchQuery.trim().length >= 1
@@ -25,10 +29,6 @@ export default function Navbar() {
       }).slice(0, 6)
     : [];
   const goToProduct = (id) => { setSearchQuery(''); navigate(`/products/${id}`); };
-  const navigate = useNavigate();
-  const [menuOpen, setMenuOpen]       = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleSearch = (e) => {
     e.preventDefault();
