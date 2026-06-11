@@ -5,7 +5,7 @@ import { useProducts } from '../context/ProductContext';
 import { useWishlist } from '../context/WishlistContext';
 
 export default function Wishlist() {
-  const { products } = useProducts();
+  const { visibleProducts: products } = useProducts();
   const { ids } = useWishlist();
   const items = ids.map((id) => products.find((p) => p.id === id)).filter(Boolean);
 

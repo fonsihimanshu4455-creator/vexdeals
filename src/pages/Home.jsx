@@ -57,7 +57,7 @@ function Heading({ eyebrow, title, to, linkLabel = 'View all' }) {
 
 export default function Home() {
   const { activeCategories } = useCategories();
-  const { products } = useProducts();
+  const { visibleProducts: products } = useProducts();
   const containerRef = useRef(null);
 
   // Order each section by its admin-set number (lower = first; unset goes last)

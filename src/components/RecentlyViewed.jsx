@@ -3,7 +3,7 @@ import { useProducts } from '../context/ProductContext';
 import { getRecent } from '../lib/recentlyViewed';
 
 export default function RecentlyViewed({ excludeId, limit = 4, title = 'Recently Viewed' }) {
-  const { products } = useProducts();
+  const { visibleProducts: products } = useProducts();
   const ids = getRecent().filter((id) => id !== excludeId);
   const items = ids.map((id) => products.find((p) => p.id === id)).filter(Boolean).slice(0, limit);
   if (items.length === 0) return null;

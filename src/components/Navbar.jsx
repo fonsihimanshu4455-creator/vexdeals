@@ -13,7 +13,7 @@ export default function Navbar() {
   const { totalItems } = useCart();
   const { user, logout, isStaff, isCustomer } = useAuth();
   const { activeCategories } = useCategories();
-  const { products } = useProducts();
+  const { visibleProducts: products } = useProducts();
   const { count: wishCount } = useWishlist();
   const settings = useSiteSettings();
   const navigate = useNavigate();
