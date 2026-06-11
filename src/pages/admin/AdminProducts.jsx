@@ -847,13 +847,24 @@ export default function AdminProducts() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex flex-col gap-0.5">
-                      {product.featured && <span className="text-[10px] bg-primary-100 text-primary-700 font-bold px-1.5 py-0.5 rounded w-fit">Featured</span>}
-                      {product.isBestseller && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded w-fit">Bestseller</span>}
-                      {product.isNew && <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded w-fit">New</span>}
-                      {product.discount > 0 && <span className="text-[10px] bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded w-fit">-{product.discount}%</span>}
-                      {product.hidden && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded w-fit">Hidden</span>}
-                      {!product.featured && !product.isBestseller && !product.isNew && !product.hidden && <span className="text-xs text-gray-400">—</span>}
+                    {/* Click any chip to toggle that flag right from the list — no need to open Edit */}
+                    <div className="flex flex-wrap gap-1 max-w-[230px]">
+                      {[
+                        { key: 'isNew', label: 'New Arrival', on: 'bg-emerald-100 text-emerald-700' },
+                        { key: 'flashSale', label: 'Flash Sale', on: 'bg-red-100 text-red-600' },
+                        { key: 'featured', label: 'Featured', on: 'bg-primary-100 text-primary-700' },
+                        { key: 'isBestseller', label: 'Bestseller', on: 'bg-amber-100 text-amber-700' },
+                      ].map((t) => (
+                        <button
+                          key={t.key}
+                          onClick={() => updateProduct(product.id, { [t.key]: !product[t.key] })}
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition-colors ${product[t.key] ? `${t.on} border-transparent` : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'}`}
+                          title={`${product[t.key] ? 'Remove' : 'Add'} ${t.label}`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                      {product.discount > 0 && <span className="text-[10px] bg-red-50 text-red-500 font-bold px-1.5 py-0.5 rounded">-{product.discount}%</span>}
                     </div>
                   </td>
                   <td className="px-4 py-3">
