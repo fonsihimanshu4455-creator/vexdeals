@@ -738,6 +738,21 @@ export default function AdminProducts() {
         <p className="mt-1">{productSyncState.message}</p>
       </div>
 
+      {/* Prominent, dedicated Drive folder import button — impossible to miss */}
+      <button
+        onClick={() => { setImportMsg(''); setImportProgress({ done: 0, total: 0, failed: 0 }); setImportOpen(true); }}
+        className="w-full flex items-center justify-between gap-3 bg-gradient-to-r from-ink-900 to-primary-700 text-white px-5 py-4 rounded-2xl shadow-sm hover:from-ink-900 hover:to-primary-600 transition-colors"
+      >
+        <span className="flex items-center gap-3 text-left">
+          <span className="bg-white/15 rounded-xl p-2"><Upload size={20} /></span>
+          <span>
+            <span className="block font-bold text-base">Google Drive Folder se Bulk Import</span>
+            <span className="block text-white/80 text-xs">Pura folder link daalo — saari images ek saath products ban jayengi (₹999, delivery ₹199)</span>
+          </span>
+        </span>
+        <span className="bg-accent-500 text-ink-900 font-bold text-sm px-4 py-2 rounded-xl shrink-0">Import</span>
+      </button>
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
