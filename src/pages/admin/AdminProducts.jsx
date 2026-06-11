@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2, Download, Percent, Copy } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
-import { uploadToCloudinary, driveDirectUrl } from '../../lib/cloudinary';
+import { uploadToCloudinary } from '../../lib/cloudinary';
+import { extractFolderId, extractFileId, driveImageUrl, listFolderImages } from '../../lib/drive';
 import ImageCropper from '../../components/ImageCropper';
 
 // Cloudinary (free, no card) — used for product video uploads.
@@ -126,7 +127,7 @@ const getImageDimensions = (src) =>
 
 export default function AdminProducts() {
   const { products: productList, addProduct, updateProduct, deleteProduct, syncState: productSyncState } = useProducts();
-  const { categories: adminCategories } = useCategories();
+  const { categories: adminCategories, addCategory } = useCategories();
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('All');
   const [editId, setEditId] = useState(null);
@@ -149,33 +150,62 @@ export default function AdminProducts() {
   const [bulkApplying, setBulkApplying] = useState(false);
   // Bulk import from links
   const [importOpen, setImportOpen] = useState(false);
-  const [importForm, setImportForm] = useState({ links: '', namePrefix: 'VexDeals Premium', category: '', price: '999', originalPrice: '1999' });
+  const [importForm, setImportForm] = useState({ links: '', namePrefix: 'VexDeals Premium', category: '', price: '999', originalPrice: '1999', delivery: '199' });
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState({ done: 0, total: 0, failed: 0 });
   const [importMsg, setImportMsg] = useState('');
 
-  // ── Bulk import: paste image/Drive links → create one product per link ──────
+  // ── Bulk import: paste a folder link OR image links → create products ──────
   const doBulkImport = async () => {
-    const links = importForm.links.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
-    if (!links.length) { setImportMsg('Paste at least one image link.'); return; }
+    const lines = importForm.links.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+    if (!lines.length) { setImportMsg('Paste a folder link or image links.'); return; }
+
     const price = Number(importForm.price) || 999;
     const originalPrice = Number(importForm.originalPrice) || price;
-    const category = importForm.category || defaultCategory;
+    const shippingCharge = Math.min(500, Math.max(0, Number(importForm.delivery) || 0));
+    const category = (importForm.category || '').trim() || defaultCategory;
     const prefix = importForm.namePrefix.trim() || 'VexDeals Product';
 
     setImporting(true);
     setImportMsg('');
-    setImportProgress({ done: 0, total: links.length, failed: 0 });
+    setImportProgress({ done: 0, total: 0, failed: 0 });
+
+    // 1) Expand folder links into individual image URLs
+    let imageUrls = [];
+    try {
+      for (const line of lines) {
+        const folderId = extractFolderId(line);
+        if (folderId) {
+          const files = await listFolderImages(folderId);
+          files.forEach(f => imageUrls.push(driveImageUrl(f.id)));
+        } else {
+          const fileId = extractFileId(line);
+          imageUrls.push(fileId ? driveImageUrl(fileId) : line);
+        }
+      }
+    } catch (e) {
+      setImporting(false);
+      setImportMsg(`Folder padhne me dikkat: ${e.message}. Folder ko "Anyone with link" public karo, aur Drive API enable hona chahiye. Ya files ke individual links daalo.`);
+      return;
+    }
+
+    if (!imageUrls.length) { setImporting(false); setImportMsg('No images found in that folder/links.'); return; }
+
+    // 2) Create category if new
+    const exists = editableCategoryNames.some(c => c.toLowerCase() === category.toLowerCase());
+    if (!exists) { try { await addCategory(category, '🛍️'); } catch { /* ignore */ } }
+
+    // 3) Upload each image to Cloudinary + create product
+    setImportProgress({ done: 0, total: imageUrls.length, failed: 0 });
     let done = 0, failed = 0;
     const startNum = productList.length + 1;
 
-    for (let i = 0; i < links.length; i++) {
-      const direct = driveDirectUrl(links[i]);
-      let imageUrl = direct;
+    for (let i = 0; i < imageUrls.length; i++) {
+      let imageUrl = imageUrls[i];
       try {
-        imageUrl = await uploadToCloudinary(direct, 'image'); // host on Cloudinary (stable + fast)
+        imageUrl = await uploadToCloudinary(imageUrls[i], 'image'); // host on Cloudinary (stable + fast)
       } catch {
-        imageUrl = direct; // fallback to the raw link
+        imageUrl = imageUrls[i]; // fallback to the raw link
       }
       try {
         await addProduct({
@@ -184,7 +214,7 @@ export default function AdminProducts() {
           price,
           originalPrice,
           stock: 50,
-          shippingCharge: 0,
+          shippingCharge,
           images: [imageUrl],
           image: imageUrl,
           rating: 4.5,
@@ -197,7 +227,7 @@ export default function AdminProducts() {
       } catch {
         failed += 1;
       }
-      setImportProgress({ done, total: links.length, failed });
+      setImportProgress({ done, total: imageUrls.length, failed });
     }
     setImporting(false);
     setImportMsg(`✓ ${done} product${done !== 1 ? 's' : ''} added${failed ? ` · ${failed} failed` : ''}.`);
@@ -554,14 +584,14 @@ export default function AdminProducts() {
               <h3 className="text-lg font-bold text-gray-900">Bulk Import Products</h3>
               <button onClick={() => !importing && setImportOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
-            <p className="text-xs text-gray-500 mb-4">Image links (Google Drive ya direct) paste karo — <b>ek link per line</b>. Har link se ek product banega.</p>
+            <p className="text-xs text-gray-500 mb-4"><b>Poore folder ka link</b> paste karo (saari images se products ban jayenge), ya alag-alag image links (ek per line).</p>
 
             <div className="space-y-4">
               <textarea
                 rows={6}
                 value={importForm.links}
                 onChange={e => setImportForm(f => ({ ...f, links: e.target.value }))}
-                placeholder={'https://drive.google.com/file/d/FILE_ID/view\nhttps://drive.google.com/file/d/FILE_ID2/view\n...'}
+                placeholder={'https://drive.google.com/drive/folders/FOLDER_ID\n(ya har image ka link, ek per line)'}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 font-mono resize-none"
               />
               <div className="grid grid-cols-2 gap-3">
@@ -571,11 +601,14 @@ export default function AdminProducts() {
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
-                  <select value={importForm.category} onChange={e => setImportForm(f => ({ ...f, category: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 bg-white">
-                    {editableCategoryNames.map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Category <span className="text-gray-400 font-normal">(nayi bhi type kar sakte ho)</span></label>
+                  <input list="vex-import-cats" value={importForm.category}
+                    onChange={e => setImportForm(f => ({ ...f, category: e.target.value }))}
+                    placeholder="e.g. Drive Collection"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                  <datalist id="vex-import-cats">
+                    {editableCategoryNames.map(c => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Price (₹)</label>
@@ -585,6 +618,11 @@ export default function AdminProducts() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Original price (₹) <span className="text-gray-400 font-normal">(cut)</span></label>
                   <input type="number" value={importForm.originalPrice} onChange={e => setImportForm(f => ({ ...f, originalPrice: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Delivery charge (₹)</label>
+                  <input type="number" value={importForm.delivery} onChange={e => setImportForm(f => ({ ...f, delivery: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
                 </div>
               </div>
@@ -671,7 +709,7 @@ export default function AdminProducts() {
             <Percent size={15} /> Bulk Discount
           </button>
           <button
-            onClick={() => { setImportMsg(''); setImportProgress({ done: 0, total: 0, failed: 0 }); setImportForm(f => ({ ...f, category: f.category || defaultCategory })); setImportOpen(true); }}
+            onClick={() => { setImportMsg(''); setImportProgress({ done: 0, total: 0, failed: 0 }); setImportOpen(true); }}
             className="flex items-center gap-2 bg-ink-900 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-700"
           >
             <Upload size={15} /> Bulk Import
