@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2, Download, Percent, Copy } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
-import { uploadToCloudinary } from '../../lib/cloudinary';
+import { uploadToCloudinary, driveDirectUrl } from '../../lib/cloudinary';
 import ImageCropper from '../../components/ImageCropper';
 
 // Cloudinary (free, no card) — used for product video uploads.
@@ -147,6 +147,62 @@ export default function AdminProducts() {
   const [bulkForm, setBulkForm] = useState({ category: 'All', percent: '' });
   const [bulkMsg, setBulkMsg] = useState('');
   const [bulkApplying, setBulkApplying] = useState(false);
+  // Bulk import from links
+  const [importOpen, setImportOpen] = useState(false);
+  const [importForm, setImportForm] = useState({ links: '', namePrefix: 'VexDeals Premium', category: '', price: '999', originalPrice: '1999' });
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState({ done: 0, total: 0, failed: 0 });
+  const [importMsg, setImportMsg] = useState('');
+
+  // ── Bulk import: paste image/Drive links → create one product per link ──────
+  const doBulkImport = async () => {
+    const links = importForm.links.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+    if (!links.length) { setImportMsg('Paste at least one image link.'); return; }
+    const price = Number(importForm.price) || 999;
+    const originalPrice = Number(importForm.originalPrice) || price;
+    const category = importForm.category || defaultCategory;
+    const prefix = importForm.namePrefix.trim() || 'VexDeals Product';
+
+    setImporting(true);
+    setImportMsg('');
+    setImportProgress({ done: 0, total: links.length, failed: 0 });
+    let done = 0, failed = 0;
+    const startNum = productList.length + 1;
+
+    for (let i = 0; i < links.length; i++) {
+      const direct = driveDirectUrl(links[i]);
+      let imageUrl = direct;
+      try {
+        imageUrl = await uploadToCloudinary(direct, 'image'); // host on Cloudinary (stable + fast)
+      } catch {
+        imageUrl = direct; // fallback to the raw link
+      }
+      try {
+        await addProduct({
+          name: `${prefix} ${String(startNum + i).padStart(2, '0')}`,
+          category,
+          price,
+          originalPrice,
+          stock: 50,
+          shippingCharge: 0,
+          images: [imageUrl],
+          image: imageUrl,
+          rating: 4.5,
+          reviews: 0,
+          tags: category ? [category.toLowerCase()] : [],
+          featured: false,
+          isNew: true,
+        });
+        done += 1;
+      } catch {
+        failed += 1;
+      }
+      setImportProgress({ done, total: links.length, failed });
+    }
+    setImporting(false);
+    setImportMsg(`✓ ${done} product${done !== 1 ? 's' : ''} added${failed ? ` · ${failed} failed` : ''}.`);
+    if (done) setImportForm(f => ({ ...f, links: '' }));
+  };
 
   // ── Bulk tools ─────────────────────────────────────────────────────────────
   const exportProductsCSV = () => {
@@ -490,6 +546,74 @@ export default function AdminProducts() {
         />
       )}
 
+      {/* Bulk import modal */}
+      {importOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-900">Bulk Import Products</h3>
+              <button onClick={() => !importing && setImportOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Image links (Google Drive ya direct) paste karo — <b>ek link per line</b>. Har link se ek product banega.</p>
+
+            <div className="space-y-4">
+              <textarea
+                rows={6}
+                value={importForm.links}
+                onChange={e => setImportForm(f => ({ ...f, links: e.target.value }))}
+                placeholder={'https://drive.google.com/file/d/FILE_ID/view\nhttps://drive.google.com/file/d/FILE_ID2/view\n...'}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 font-mono resize-none"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Name prefix</label>
+                  <input value={importForm.namePrefix} onChange={e => setImportForm(f => ({ ...f, namePrefix: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+                  <select value={importForm.category} onChange={e => setImportForm(f => ({ ...f, category: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500 bg-white">
+                    {editableCategoryNames.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Price (₹)</label>
+                  <input type="number" value={importForm.price} onChange={e => setImportForm(f => ({ ...f, price: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Original price (₹) <span className="text-gray-400 font-normal">(cut)</span></label>
+                  <input type="number" value={importForm.originalPrice} onChange={e => setImportForm(f => ({ ...f, originalPrice: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                </div>
+              </div>
+
+              {importing && (
+                <div>
+                  <div className="flex items-center justify-between text-sm font-medium text-primary-700 mb-1.5">
+                    <span>Importing… {importProgress.done}/{importProgress.total}</span>
+                    {importProgress.failed > 0 && <span className="text-red-500">{importProgress.failed} failed</span>}
+                  </div>
+                  <div className="h-2 w-full bg-primary-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary-600 transition-all" style={{ width: `${importProgress.total ? (importProgress.done / importProgress.total) * 100 : 0}%` }} />
+                  </div>
+                </div>
+              )}
+              {importMsg && <p className={`text-sm font-medium ${importMsg.startsWith('✓') ? 'text-emerald-600' : 'text-red-500'}`}>{importMsg}</p>}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setImportOpen(false)} disabled={importing} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50 disabled:opacity-50">Close</button>
+              <button onClick={doBulkImport} disabled={importing}
+                className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 disabled:opacity-60 flex items-center justify-center gap-2">
+                {importing ? <><Loader2 size={16} className="animate-spin" /> Importing…</> : <><Upload size={16} /> Import all</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bulk discount modal */}
       {bulkOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -545,6 +669,12 @@ export default function AdminProducts() {
             className="flex items-center gap-2 bg-accent-500 text-ink-900 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-accent-400"
           >
             <Percent size={15} /> Bulk Discount
+          </button>
+          <button
+            onClick={() => { setImportMsg(''); setImportProgress({ done: 0, total: 0, failed: 0 }); setImportForm(f => ({ ...f, category: f.category || defaultCategory })); setImportOpen(true); }}
+            className="flex items-center gap-2 bg-ink-900 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-700"
+          >
+            <Upload size={15} /> Bulk Import
           </button>
           <button
             onClick={openAddModal}
