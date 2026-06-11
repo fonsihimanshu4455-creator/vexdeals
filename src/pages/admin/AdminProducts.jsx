@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2, Download, Percent, Copy } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2, Download, Percent, Copy, Eye, EyeOff } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
 import { uploadToCloudinary } from '../../lib/cloudinary';
@@ -852,11 +852,19 @@ export default function AdminProducts() {
                       {product.isBestseller && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded w-fit">Bestseller</span>}
                       {product.isNew && <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded w-fit">New</span>}
                       {product.discount > 0 && <span className="text-[10px] bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded w-fit">-{product.discount}%</span>}
-                      {!product.featured && !product.isBestseller && !product.isNew && <span className="text-xs text-gray-400">—</span>}
+                      {product.hidden && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded w-fit">Hidden</span>}
+                      {!product.featured && !product.isBestseller && !product.isNew && !product.hidden && <span className="text-xs text-gray-400">—</span>}
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateProduct(product.id, { hidden: !product.hidden })}
+                        className={`p-1.5 rounded-lg transition-colors ${product.hidden ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                        title={product.hidden ? 'Hidden from store — click to show' : 'Visible in store — click to hide'}
+                      >
+                        {product.hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                       <button onClick={() => duplicateProduct(product)} className="p-1.5 bg-gray-50 text-gray-500 rounded-lg hover:bg-gray-100 transition-colors" title="Duplicate product">
                         <Copy size={16} />
                       </button>

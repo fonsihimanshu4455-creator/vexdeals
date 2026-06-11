@@ -17,7 +17,7 @@ const sortOptions = [
 
 export default function Products() {
   const { activeCategories } = useCategories();
-  const { products } = useProducts();
+  const { visibleProducts: products } = useProducts();
   const categories = ['All', ...activeCategories.map(c => c.name)];
 
   const [searchParams, setSearchParams] = useSearchParams();

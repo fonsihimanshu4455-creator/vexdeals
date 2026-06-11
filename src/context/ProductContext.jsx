@@ -96,6 +96,7 @@ const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
     isNew: Boolean(rawProduct.isNew),
     isBestseller: Boolean(rawProduct.isBestseller),
     flashSale: Boolean(rawProduct.flashSale),
+    hidden: Boolean(rawProduct.hidden),
   };
 };
 
@@ -373,13 +374,18 @@ export function ProductProvider({ children }) {
     }
   };
 
+  // Storefront should never show products an admin has hidden. Admin screens
+  // keep using the full `products` list so hidden items stay manageable.
+  const visibleProducts = useMemo(() => products.filter((p) => !p.hidden), [products]);
+
   const value = useMemo(() => ({
     products,
+    visibleProducts,
     addProduct,
     updateProduct,
     deleteProduct,
     syncState,
-  }), [products, syncState]);
+  }), [products, visibleProducts, syncState]);
 
   return (
     <ProductContext.Provider value={value}>

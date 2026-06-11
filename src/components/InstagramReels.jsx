@@ -84,7 +84,7 @@ function Reel({ product }) {
 }
 
 export default function InstagramReels() {
-  const { products } = useProducts();
+  const { visibleProducts: products } = useProducts();
   const reels = products.filter((p) => p.video && String(p.video).trim());
   if (reels.length === 0) return null;
 
