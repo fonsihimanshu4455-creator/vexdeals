@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Plus, Edit2, Trash2, Star, Package, X, Upload, ChevronLeft, ChevronRight, Video, Film, Loader2, Download, Percent, Copy, Eye, EyeOff } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
@@ -124,6 +124,47 @@ const getImageDimensions = (src) =>
     image.onerror = () => reject(new Error('Unable to read image dimensions.'));
     image.src = src;
   });
+
+// Inline-editable product name — click the name in the list to rename without
+// opening the Edit modal. Saves on Enter or blur (Esc cancels).
+function InlineName({ value, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(value);
+  useEffect(() => { setText(value); }, [value]);
+
+  const commit = () => {
+    setEditing(false);
+    const t = text.trim();
+    if (t && t !== value) onSave(t);
+    else setText(value);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') { setText(value); setEditing(false); }
+        }}
+        className="w-full font-medium text-gray-800 border border-primary-300 rounded-lg px-2 py-1 text-sm outline-none focus:border-primary-500"
+      />
+    );
+  }
+
+  return (
+    <p
+      className="font-medium text-gray-800 line-clamp-1 cursor-text hover:text-primary-600 decoration-dotted hover:underline"
+      title="Click to edit name"
+      onClick={() => setEditing(true)}
+    >
+      {value}
+    </p>
+  );
+}
 
 export default function AdminProducts() {
   const { products: productList, addProduct, updateProduct, deleteProduct, syncState: productSyncState } = useProducts();
@@ -813,9 +854,9 @@ export default function AdminProducts() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <img src={product.image} alt={product.name} className="w-10 h-10 rounded-xl object-cover bg-gray-100 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800 line-clamp-1">{product.name}</p>
-                        <p className="text-xs text-gray-400">{product.reviews.toLocaleString()} reviews</p>
+                      <div className="min-w-0 flex-1">
+                        <InlineName value={product.name} onSave={(name) => updateProduct(product.id, { name })} />
+                        <p className="text-xs text-gray-400">{product.reviews.toLocaleString()} reviews · click name to edit</p>
                       </div>
                     </div>
                   </td>
