@@ -30,8 +30,11 @@ export default function ProductCard({ product }) {
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-contain p-2 transition-transform duration-700 ease-out group-hover:scale-105"
+          className="img-fade w-full h-full object-contain p-2 transition-transform duration-700 ease-out group-hover:scale-105"
           loading="lazy"
+          decoding="async"
+          onLoad={(e) => e.currentTarget.classList.add('loaded')}
+          onError={(e) => e.currentTarget.classList.add('loaded')}
         />
 
         {/* Tags */}

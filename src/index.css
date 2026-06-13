@@ -149,3 +149,34 @@
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
   animation: shimmer-slide 1.4s infinite;
 }
+
+/* ── Page loader (code-split routes) ────────────────────────────────────── */
+@keyframes loader-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(220%); }
+}
+.animate-loader-slide { animation: loader-slide 1s ease-in-out infinite; }
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.9); }
+}
+.animate-pulse-slow { animation: pulse-slow 1.4s ease-in-out infinite; }
+
+/* ── Images fade in smoothly once loaded (no harsh pop) ─────────────────── */
+.img-fade {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.img-fade.loaded {
+  opacity: 1;
+}
+
+/* Respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
