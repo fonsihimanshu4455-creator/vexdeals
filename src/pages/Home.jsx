@@ -12,7 +12,6 @@ import { useProducts } from '../context/ProductContext';
 import { useSiteSettings } from '../lib/settings';
 
 const MARQUEE = ['100% Authentic', 'Free Shipping ₹1000+', '7-Day Returns', 'Secure Payments', 'Hand-picked Edits'];
-
 function Countdown() {
   const [t, setT] = useState({ h: 8, m: 24, s: 12 });
   useEffect(() => {
@@ -59,7 +58,8 @@ function Heading({ eyebrow, title, to, linkLabel = 'View all' }) {
 export default function Home() {
   const { activeCategories } = useCategories();
   const { visibleProducts: products } = useProducts();
-  const { trustBadges: badges = [] } = useSiteSettings();
+  const { trustBadges: badges = [], marquee: marqueeRaw } = useSiteSettings();
+  const marquee = (marqueeRaw && marqueeRaw.length) ? marqueeRaw : MARQUEE;
   const containerRef = useRef(null);
 
   // Order each section by its admin-set number (lower = first; unset goes last)
@@ -100,7 +100,7 @@ export default function Home() {
         <div className="flex w-max animate-marquee">
           {[0, 1].map(copy => (
             <div key={copy} className="flex items-center shrink-0">
-              {MARQUEE.map((m, i) => (
+              {marquee.map((m, i) => (
                 <span key={i} className="flex items-center text-white/80 text-sm font-medium whitespace-nowrap">
                   <span className="px-6">{m}</span>
                   <Sparkles size={12} className="text-accent-400" />

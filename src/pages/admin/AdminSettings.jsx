@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS } from '../../lib/settings';
 
 export default function AdminSettings() {
   const [form, setForm] = useState(DEFAULT_SETTINGS);
+  const [marqueeStr, setMarqueeStr] = useState((DEFAULT_SETTINGS.marquee || []).join(', '));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
@@ -13,7 +14,13 @@ export default function AdminSettings() {
   useEffect(() => {
     if (!db) { setLoading(false); return; }
     getDoc(doc(db, 'site', 'settings'))
-      .then(snap => { if (snap.exists()) setForm({ ...DEFAULT_SETTINGS, ...snap.data() }); })
+      .then(snap => {
+        if (snap.exists()) {
+          const data = { ...DEFAULT_SETTINGS, ...snap.data() };
+          setForm(data);
+          setMarqueeStr((data.marquee || []).join(', '));
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -32,6 +39,7 @@ export default function AdminSettings() {
           t: String(b.t || '').trim(),
           s: String(b.s || '').trim(),
         })),
+        marquee: marqueeStr.split(',').map(s => s.trim()).filter(Boolean),
         updatedAt: new Date().toISOString(),
       }, { merge: true });
       setMsg('✓ Saved! Changes are live across the site.');
@@ -64,6 +72,18 @@ export default function AdminSettings() {
             placeholder="✦ Free shipping over ₹1000 · Use code VEXFIRST for 10% off"
           />
           <p className="text-xs text-gray-400 mt-1">Khaali chhodoge to announcement bar hide ho jayega.</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Running strip text <span className="text-gray-400 font-normal">(home page pe chalti hui line)</span></label>
+          <textarea
+            rows={2}
+            value={marqueeStr}
+            onChange={e => setMarqueeStr(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500"
+            placeholder="100% Authentic, Free Shipping ₹1000+, 7-Day Returns, Secure Payments"
+          />
+          <p className="text-xs text-gray-400 mt-1">Har point ko <b>comma (,)</b> se alag karo. Ye loop me chalte rehte hain.</p>
         </div>
 
         <div>
