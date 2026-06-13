@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS = {
     { t: 'Fast Shipping', s: 'Free over ₹1000' },
     { t: '7-Day Returns', s: 'Easy & hassle-free' },
   ],
+  marquee: ['100% Authentic', 'Free Shipping ₹1000+', '7-Day Returns', 'Secure Payments', 'Hand-picked Edits'],
 };
 
 export function useSiteSettings() {
