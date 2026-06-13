@@ -145,7 +145,7 @@ export default function Home() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 reveal">
           <Heading eyebrow="Trending now" title="Featured Products" to="/products" linkLabel="Shop all" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {featuredProducts.slice(0, 8).map(p => <ProductCard key={p.id} product={p} />)}
+            {featuredProducts.slice(0, 8).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         </section>
       )}
@@ -217,7 +217,7 @@ export default function Home() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 reveal">
           <Heading eyebrow="Loved most" title="Bestsellers" to="/products" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {bestsellers.map(p => <ProductCard key={p.id} product={p} />)}
+            {bestsellers.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         </section>
       )}
@@ -227,7 +227,7 @@ export default function Home() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 reveal">
           <Heading eyebrow="Just dropped" title="New Arrivals" to="/products" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {newArrivals.map(p => <ProductCard key={p.id} product={p} />)}
+            {newArrivals.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         </section>
       )}
