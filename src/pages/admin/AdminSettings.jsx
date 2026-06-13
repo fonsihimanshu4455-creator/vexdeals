@@ -28,6 +28,10 @@ export default function AdminSettings() {
         announcement: String(form.announcement || '').trim(),
         freeShippingMin: min,
         whatsappNumber: String(form.whatsappNumber || '').replace(/\D/g, ''),
+        trustBadges: (form.trustBadges || []).map(b => ({
+          t: String(b.t || '').trim(),
+          s: String(b.s || '').trim(),
+        })),
         updatedAt: new Date().toISOString(),
       }, { merge: true });
       setMsg('✓ Saved! Changes are live across the site.');
@@ -82,6 +86,38 @@ export default function AdminSettings() {
             placeholder="919034948078"
           />
           <p className="text-xs text-gray-400 mt-1">Site pe floating WhatsApp button isi number pe message kholega. Khaali = button hide.</p>
+        </div>
+
+        <div className="border-t border-gray-100 pt-5">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Trust badges <span className="text-gray-400 font-normal">(home page ki 3 strip — 100% Authentic etc.)</span></label>
+          <p className="text-xs text-gray-400 mb-3">Title + chhoti line edit karo. Icon fixed rehta hai. Title khaali = wo badge hide.</p>
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => {
+              const b = (form.trustBadges || [])[i] || { t: '', s: '' };
+              const setBadge = (key, val) => setForm(f => {
+                const list = [ ...(f.trustBadges || []) ];
+                while (list.length < 3) list.push({ t: '', s: '' });
+                list[i] = { ...list[i], [key]: val };
+                return { ...f, trustBadges: list };
+              });
+              return (
+                <div key={i} className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={b.t}
+                    onChange={e => setBadge('t', e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500"
+                    placeholder={`Title ${i + 1} (e.g. 100% Authentic)`}
+                  />
+                  <input
+                    value={b.s}
+                    onChange={e => setBadge('s', e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary-500"
+                    placeholder={`Subtitle ${i + 1} (e.g. Verified genuine brands)`}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

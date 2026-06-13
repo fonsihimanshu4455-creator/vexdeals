@@ -9,6 +9,7 @@ import RecentlyViewed from '../components/RecentlyViewed';
 import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
+import { useSiteSettings } from '../lib/settings';
 
 const MARQUEE = ['100% Authentic', 'Free Shipping ₹1000+', '7-Day Returns', 'Secure Payments', 'Hand-picked Edits'];
 
@@ -58,6 +59,7 @@ function Heading({ eyebrow, title, to, linkLabel = 'View all' }) {
 export default function Home() {
   const { activeCategories } = useCategories();
   const { visibleProducts: products } = useProducts();
+  const { trustBadges: badges = [] } = useSiteSettings();
   const containerRef = useRef(null);
 
   // Order each section by its admin-set number (lower = first; unset goes last)
@@ -195,10 +197,10 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 reveal">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { Icon: ShieldCheck, t: '100% Authentic', s: 'Verified genuine brands' },
-            { Icon: Truck,       t: 'Fast Shipping',  s: 'Free over ₹1000' },
-            { Icon: RefreshCw,   t: '7-Day Returns',  s: 'Easy & hassle-free' },
-          ].map(({ Icon, t, s }) => (
+            { Icon: ShieldCheck, ...(badges[0] || {}) },
+            { Icon: Truck,       ...(badges[1] || {}) },
+            { Icon: RefreshCw,   ...(badges[2] || {}) },
+          ].filter(b => b.t || b.s).map(({ Icon, t, s }) => (
             <div key={t} className="flex items-center gap-4 bg-white rounded-2xl border border-ink-900/5 shadow-soft p-5">
               <div className="w-12 h-12 rounded-xl bg-brand-soft flex items-center justify-center shrink-0">
                 <Icon size={22} className="text-primary-600" />
