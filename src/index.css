@@ -163,6 +163,13 @@
 }
 .animate-pulse-slow { animation: pulse-slow 1.4s ease-in-out infinite; }
 
+/* ── Product cards slide + fade in (staggered) on mount ─────────────────── */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+.card-enter { animation: card-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* ── Images fade in smoothly once loaded (no harsh pop) ─────────────────── */
 .img-fade {
   opacity: 0;

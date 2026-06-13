@@ -6,7 +6,7 @@ import { VexLogoMark } from './Logo';
 import { trackAddToCart } from '../utils/pixel';
 import { trackAddToCartHit } from '../utils/analytics';
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, index = 0 }) {
   const { dispatch } = useCart();
   const { has, toggle } = useWishlist();
   const wished = has(product.id);
@@ -21,9 +21,10 @@ export default function ProductCard({ product }) {
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
 
   return (
+    <div className="card-enter h-full" style={{ animationDelay: `${Math.min(index, 11) * 60}ms` }}>
     <Link
       to={`/products/${product.id}`}
-      className="group bg-white rounded-3xl border border-ink-900/5 shadow-soft hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300 flex flex-col overflow-hidden"
+      className="group h-full bg-white rounded-3xl border border-ink-900/5 shadow-soft hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300 flex flex-col overflow-hidden"
     >
       {/* Image */}
       <div className="relative overflow-hidden rounded-3xl m-2 bg-white aspect-square">
@@ -105,5 +106,6 @@ export default function ProductCard({ product }) {
         )}
       </div>
     </Link>
+    </div>
   );
 }
