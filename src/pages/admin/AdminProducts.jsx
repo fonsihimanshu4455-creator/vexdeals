@@ -339,6 +339,12 @@ export default function AdminProducts() {
     return [...new Set([...categoryChoices.map((category) => category.name), ...productCategories])];
   }, [categoryChoices, productList]);
 
+  // Brand choices for the inline dropdown — luxury presets + brands already used.
+  const brandNames = useMemo(() => {
+    const used = productList.map((p) => String(p.brand || '').trim()).filter(Boolean);
+    return [...new Set([...LUXURY_BRANDS, ...used])].sort((a, b) => a.localeCompare(b));
+  }, [productList]);
+
   const filtered = productList.filter((product) => {
     const matchCat = filterCat === 'All' || product.category === filterCat;
     const matchSearch = product.name.toLowerCase().includes(search.toLowerCase());
@@ -872,14 +878,19 @@ export default function AdminProducts() {
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
-                    {/* Brand — click to edit inline */}
+                    {/* Brand — select inline from the list */}
                     <div className="mt-1.5">
-                      <InlineName
+                      <select
                         value={product.brand || ''}
-                        placeholder="+ add brand"
-                        className="text-xs text-gray-500"
-                        onSave={(brand) => updateProduct(product.id, { brand })}
-                      />
+                        onChange={(e) => updateProduct(product.id, { brand: e.target.value })}
+                        className="text-xs text-gray-600 bg-gray-50 pl-2 pr-6 py-1 rounded-lg border border-gray-200 outline-none focus:border-primary-400 cursor-pointer max-w-[160px]"
+                        title="Select brand"
+                      >
+                        <option value="">— No brand —</option>
+                        {[...new Set([product.brand, ...brandNames])].filter(Boolean).map((b) => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
                     </div>
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-900">
