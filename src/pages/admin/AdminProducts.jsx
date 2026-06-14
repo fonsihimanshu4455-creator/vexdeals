@@ -125,9 +125,9 @@ const getImageDimensions = (src) =>
     image.src = src;
   });
 
-// Inline-editable product name — click the name in the list to rename without
-// opening the Edit modal. Saves on Enter or blur (Esc cancels).
-function InlineName({ value, onSave }) {
+// Inline-editable text — click to edit in place, saves on Enter or blur
+// (Esc cancels). Used for product name and brand in the list.
+function InlineName({ value, onSave, placeholder = 'Click to edit', className = 'font-medium text-gray-800' }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value);
   useEffect(() => { setText(value); }, [value]);
@@ -135,7 +135,7 @@ function InlineName({ value, onSave }) {
   const commit = () => {
     setEditing(false);
     const t = text.trim();
-    if (t && t !== value) onSave(t);
+    if (t !== value) onSave(t);
     else setText(value);
   };
 
@@ -150,18 +150,18 @@ function InlineName({ value, onSave }) {
           if (e.key === 'Enter') e.currentTarget.blur();
           if (e.key === 'Escape') { setText(value); setEditing(false); }
         }}
-        className="w-full font-medium text-gray-800 border border-primary-300 rounded-lg px-2 py-1 text-sm outline-none focus:border-primary-500"
+        className={`w-full ${className} border border-primary-300 rounded-lg px-2 py-1 text-sm outline-none focus:border-primary-500`}
       />
     );
   }
 
   return (
     <p
-      className="font-medium text-gray-800 line-clamp-1 cursor-text hover:text-primary-600 decoration-dotted hover:underline"
-      title="Click to edit name"
+      className={`${className} line-clamp-1 cursor-text hover:text-primary-600 decoration-dotted hover:underline`}
+      title="Click to edit"
       onClick={() => setEditing(true)}
     >
-      {value}
+      {value || <span className="text-gray-300 italic font-normal">{placeholder}</span>}
     </p>
   );
 }
@@ -840,7 +840,7 @@ export default function AdminProducts() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Product</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Category / Brand</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Price</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Shipping</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Stock</th>
@@ -861,9 +861,26 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs bg-primary-50 text-primary-700 font-medium px-2 py-1 rounded-full">
-                      {product.category}
-                    </span>
+                    {/* Category — change inline from the list (no Edit modal) */}
+                    <select
+                      value={product.category}
+                      onChange={(e) => updateProduct(product.id, { category: e.target.value })}
+                      className="text-xs bg-primary-50 text-primary-700 font-medium pl-2 pr-6 py-1 rounded-lg border border-primary-100 outline-none focus:border-primary-400 cursor-pointer max-w-[160px]"
+                      title="Change category"
+                    >
+                      {[...new Set([product.category, ...editableCategoryNames])].filter(Boolean).map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    {/* Brand — click to edit inline */}
+                    <div className="mt-1.5">
+                      <InlineName
+                        value={product.brand || ''}
+                        placeholder="+ add brand"
+                        className="text-xs text-gray-500"
+                        onSave={(brand) => updateProduct(product.id, { brand })}
+                      />
+                    </div>
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-900">
                     <div className="text-sm">{formatPrice(product.price)}</div>
