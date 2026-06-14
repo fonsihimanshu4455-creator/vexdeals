@@ -390,6 +390,35 @@ export function CustomerDataProvider({ children }) {
     return order;
   };
 
+  // ── Guest order (no login required) — saves straight to Firestore so the
+  // admin sees it. This unblocks conversions: shoppers can buy without an
+  // account, then we capture their name/phone/address from the checkout form.
+  const placeGuestOrder = ({ cartItems, subtotal, shipping, total, shippingAddress, paymentMethod, paymentId }) => {
+    const orderId = `VEX-${Date.now().toString().slice(-6)}`;
+    const createdAt = new Date().toISOString();
+    const addressLine = [shippingAddress.address, shippingAddress.city, shippingAddress.state, shippingAddress.pincode]
+      .map((v) => String(v || '').trim()).filter(Boolean).join(', ');
+
+    const order = {
+      id: orderId,
+      userId: 'guest',
+      userName: String(shippingAddress.fullName || 'Guest').trim(),
+      userEmail: String(shippingAddress.email || '').trim(),
+      userPhone: String(shippingAddress.phone || '').trim(),
+      products: cartItems.map((item) => ({
+        productId: item.id, name: item.name, price: item.price, qty: item.qty || 1, image: item.image,
+      })),
+      subtotal, shipping, total,
+      status: paymentMethod === 'Cash on Delivery' ? 'Pending' : 'Confirmed',
+      date: createdAt.split('T')[0],
+      address: addressLine + (shippingAddress.phone ? ` · 📞 ${shippingAddress.phone}` : ''),
+      paymentMethod, paymentId, createdAt, guest: true,
+    };
+
+    if (db) setDoc(doc(db, 'orders', order.id), order).catch(() => {});
+    return order;
+  };
+
   // ── Real-time order status sync from Firestore ───────────────────────────
   useEffect(() => {
     if (!db || !user?.id || !isCustomer) return undefined;
@@ -427,6 +456,7 @@ export function CustomerDataProvider({ children }) {
     saveAddress,
     setDefaultAddress,
     placeCustomerOrder,
+    placeGuestOrder,
   }), [orders, transactions, addresses, defaultAddress]);
 
   return (

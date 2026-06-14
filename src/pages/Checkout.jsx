@@ -39,7 +39,7 @@ export default function Checkout() {
     removePromoCode,
   } = useCart();
   const { user, isCustomer } = useAuth();
-  const { defaultAddress, placeCustomerOrder } = useCustomerData();
+  const { defaultAddress, placeCustomerOrder, placeGuestOrder } = useCustomerData();
   const navigate = useNavigate();
 
   const [step, setStep]       = useState(1);
@@ -61,12 +61,9 @@ export default function Checkout() {
 
   const fmt = (p) => `₹${p.toLocaleString('en-IN')}`;
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!user) {
-      navigate('/login', { replace: true, state: { from: '/checkout' } });
-    }
-  }, [user, navigate]);
+  // Guest checkout allowed — no forced login. Shoppers can buy directly; we
+  // capture their details from the form below. (Logged-in users get prefilled
+  // info + order history.)
 
   useEffect(() => {
     setPromoInput(promoCode);
@@ -130,25 +127,26 @@ export default function Checkout() {
   };
 
   const placeOrder = (method, paymentId = null) => {
-    const savedOrder = isCustomer
-      ? placeCustomerOrder({
-          cartItems: items,
-          subtotal,
-          shipping,
-          total,
-          shippingAddress: {
-            fullName: form.name,
-            email: form.email,
-            phone: form.phone,
-            address: form.address,
-            city: form.city,
-            state: form.state,
-            pincode: form.pincode,
-          },
-          paymentMethod: method,
-          paymentId,
-        })
-      : null;
+    const orderPayload = {
+      cartItems: items,
+      subtotal,
+      shipping,
+      total,
+      shippingAddress: {
+        fullName: form.name,
+        email: form.email,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        pincode: form.pincode,
+      },
+      paymentMethod: method,
+      paymentId,
+    };
+    // Logged-in customers get the full account flow; guests still get a real
+    // order saved to Firestore so it shows up in the admin panel.
+    const savedOrder = isCustomer ? placeCustomerOrder(orderPayload) : placeGuestOrder(orderPayload);
 
     setPlacedOrder(savedOrder);
     setCompletedCheckout({ subtotal, shipping, total });
@@ -163,7 +161,7 @@ export default function Checkout() {
     trackPurchaseHit(total);
     setOrdered(true);
     clearCart();
-    setTimeout(() => navigate(savedOrder ? '/account/orders' : '/'), 4000);
+    setTimeout(() => navigate(isCustomer && savedOrder ? '/account/orders' : '/'), 4000);
   };
 
   const handleApplyPromo = () => {
