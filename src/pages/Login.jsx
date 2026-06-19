@@ -75,11 +75,11 @@ export default function Login() {
     setLoading(false);
   };
 
-  // Email-OTP signup/signin — code verified, create/log in the customer.
-  const handleOtpVerified = ({ email, name }) => {
-    const customer = buildOtpCustomer(email, name);
+  // Email/Mobile-OTP signup/signin — code verified, create/log in the customer.
+  const handleOtpVerified = ({ email, phone, name }) => {
+    const customer = buildOtpCustomer({ email, phone, name });
     saveCustomer(customer);
-    login(customer.email, null, customer);
+    login(customer.email || customer.phone, null, customer);
     setSuccess(true);
     setTimeout(() => navigate('/'), 1000);
   };
