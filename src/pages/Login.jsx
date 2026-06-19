@@ -6,6 +6,8 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
+import EmailOtpAuth from '../components/EmailOtpAuth';
+import { buildOtpCustomer } from '../lib/customers';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -73,6 +75,15 @@ export default function Login() {
     setLoading(false);
   };
 
+  // Email-OTP signup/signin — code verified, create/log in the customer.
+  const handleOtpVerified = ({ email, name }) => {
+    const customer = buildOtpCustomer(email, name);
+    saveCustomer(customer);
+    login(customer.email, null, customer);
+    setSuccess(true);
+    setTimeout(() => navigate('/'), 1000);
+  };
+
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-primary-900 to-primary-800 flex items-center justify-center">
@@ -99,6 +110,15 @@ export default function Login() {
             {error}
           </div>
         )}
+
+        {/* Email OTP signup / signin */}
+        <EmailOtpAuth onVerified={handleOtpVerified} askName cta="Send OTP" />
+
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs text-gray-400 font-medium">OR</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
 
         {/* Google Sign-In */}
         <button
