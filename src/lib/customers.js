@@ -20,21 +20,24 @@ export const saveCustomer = (user) => {
   }
 };
 
-// Stable, deterministic id from an email so repeat logins map to one account.
-export const buildOtpCustomer = (email, name) => {
-  const clean = String(email || '').trim().toLowerCase();
-  const display = String(name || '').trim() || clean.split('@')[0];
+// Stable, deterministic id from an email OR phone so repeat logins map to one
+// account. Pass { email } and/or { phone }.
+export const buildOtpCustomer = ({ email = '', phone = '', name = '' } = {}) => {
+  const e = String(email || '').trim().toLowerCase();
+  const p = String(phone || '').replace(/\D/g, '').slice(-10);
+  const display = String(name || '').trim() || (e ? e.split('@')[0] : (p ? `User ${p.slice(-4)}` : 'Customer'));
+  const id = e ? `email_${e.replace(/[^a-z0-9]/gi, '_')}` : `phone_${p}`;
   return {
-    id: `email_${clean.replace(/[^a-z0-9]/gi, '_')}`,
+    id,
     name: display,
-    email: clean,
-    phone: '',
+    email: e,
+    phone: p,
     role: 'customer',
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(display)}&background=009fb7&color=fff`,
     joinDate: new Date().toISOString().split('T')[0],
     totalOrders: 0,
     totalSpent: 0,
     status: 'Active',
-    provider: 'email',
+    provider: e ? 'email' : 'phone',
   };
 };

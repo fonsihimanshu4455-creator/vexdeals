@@ -65,11 +65,16 @@ export default function Checkout() {
 
   // Email-OTP login/signup right inside checkout (Flipkart-style). Optional —
   // shoppers can also continue as guest by just filling the form below.
-  const handleOtpVerified = ({ email, name }) => {
-    const customer = buildOtpCustomer(email, name);
+  const handleOtpVerified = ({ email, phone, name }) => {
+    const customer = buildOtpCustomer({ email, phone, name });
     saveCustomer(customer);
-    login(customer.email, null, customer);
-    setForm((f) => ({ ...f, email: customer.email, name: f.name || customer.name }));
+    login(customer.email || customer.phone, null, customer);
+    setForm((f) => ({
+      ...f,
+      email: customer.email || f.email,
+      phone: customer.phone || f.phone,
+      name: f.name || customer.name,
+    }));
   };
 
   // Guest checkout allowed — no forced login. Shoppers can buy directly; we
