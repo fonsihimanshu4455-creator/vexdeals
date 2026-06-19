@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { useCustomerData } from '../context/CustomerDataContext';
 import { trackInitiateCheckout, trackPurchase } from '../utils/pixel';
 import { trackCheckoutHit, trackPurchaseHit } from '../utils/analytics';
+import EmailOtpAuth from '../components/EmailOtpAuth';
+import { buildOtpCustomer, saveCustomer } from '../lib/customers';
 
 // ── Load Razorpay script dynamically ────────────────────────────────────────
 const loadRazorpay = () =>
@@ -38,7 +40,7 @@ export default function Checkout() {
     applyPromoCode,
     removePromoCode,
   } = useCart();
-  const { user, isCustomer } = useAuth();
+  const { user, isCustomer, login } = useAuth();
   const { defaultAddress, placeCustomerOrder, placeGuestOrder } = useCustomerData();
   const navigate = useNavigate();
 
@@ -60,6 +62,15 @@ export default function Checkout() {
   const [errors, setErrors] = useState({});
 
   const fmt = (p) => `₹${p.toLocaleString('en-IN')}`;
+
+  // Email-OTP login/signup right inside checkout (Flipkart-style). Optional —
+  // shoppers can also continue as guest by just filling the form below.
+  const handleOtpVerified = ({ email, name }) => {
+    const customer = buildOtpCustomer(email, name);
+    saveCustomer(customer);
+    login(customer.email, null, customer);
+    setForm((f) => ({ ...f, email: customer.email, name: f.name || customer.name }));
+  };
 
   // Guest checkout allowed — no forced login. Shoppers can buy directly; we
   // capture their details from the form below. (Logged-in users get prefilled
@@ -382,6 +393,15 @@ export default function Checkout() {
             {step === 1 && (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Shipping Details</h2>
+
+                {/* Email OTP login/signup — verify email for faster checkout & order tracking. Optional. */}
+                {!user && (
+                  <div className="mb-6 rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
+                    <p className="font-semibold text-gray-800 text-sm mb-1">Login / Signup with email OTP</p>
+                    <p className="text-xs text-gray-500 mb-3">Verify karo to order tracking mile — ya neeche form bhar ke <b>guest</b> bhi kharid sakte ho.</p>
+                    <EmailOtpAuth onVerified={handleOtpVerified} askName cta="Send OTP" compact />
+                  </div>
+                )}
 
                 <div className="mb-6 rounded-2xl border border-primary-100 bg-primary-50 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
