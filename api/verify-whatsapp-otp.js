@@ -1,7 +1,7 @@
-import crypto from 'crypto';
-
-const OTP_SECRET = process.env.OTP_SECRET || 'vexdeals-otp-secret-key-change-in-prod';
-
+/**
+ * Vercel Serverless Function — POST /api/verify-whatsapp-otp
+ * Verifies a mobile OTP against MSG91 (which generated & stored it).
+ */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -9,36 +9,28 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { phone, otp, token } = req.body || {};
-  const cleaned = String(phone || '').replace(/\D/g, '').slice(-10);
+  const cleaned = String(req.body?.phone || '').replace(/\D/g, '').slice(-10);
+  const otp = String(req.body?.otp || '').replace(/\D/g, '');
 
-  if (!cleaned || !otp || !token) {
-    return res.status(400).json({ error: 'Missing required fields.' });
+  if (cleaned.length !== 10 || !otp) {
+    return res.status(400).json({ error: 'Missing phone number or OTP.' });
   }
 
-  const dotIdx = token.indexOf('.');
-  if (dotIdx === -1) return res.status(400).json({ error: 'Invalid token.' });
+  const AUTH = process.env.MSG91_AUTH_KEY;
 
-  const expiry = parseInt(token.slice(0, dotIdx), 10);
-  const sig    = token.slice(dotIdx + 1);
-
-  if (!Number.isFinite(expiry) || Date.now() > expiry) {
-    return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+  // Dev mode — no keys: accept any code so the flow stays testable locally.
+  if (!AUTH) {
+    return res.status(200).json({ success: true, dev: true });
   }
 
-  const expected = crypto
-    .createHmac('sha256', OTP_SECRET)
-    .update(`${cleaned}:${otp}:${expiry}`)
-    .digest('hex');
-
-  let valid = false;
   try {
-    valid = crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
-  } catch { valid = false; }
-
-  if (!valid) {
-    return res.status(400).json({ error: 'Incorrect OTP. Please try again.' });
+    const url = `https://control.msg91.com/api/v5/otp/verify?otp=${encodeURIComponent(otp)}&mobile=91${cleaned}`;
+    const resp = await fetch(url, { headers: { authkey: AUTH } });
+    const data = await resp.json();
+    if (data?.type === 'success') return res.status(200).json({ success: true });
+    return res.status(400).json({ error: data?.message || 'Incorrect OTP. Please try again.' });
+  } catch (err) {
+    console.error('MSG91 verify error:', err);
+    return res.status(500).json({ error: 'Verification service unavailable. Please try again.' });
   }
-
-  return res.status(200).json({ success: true });
 }

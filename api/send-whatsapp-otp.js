@@ -1,7 +1,11 @@
-import crypto from 'crypto';
-
-const OTP_SECRET = process.env.OTP_SECRET || 'vexdeals-otp-secret-key-change-in-prod';
-
+/**
+ * Vercel Serverless Function — POST /api/send-whatsapp-otp
+ * Sends a mobile OTP via MSG91's OTP platform. MSG91 generates, sends AND
+ * stores the OTP server-side; /api/verify-whatsapp-otp checks it against MSG91.
+ * (No self-generated OTP — that caused a mismatch with what MSG91 sent.)
+ *
+ * Required env (Vercel): MSG91_AUTH_KEY, MSG91_TEMPLATE_ID
+ */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -9,44 +13,34 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { phone } = req.body || {};
-  const cleaned = String(phone || '').replace(/\D/g, '').slice(-10);
-
+  const cleaned = String(req.body?.phone || '').replace(/\D/g, '').slice(-10);
   if (cleaned.length !== 10) {
     return res.status(400).json({ error: 'Enter a valid 10-digit mobile number.' });
   }
 
-  const otp    = String(Math.floor(100000 + Math.random() * 900000));
-  const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+  const AUTH = process.env.MSG91_AUTH_KEY;
+  const TEMPLATE = process.env.MSG91_TEMPLATE_ID;
 
-  // Stateless HMAC token — no DB needed
-  const payload = `${cleaned}:${otp}:${expiry}`;
-  const sig     = crypto.createHmac('sha256', OTP_SECRET).update(payload).digest('hex');
-  const token   = `${expiry}.${sig}`;
-
-  const MSG91_AUTH_KEY    = process.env.MSG91_AUTH_KEY;
-  const MSG91_TEMPLATE_ID = process.env.MSG91_TEMPLATE_ID;
-
-  if (MSG91_AUTH_KEY && MSG91_TEMPLATE_ID) {
-    try {
-      const resp = await fetch('https://api.msg91.com/api/v5/otp', {
-        method:  'POST',
-        headers: { authkey: MSG91_AUTH_KEY, 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ template_id: MSG91_TEMPLATE_ID, mobile: `91${cleaned}`, otp }),
-      });
-      const data = await resp.json();
-      if (data.type !== 'success') {
-        console.error('MSG91 error:', data);
-        return res.status(500).json({ error: 'Failed to send OTP via WhatsApp. Please try again.' });
-      }
-    } catch (err) {
-      console.error('MSG91 fetch error:', err);
-      return res.status(500).json({ error: 'Could not reach WhatsApp service.' });
-    }
-  } else {
-    // Dev mode — OTP visible in Vercel function logs
-    console.log(`[VexDeals OTP] +91${cleaned} → ${otp}  (5 min expiry)`);
+  // Dev mode — no keys configured. OTP can't be sent; verify will accept any
+  // code so the flow is still testable locally.
+  if (!AUTH || !TEMPLATE) {
+    console.log(`[VexDeals OTP dev] +91${cleaned} — MSG91 keys not set; verify will accept any code.`);
+    return res.status(200).json({ success: true, dev: true });
   }
 
-  return res.status(200).json({ success: true, token });
+  try {
+    const url = `https://control.msg91.com/api/v5/otp?otp_expiry=5&template_id=${encodeURIComponent(TEMPLATE)}&mobile=91${cleaned}`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { authkey: AUTH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const data = await resp.json();
+    if (data?.type === 'success') return res.status(200).json({ success: true });
+    console.error('MSG91 send error:', data);
+    return res.status(500).json({ error: data?.message || 'Could not send OTP. Check MSG91 template / KYC.' });
+  } catch (err) {
+    console.error('MSG91 send fetch error:', err);
+    return res.status(500).json({ error: 'Could not reach the SMS service. Please try again.' });
+  }
 }
