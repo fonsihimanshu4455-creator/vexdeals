@@ -3,7 +3,7 @@ import { Mail, Phone, RefreshCw, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 // Reusable OTP auth (signup + signin) over Email or Mobile. Channel tabs let
 // the user pick. Calls onVerified({ email, phone, name }) once verified.
-export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send OTP', compact = false, defaultChannel = 'email' }) {
+export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send OTP', compact = false, defaultChannel = 'email', lockChannel = false }) {
   const [channel, setChannel] = useState(defaultChannel); // 'email' | 'phone'
   const [step, setStep] = useState('input');              // 'input' | 'otp'
   const [email, setEmail] = useState('');
@@ -84,11 +84,13 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
 
   return (
     <div className={compact ? '' : 'space-y-4'}>
-      {/* Channel tabs */}
-      <div className="flex bg-gray-100 rounded-xl p-1 mb-3">
-        <button type="button" onClick={() => switchChannel('email')} className={tabCls(isEmail)}><Mail size={15} /> Email</button>
-        <button type="button" onClick={() => switchChannel('phone')} className={tabCls(!isEmail)}><Phone size={15} /> Mobile</button>
-      </div>
+      {/* Channel tabs (hidden when a single channel is locked) */}
+      {!lockChannel && (
+        <div className="flex bg-gray-100 rounded-xl p-1 mb-3">
+          <button type="button" onClick={() => switchChannel('email')} className={tabCls(isEmail)}><Mail size={15} /> Email</button>
+          <button type="button" onClick={() => switchChannel('phone')} className={tabCls(!isEmail)}><Phone size={15} /> Mobile</button>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-2.5 text-sm mb-3">{error}</div>
