@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, LogOut,
   Menu, X, Bell, ChevronRight, BarChart3, Tag, Shield,
-  Megaphone, Watch, UserCircle, Star, FileText, MousePointerClick, Settings,
+  Megaphone, Watch, UserCircle, Star, FileText, MousePointerClick, Settings, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { VexLogoInline } from '../../components/Logo';
@@ -21,6 +21,7 @@ const adminNavItems = [
   { to: '/admin/categories',   label: 'Categories',  Icon: Tag              },
   { to: '/admin/sub-admins',   label: 'Sub-Admins',  Icon: Shield           },
   { to: '/admin/marketing',    label: 'Marketing',   Icon: Megaphone        },
+  { to: '/admin/drops',        label: 'Drops (3D)',  Icon: Sparkles         },
   { to: '/admin/reviews',      label: 'Reviews',     Icon: Star             },
   { to: '/admin/about',        label: 'About Page',  Icon: FileText         },
   { to: '/admin/settings',     label: 'Settings',    Icon: Settings         },
