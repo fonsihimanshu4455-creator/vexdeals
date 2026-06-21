@@ -37,6 +37,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminSubAdmins from './pages/admin/AdminSubAdmins';
 import AdminMarketing from './pages/admin/AdminMarketing';
+import AdminDrops from './pages/admin/AdminDrops';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminReviews from './pages/admin/AdminReviews';
 import AdminAbout from './pages/admin/AdminAbout';
@@ -95,6 +96,7 @@ export default function App() {
                     <Route path="categories"  element={<AdminCategories />} />
                     <Route path="sub-admins"  element={<AdminSubAdmins />}  />
                     <Route path="marketing"   element={<AdminMarketing />}  />
+                    <Route path="drops"       element={<AdminDrops />}      />
                     <Route path="reviews"     element={<AdminReviews />}    />
                     <Route path="about"       element={<AdminAbout />}      />
                     <Route path="tracking"    element={<AdminTracking />}   />

@@ -97,6 +97,9 @@ const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
     isBestseller: Boolean(rawProduct.isBestseller),
     flashSale: Boolean(rawProduct.flashSale),
     hidden: Boolean(rawProduct.hidden),
+    drops: Boolean(rawProduct.drops),
+    dropsText: typeof rawProduct.dropsText === 'string' ? rawProduct.dropsText : '',
+    dropsOrder: rawProduct.dropsOrder ?? '',
   };
 };
 

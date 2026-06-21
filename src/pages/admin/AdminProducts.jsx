@@ -998,6 +998,7 @@ export default function AdminProducts() {
                     {/* Click any chip to toggle that flag right from the list — no need to open Edit */}
                     <div className="flex flex-wrap gap-1 max-w-[230px]">
                       {[
+                        { key: 'drops', label: 'Drops', on: 'bg-violet-100 text-violet-700' },
                         { key: 'isNew', label: 'New Arrival', on: 'bg-emerald-100 text-emerald-700' },
                         { key: 'flashSale', label: 'Flash Sale', on: 'bg-red-100 text-red-600' },
                         { key: 'featured', label: 'Featured', on: 'bg-primary-100 text-primary-700' },

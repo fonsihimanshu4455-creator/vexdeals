@@ -105,6 +105,7 @@ export default function Coverflow3D({ products = [], title = 'The Drops', subtit
       <div className="max-w-md mx-auto mt-7 px-4">
         <div className="bg-white rounded-2xl shadow-card border border-ink-900/5 p-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
+            {current.dropsText && <p className="text-[11px] font-bold uppercase tracking-wide text-primary-600 mb-0.5">{current.dropsText}</p>}
             <p className="font-semibold text-ink-900 truncate">{current.name}</p>
             <div className="flex items-baseline gap-2">
               <p className="text-lg font-bold text-ink-900">{fmt(current.price)}</p>

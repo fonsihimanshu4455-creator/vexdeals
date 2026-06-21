@@ -71,6 +71,8 @@ export default function Home() {
   const flaggedSale      = products.filter(p => p.flashSale);
   const saleProducts     = (flaggedSale.length ? flaggedSale : products.filter(p => p.discount >= 20)).sort(orderBy('flashOrder')).slice(0, 6);
   const heroProduct      = featuredProducts[0] || bestsellers[0] || products[0];
+  const flaggedDrops     = products.filter(p => p.drops).sort(orderBy('dropsOrder'));
+  const dropProducts     = flaggedDrops.length ? flaggedDrops : (featuredProducts.length ? featuredProducts : products);
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
   const countForCat = (name) => products.filter(p => p.category === name).length;
@@ -125,7 +127,7 @@ export default function Home() {
 
       {/* ── 3D product coverflow ─────────────────────────────────────────── */}
       <Coverflow3D
-        products={(featuredProducts.length ? featuredProducts : products)}
+        products={dropProducts}
         title="The Drops"
         subtitle="Hottest picks from around the world. Refreshed daily."
       />
