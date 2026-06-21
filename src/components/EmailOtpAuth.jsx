@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mail, Phone, RefreshCw, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { phoneAuth, phoneAuthReady } from '../config/firebaseAuth';
 
 // Reusable OTP auth (signup + signin). Mobile uses Firebase Phone Auth (Google
-// sends the SMS — no separate SMS provider). Email uses the Resend OTP API.
+// sends the SMS). Email uses the Resend OTP API.
 // Calls onVerified({ email, phone, name }) once verified.
 export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send OTP', compact = false, defaultChannel = 'email', lockChannel = false }) {
   const [channel, setChannel] = useState(defaultChannel); // 'email' | 'phone'
@@ -18,9 +18,9 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
   const [error, setError] = useState('');
   const [resendIn, setResendIn] = useState(0);
   const timerRef = useRef(null);
-  const recaptchaElRef = useRef(null);   // invisible reCAPTCHA container
-  const verifierRef = useRef(null);      // RecaptchaVerifier instance
-  const confirmationRef = useRef(null);  // Firebase confirmationResult
+  const recaptchaElRef = useRef(null);
+  const verifierRef = useRef(null);
+  const confirmationRef = useRef(null);
 
   const isEmail = channel === 'email';
   const cleanPhone = phone.replace(/\D/g, '').slice(-10);
@@ -49,16 +49,16 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
     if (c.includes('invalid-phone-number')) return 'Sahi 10-digit mobile number daalo.';
     if (c.includes('operation-not-allowed')) return 'Phone login Firebase Console me enable nahi hai.';
     if (c.includes('captcha') || c.includes('app-credential')) return 'Verification fail. Page refresh karke dobara karo.';
-    if (c.includes('billing-not-enabled')) return 'Firebase billing (Blaze) enable karna padega phone OTP ke liye.';
+    if (c.includes('billing-not-enabled')) return 'Firebase billing (Blaze) enable karna padega.';
     return err?.message || 'Kuch galat hua. Dobara try karo.';
   };
 
   const sendPhoneOtp = async () => {
-    if (!auth) throw new Error('Auth not configured.');
+    if (!phoneAuthReady) throw new Error('Phone OTP abhi setup nahi hua (Firebase auth config missing).');
     if (!verifierRef.current) {
-      verifierRef.current = new RecaptchaVerifier(auth, recaptchaElRef.current, { size: 'invisible' });
+      verifierRef.current = new RecaptchaVerifier(phoneAuth, recaptchaElRef.current, { size: 'invisible' });
     }
-    confirmationRef.current = await signInWithPhoneNumber(auth, `+91${cleanPhone}`, verifierRef.current);
+    confirmationRef.current = await signInWithPhoneNumber(phoneAuth, `+91${cleanPhone}`, verifierRef.current);
   };
 
   const sendEmailOtp = async () => {
@@ -107,7 +107,7 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
         if (!data.success) throw new Error(data.error || 'Wrong code.');
       } else {
         if (!confirmationRef.current) throw new Error('Pehle OTP bhejo.');
-        await confirmationRef.current.confirm(code); // throws on wrong/expired
+        await confirmationRef.current.confirm(code);
       }
       onVerified({
         email: isEmail ? email.trim().toLowerCase() : '',
