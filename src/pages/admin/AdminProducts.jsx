@@ -178,6 +178,7 @@ export default function AdminProducts() {
   const [editError, setEditError] = useState('');
   const editFileInputRef = useRef(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [addOpen, setAddOpen] = useState(false);
   const [formError, setFormError] = useState('');
   const [urlInput, setUrlInput] = useState('');
@@ -350,6 +351,26 @@ export default function AdminProducts() {
     const matchSearch = product.name.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  // ── Bulk selection (tick boxes) ──────────────────────────────────────────
+  const isSelected = (id) => selectedIds.includes(id);
+  const toggleSelect = (id) => setSelectedIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const filteredIds = filtered.map((p) => p.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id));
+  const toggleSelectAll = () => setSelectedIds(allFilteredSelected ? [] : filteredIds);
+  const clearSelection = () => setSelectedIds([]);
+  const bulkSetHidden = async (hidden) => {
+    const ids = [...selectedIds];
+    for (const id of ids) { await updateProduct(id, { hidden }); }
+    clearSelection();
+  };
+  const bulkDelete = async () => {
+    const ids = [...selectedIds];
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(`${ids.length} products delete karein? Ye wapas nahi aayenge.`)) return;
+    clearSelection();
+    for (const id of ids) { await deleteProduct(id); }
+  };
 
   const startEdit = (product) => {
     setEditId(product.id);
@@ -840,11 +861,35 @@ export default function AdminProducts() {
         ))}
       </div>
 
+      {/* Bulk action bar — appears when products are ticked */}
+      {selectedIds.length > 0 && (
+        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 bg-ink-900 text-white rounded-2xl px-4 py-3 shadow-lg">
+          <span className="font-bold text-sm">{selectedIds.length} selected</span>
+          <div className="flex-1" />
+          <button onClick={() => bulkSetHidden(true)} className="flex items-center gap-1.5 bg-amber-500 text-ink-900 px-3 py-2 rounded-xl text-sm font-bold hover:bg-amber-400">
+            <EyeOff size={15} /> Hide
+          </button>
+          <button onClick={() => bulkSetHidden(false)} className="flex items-center gap-1.5 bg-white text-ink-900 px-3 py-2 rounded-xl text-sm font-bold hover:bg-gray-100">
+            <Eye size={15} /> Show
+          </button>
+          <button onClick={bulkDelete} className="flex items-center gap-1.5 bg-red-500 text-white px-3 py-2 rounded-xl text-sm font-bold hover:bg-red-600">
+            <Trash2 size={15} /> Delete
+          </button>
+          <button onClick={clearSelection} className="flex items-center gap-1.5 border border-white/30 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-white/10">
+            <X size={15} /> Clear
+          </button>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-3 py-3 w-10">
+                  <input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAll}
+                    className="w-4 h-4 accent-primary-600 cursor-pointer" title="Select all" />
+                </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Product</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Category / Brand</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Price</th>
@@ -856,7 +901,11 @@ export default function AdminProducts() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={product.id} className={`transition-colors ${isSelected(product.id) ? 'bg-primary-50/60' : 'hover:bg-gray-50'}`}>
+                  <td className="px-3 py-3 w-10">
+                    <input type="checkbox" checked={isSelected(product.id)} onChange={() => toggleSelect(product.id)}
+                      className="w-4 h-4 accent-primary-600 cursor-pointer" />
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <img src={product.image} alt={product.name} className="w-10 h-10 rounded-xl object-cover bg-gray-100 shrink-0" />
