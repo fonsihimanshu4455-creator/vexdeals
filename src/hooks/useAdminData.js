@@ -65,7 +65,9 @@ export const buildUserList = (firestoreUsers) => {
 
   const merged = [...admins];
   customers.forEach((cu) => {
-    if (!merged.find((u) => u.id === cu.id || u.email === cu.email)) {
+    // Dedupe by id, and by email only when an email actually exists — otherwise
+    // every phone-only user (email = '') would collide and get dropped.
+    if (!merged.find((u) => u.id === cu.id || (cu.email && u.email === cu.email))) {
       const stats = getOrderStats(cu.id, cu.email);
       merged.push({
         ...cu,
