@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Image, Tag, Calendar, Percent, IndianRupee, X, Check, Copy, Eye, Edit2, Upload, Wifi, WifiOff } from 'lucide-react';
+import { Plus, Trash2, Image, Tag, Calendar, Percent, IndianRupee, X, Check, Copy, Eye, Edit2, Upload, Wifi, WifiOff, Film } from 'lucide-react';
 import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import ReelsManager from './ReelsManager';
 
 const getPosters = () => {
   try { return JSON.parse(localStorage.getItem('vexdeals_posters') || '[]'); }
@@ -258,12 +259,14 @@ export default function AdminMarketing() {
             )}
           </div>
         </div>
-        <button
-          onClick={() => tab === 'posters' ? openAddPoster() : setShowPromo(true)}
-          className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-primary-700 transition-colors text-sm"
-        >
-          <Plus size={18} /> {tab === 'posters' ? 'Add Poster' : 'New Promo Code'}
-        </button>
+        {tab !== 'reels' && (
+          <button
+            onClick={() => tab === 'posters' ? openAddPoster() : setShowPromo(true)}
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-primary-700 transition-colors text-sm"
+          >
+            <Plus size={18} /> {tab === 'posters' ? 'Add Poster' : 'New Promo Code'}
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -285,6 +288,7 @@ export default function AdminMarketing() {
       <div className="flex gap-2">
         {[
           { key: 'posters', label: 'Marketing Posters', Icon: Image },
+          { key: 'reels',   label: 'Homepage Reels',    Icon: Film  },
           { key: 'promos',  label: 'Promo Codes',       Icon: Tag   },
         ].map(({ key, label, Icon }) => (
           <button
@@ -298,6 +302,9 @@ export default function AdminMarketing() {
           </button>
         ))}
       </div>
+
+      {/* ── REELS TAB ───────────────────────────────────────────────────────── */}
+      {tab === 'reels' && <ReelsManager />}
 
       {/* ── POSTERS TAB ─────────────────────────────────────────────────────── */}
       {tab === 'posters' && (
