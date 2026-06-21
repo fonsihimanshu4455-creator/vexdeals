@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mail, Phone, RefreshCw, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth } from '../config/firebase';
 
-// Reusable OTP auth (signup + signin) over Email or Mobile. Channel tabs let
-// the user pick. Calls onVerified({ email, phone, name }) once verified.
+// Reusable OTP auth (signup + signin). Mobile uses Firebase Phone Auth (Google
+// sends the SMS — no separate SMS provider). Email uses the Resend OTP API.
+// Calls onVerified({ email, phone, name }) once verified.
 export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send OTP', compact = false, defaultChannel = 'email', lockChannel = false }) {
   const [channel, setChannel] = useState(defaultChannel); // 'email' | 'phone'
   const [step, setStep] = useState('input');              // 'input' | 'otp'
@@ -15,11 +18,18 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
   const [error, setError] = useState('');
   const [resendIn, setResendIn] = useState(0);
   const timerRef = useRef(null);
+  const recaptchaElRef = useRef(null);   // invisible reCAPTCHA container
+  const verifierRef = useRef(null);      // RecaptchaVerifier instance
+  const confirmationRef = useRef(null);  // Firebase confirmationResult
 
   const isEmail = channel === 'email';
   const cleanPhone = phone.replace(/\D/g, '').slice(-10);
 
-  useEffect(() => () => clearInterval(timerRef.current), []);
+  useEffect(() => () => {
+    clearInterval(timerRef.current);
+    try { verifierRef.current?.clear(); } catch { /* ignore */ }
+    verifierRef.current = null;
+  }, []);
 
   const startResendTimer = () => {
     setResendIn(30);
@@ -31,6 +41,36 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
 
   const switchChannel = (c) => { setChannel(c); setStep('input'); setOtp(''); setError(''); };
 
+  const mapErr = (err) => {
+    const c = String(err?.code || '');
+    if (c.includes('invalid-verification-code')) return 'Galat OTP. Dobara try karo.';
+    if (c.includes('code-expired')) return 'OTP expire ho gaya. Resend karo.';
+    if (c.includes('too-many-requests')) return 'Bahut zyada attempts. Thodi der baad try karo.';
+    if (c.includes('invalid-phone-number')) return 'Sahi 10-digit mobile number daalo.';
+    if (c.includes('operation-not-allowed')) return 'Phone login Firebase Console me enable nahi hai.';
+    if (c.includes('captcha') || c.includes('app-credential')) return 'Verification fail. Page refresh karke dobara karo.';
+    if (c.includes('billing-not-enabled')) return 'Firebase billing (Blaze) enable karna padega phone OTP ke liye.';
+    return err?.message || 'Kuch galat hua. Dobara try karo.';
+  };
+
+  const sendPhoneOtp = async () => {
+    if (!auth) throw new Error('Auth not configured.');
+    if (!verifierRef.current) {
+      verifierRef.current = new RecaptchaVerifier(auth, recaptchaElRef.current, { size: 'invisible' });
+    }
+    confirmationRef.current = await signInWithPhoneNumber(auth, `+91${cleanPhone}`, verifierRef.current);
+  };
+
+  const sendEmailOtp = async () => {
+    const res = await fetch('/api/send-email-otp', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Could not send code.');
+    setToken(data.token);
+  };
+
   const sendOtp = async () => {
     setError('');
     if (askName && !name.trim()) { setError('Apna naam daalo.'); return; }
@@ -41,16 +81,13 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
     }
     setLoading(true);
     try {
-      const url = isEmail ? '/api/send-email-otp' : '/api/send-whatsapp-otp';
-      const body = isEmail ? { email: email.trim().toLowerCase() } : { phone: cleanPhone };
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data = await res.json();
-      if (!res.ok || data.error || (!data.token && !data.success)) throw new Error(data.error || 'Could not send code.');
-      setToken(data.token);
+      if (isEmail) await sendEmailOtp(); else await sendPhoneOtp();
       setStep('otp');
       startResendTimer();
     } catch (err) {
-      setError(err.message || 'Could not send code.');
+      try { verifierRef.current?.clear(); } catch { /* ignore */ }
+      verifierRef.current = null;
+      setError(mapErr(err));
     }
     setLoading(false);
   };
@@ -61,20 +98,24 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
     if (code.length < 4) { setError('Pura code daalo.'); return; }
     setLoading(true);
     try {
-      const url = isEmail ? '/api/verify-email-otp' : '/api/verify-whatsapp-otp';
-      const body = isEmail
-        ? { email: email.trim().toLowerCase(), otp: code, token }
-        : { phone: cleanPhone, otp: code, token };
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Wrong code.');
+      if (isEmail) {
+        const res = await fetch('/api/verify-email-otp', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim().toLowerCase(), otp: code, token }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Wrong code.');
+      } else {
+        if (!confirmationRef.current) throw new Error('Pehle OTP bhejo.');
+        await confirmationRef.current.confirm(code); // throws on wrong/expired
+      }
       onVerified({
         email: isEmail ? email.trim().toLowerCase() : '',
         phone: isEmail ? '' : cleanPhone,
         name: name.trim(),
       });
     } catch (err) {
-      setError(err.message || 'Verification failed.');
+      setError(mapErr(err));
     }
     setLoading(false);
   };
@@ -84,7 +125,6 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
 
   return (
     <div className={compact ? '' : 'space-y-4'}>
-      {/* Channel tabs (hidden when a single channel is locked) */}
       {!lockChannel && (
         <div className="flex bg-gray-100 rounded-xl p-1 mb-3">
           <button type="button" onClick={() => switchChannel('email')} className={tabCls(isEmail)}><Mail size={15} /> Email</button>
@@ -139,6 +179,9 @@ export default function EmailOtpAuth({ onVerified, askName = true, cta = 'Send O
           </div>
         </div>
       )}
+
+      {/* Invisible reCAPTCHA container for Firebase phone auth */}
+      <div ref={recaptchaElRef} />
     </div>
   );
 }
