@@ -7,15 +7,21 @@ import { db } from '../config/firebase';
 export const saveCustomer = (user) => {
   try {
     const customers = JSON.parse(localStorage.getItem('vexdeals_customers') || '[]');
-    const idx = customers.findIndex((c) => c.id === user.id || c.email === user.email);
+    const idx = customers.findIndex((c) => c.id === user.id
+      || (user.phone && c.phone === user.phone)
+      || (user.email && c.email === user.email));
     if (idx === -1) customers.push({ ...user, firstLogin: new Date().toISOString() });
-    else customers[idx] = { ...customers[idx], ...user };
+    // Existing account — keep first-login date + order history, just refresh profile.
+    else customers[idx] = { ...customers[idx], ...user, firstLogin: customers[idx].firstLogin };
     localStorage.setItem('vexdeals_customers', JSON.stringify(customers));
   } catch { /* ignore */ }
 
   if (db) {
+    // Don't overwrite stats on re-login — only write base profile fields.
+    // (merge:true keeps existing joinDate / totalOrders / totalSpent intact.)
+    const { totalOrders, totalSpent, joinDate, status, ...base } = user; // eslint-disable-line no-unused-vars
     setDoc(doc(db, 'users', String(user.id)), {
-      ...user, updatedAt: new Date().toISOString(),
+      ...base, updatedAt: new Date().toISOString(),
     }, { merge: true }).catch(() => {});
   }
 };
