@@ -6,12 +6,15 @@ import { getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { auth as mainAuth } from './firebase';
 
+// Public Firebase web config for the dedicated "vexdeals-fc0a1" auth project
+// (these are not secrets — they're meant to ship in the client). Env vars
+// override if you ever want to point at a different project.
 const cfg = {
-  apiKey: import.meta.env.VITE_FIREBASE_AUTH_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_AUTH_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_AUTH_APP_ID,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_AUTH_MESSAGING_SENDER_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_AUTH_API_KEY || 'AIzaSyDMGxvEkDJ7cV7hTtdIR2u-IR-6voUJ14M',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_AUTH_DOMAIN || 'vexdeals-fc0a1.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_AUTH_PROJECT_ID || 'vexdeals-fc0a1',
+  appId: import.meta.env.VITE_FIREBASE_AUTH_APP_ID || '1:118904115426:web:bb4cdb8a914dec5988cebb',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_AUTH_MESSAGING_SENDER_ID || '118904115426',
 };
 
 const ready = Boolean(cfg.apiKey && cfg.authDomain && cfg.projectId && cfg.appId);
