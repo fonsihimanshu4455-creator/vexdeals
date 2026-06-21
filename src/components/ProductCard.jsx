@@ -15,7 +15,7 @@ export default function ProductCard({ product, index = 0 }) {
     e.preventDefault();
     dispatch({ type: 'ADD_ITEM', payload: product });
     trackAddToCart({ id: product.id, name: product.name, value: product.price, currency: 'INR', quantity: 1 });
-    trackAddToCartHit();
+    trackAddToCartHit(product.id, product.name);
   };
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;

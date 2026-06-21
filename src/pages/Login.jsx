@@ -112,7 +112,7 @@ export default function Login() {
         )}
 
         {/* Mobile OTP signup / signin */}
-        <EmailOtpAuth onVerified={handleOtpVerified} askName cta="Send OTP" defaultChannel="phone" lockChannel />
+        <EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" defaultChannel="phone" lockChannel />
 
         <div className="mb-8" />
 
