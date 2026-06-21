@@ -179,6 +179,8 @@ export default function AdminProducts() {
   const editFileInputRef = useRef(null);
   const [deleteId, setDeleteId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [rangeFrom, setRangeFrom] = useState('');
+  const [rangeTo, setRangeTo] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [formError, setFormError] = useState('');
   const [urlInput, setUrlInput] = useState('');
@@ -364,6 +366,21 @@ export default function AdminProducts() {
     for (const id of ids) { await updateProduct(id, { hidden }); }
     clearSelection();
   };
+  // Select every product whose name ends in a number within [from, to].
+  const selectRange = () => {
+    const a = parseInt(rangeFrom, 10);
+    const b = parseInt(rangeTo, 10);
+    if (Number.isNaN(a) || Number.isNaN(b)) return;
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    const ids = filtered.filter((p) => {
+      const m = String(p.name).match(/(\d+)\s*$/);
+      if (!m) return false;
+      const n = parseInt(m[1], 10);
+      return n >= lo && n <= hi;
+    }).map((p) => p.id);
+    setSelectedIds((prev) => [...new Set([...prev, ...ids])]);
+  };
+
   const bulkDelete = async () => {
     const ids = [...selectedIds];
     // eslint-disable-next-line no-alert
@@ -859,6 +876,19 @@ export default function AdminProducts() {
             <p className="text-xs text-gray-500 mt-0.5">{label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Select-by-range — pick all products with numbers from X to Y */}
+      <div className="flex flex-wrap items-center gap-2 bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
+        <span className="text-sm font-semibold text-gray-700">Select range:</span>
+        <input type="number" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)}
+          placeholder="From #" className="w-24 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-primary-500" />
+        <span className="text-gray-400">to</span>
+        <input type="number" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)}
+          placeholder="To #" className="w-24 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-primary-500"
+          onKeyDown={(e) => { if (e.key === 'Enter') selectRange(); }} />
+        <button onClick={selectRange} className="bg-primary-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-primary-700">Select</button>
+        <span className="text-xs text-gray-400">e.g. 37 to 317 — phir neeche Hide/Show karo</span>
       </div>
 
       {/* Bulk action bar — appears when products are ticked */}
