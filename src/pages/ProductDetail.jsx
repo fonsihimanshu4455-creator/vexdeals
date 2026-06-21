@@ -64,7 +64,7 @@ export default function ProductDetail() {
   useEffect(() => {
     if (!product) return;
     trackViewContent({ id: product.id, name: product.name, value: product.price, currency: 'INR' });
-    trackProductView(product.id);
+    trackProductView(product.id, product.name);
     addRecent(product.id);
   }, [product?.id]);
 
@@ -100,7 +100,7 @@ export default function ProductDetail() {
       dispatch({ type: 'ADD_ITEM', payload: product });
     }
     trackAddToCart({ id: product.id, name: product.name, value: product.price * qty, currency: 'INR', quantity: qty });
-    trackAddToCartHit();
+    trackAddToCartHit(product.id, product.name);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
