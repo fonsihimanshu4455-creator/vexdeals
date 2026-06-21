@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, ToggleLeft, ToggleRight, Edit2, Save, X, Tag, Upload, Loader2 } from 'lucide-react';
 import { useCategories } from '../../context/CategoryContext';
 import { uploadToCloudinary } from '../../lib/cloudinary';
+import ImageCropper from '../../components/ImageCropper';
 
 const EMOJI_OPTIONS = ['⌚','🕶️','💻','👗','🏠','🏋️','✨','📱','🎵','📚','🍎','🚗','💊','🎮','👟','💍','🌿','🎒'];
 
@@ -28,17 +29,28 @@ export default function AdminCategories() {
   const [newPriority, setNewPriority] = useState('');
   const [editPriority, setEditPriority] = useState('');
   const [imgUploading, setImgUploading] = useState(false);
+  const [cropper, setCropper] = useState(null); // { url, setter }
 
-  const uploadImage = async (file, setter) => {
+  // Open the crop+zoom tool when a photo is picked.
+  const pickImage = (file, setter) => {
     if (!file) return;
+    setCropper({ url: URL.createObjectURL(file), setter });
+  };
+  const closeCropper = () => {
+    setCropper((c) => { if (c?.url) URL.revokeObjectURL(c.url); return null; });
+  };
+  const handleCropped = async (blob) => {
+    const setter = cropper?.setter;
     try {
       setImgUploading(true);
+      const file = new File([blob], `vex-cat-${Date.now()}.jpg`, { type: 'image/jpeg' });
       const url = await uploadToCloudinary(file, 'image');
-      setter(url);
+      setter?.(url);
     } catch {
       alert('Image upload failed. Try again.');
     } finally {
       setImgUploading(false);
+      closeCropper();
     }
   };
 
@@ -68,6 +80,9 @@ export default function AdminCategories() {
 
   return (
     <div className="space-y-6">
+      {cropper && (
+        <ImageCropper src={cropper.url} uploading={imgUploading} onCancel={closeCropper} onCropped={handleCropped} />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -168,7 +183,7 @@ export default function AdminCategories() {
                           <label className="flex items-center gap-1 text-xs font-medium text-primary-600 cursor-pointer hover:text-primary-700">
                             {imgUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                             {editImage ? 'Change photo' : 'Add photo'}
-                            <input type="file" accept="image/*" className="hidden" onChange={e => uploadImage(e.target.files?.[0], setEditImage)} />
+                            <input type="file" accept="image/*" className="hidden" onChange={e => { pickImage(e.target.files?.[0], setEditImage); e.target.value = ''; }} />
                           </label>
                           {editImage && <button onClick={() => setEditImage('')} className="text-xs text-red-500 hover:text-red-600">Remove</button>}
                         </div>
@@ -320,7 +335,7 @@ export default function AdminCategories() {
                 ) : (
                   <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-4 py-4 text-sm cursor-pointer hover:border-primary-400 text-gray-500">
                     {imgUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading…</> : <><Upload size={16} /> Upload photo</>}
-                    <input type="file" accept="image/*" className="hidden" onChange={e => uploadImage(e.target.files?.[0], setNewImage)} />
+                    <input type="file" accept="image/*" className="hidden" onChange={e => { pickImage(e.target.files?.[0], setNewImage); e.target.value = ''; }} />
                   </label>
                 )}
               </div>
