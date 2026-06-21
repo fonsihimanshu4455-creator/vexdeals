@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard';
 import ProductGridSkeleton from '../components/ProductSkeleton';
 import MarketingPosters from '../components/MarketingPosters';
 import InstagramReels from '../components/InstagramReels';
+import Coverflow3D from '../components/Coverflow3D';
 import RecentlyViewed from '../components/RecentlyViewed';
 import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
@@ -70,7 +71,6 @@ export default function Home() {
   const flaggedSale      = products.filter(p => p.flashSale);
   const saleProducts     = (flaggedSale.length ? flaggedSale : products.filter(p => p.discount >= 20)).sort(orderBy('flashOrder')).slice(0, 6);
   const heroProduct      = featuredProducts[0] || bestsellers[0] || products[0];
-  const brands           = [...new Set(products.map(p => String(p.brand || '').trim()).filter(Boolean))].slice(0, 14);
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
   const countForCat = (name) => products.filter(p => p.category === name).length;
@@ -91,7 +91,7 @@ export default function Home() {
   }, [products.length, activeCategories.length]);
 
   return (
-    <div ref={containerRef} className="bg-white bg-grid">
+    <div ref={containerRef} className="bg-cream-100">
 
       {/* ── Instagram reels (top of page) ────────────────────────────────── */}
       <InstagramReels />
@@ -123,58 +123,27 @@ export default function Home() {
       {/* ── Marketing posters ────────────────────────────────────────────── */}
       <MarketingPosters />
 
-      {/* ── Brand wall (Culture-Circle style) ────────────────────────────── */}
-      {brands.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 reveal">
-          <div className="text-center mb-8">
-            <p className="eyebrow mb-1">Shop from the</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-ink-900">Global Brands at the Best Prices</h2>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-5">
-            {brands.map((b) => (
-              <Link
-                key={b}
-                to={`/products?search=${encodeURIComponent(b)}`}
-                className="group flex flex-col items-center gap-2"
-                title={b}
-              >
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white ring-1 ring-ink-900/10 shadow-soft flex items-center justify-center px-2 group-hover:ring-2 group-hover:ring-primary-500 group-hover:-translate-y-1 transition-all duration-300">
-                  <span className="font-display font-bold text-ink-900 text-center text-sm sm:text-base leading-tight line-clamp-2">{b}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Link to="/products" className="inline-flex items-center gap-2 border border-ink-900/15 hover:border-ink-900 text-ink-900 font-semibold px-7 py-3 rounded-full transition-colors">
-              View All Brands <ArrowRight size={15} />
-            </Link>
-          </div>
-        </section>
-      )}
+      {/* ── 3D product coverflow ─────────────────────────────────────────── */}
+      <Coverflow3D
+        products={(featuredProducts.length ? featuredProducts : products)}
+        title="The Drops"
+        subtitle="Hottest picks from around the world. Refreshed daily."
+      />
 
-      {/* ── Categories — bento grid (Culture-Circle style) ───────────────── */}
+      {/* ── Categories ───────────────────────────────────────────────────── */}
       {activeCategories.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 reveal">
           <Heading eyebrow="Browse" title="Shop by Category" to="/products" />
-          <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-[150px] sm:auto-rows-[190px] gap-3">
-            {activeCategories.map((cat, i) => (
-              <Link
-                key={cat.id}
-                to={`/products?category=${encodeURIComponent(cat.name)}`}
-                className={`group relative rounded-3xl overflow-hidden bg-ink-900 shadow-soft ${i % 6 === 0 ? 'col-span-2 row-span-2' : ''}`}
-              >
-                {cat.image ? (
-                  <img src={cat.image} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-5xl bg-brand-soft">{cat.icon}</div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                <span className={`absolute left-4 bottom-3 text-white font-display font-extrabold uppercase tracking-wide leading-none ${i % 6 === 0 ? 'text-2xl sm:text-4xl' : 'text-sm sm:text-xl'}`}>
-                  {cat.name}
-                </span>
-                <span className="absolute right-3 top-3 w-8 h-8 rounded-full bg-white/90 text-ink-900 flex items-center justify-center opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all">
-                  <ArrowUpRight size={16} />
-                </span>
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-x-3 gap-y-5">
+            {activeCategories.map(cat => (
+              <Link key={cat.id} to={`/products?category=${encodeURIComponent(cat.name)}`}
+                className="group flex flex-col items-center gap-2 text-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-brand-soft ring-1 ring-ink-900/5 flex items-center justify-center text-2xl sm:text-3xl group-hover:ring-2 group-hover:ring-primary-500 group-hover:-translate-y-1 transition-all duration-300">
+                  {cat.image
+                    ? <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                    : cat.icon}
+                </div>
+                <p className="text-xs sm:text-sm font-medium text-ink-800 line-clamp-1 group-hover:text-primary-600 transition-colors">{cat.name}</p>
               </Link>
             ))}
           </div>

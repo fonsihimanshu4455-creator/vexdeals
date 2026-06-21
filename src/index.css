@@ -179,20 +179,48 @@
   opacity: 1;
 }
 
-/* ── Culture-Circle style graph-paper grid background ───────────────────── */
-.bg-grid {
-  background-color: #ffffff;
+/* ── 3D product coverflow (Culture-Circle "Drops" style) ────────────────── */
+.coverflow-grid {
+  background-color: #fafbfc;
   background-image:
-    linear-gradient(rgba(15, 39, 64, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 39, 64, 0.045) 1px, transparent 1px);
-  background-size: 46px 46px;
+    linear-gradient(rgba(15, 39, 64, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 39, 64, 0.05) 1px, transparent 1px);
+  background-size: 42px 42px;
 }
-.bg-grid-soft {
-  background-image:
-    linear-gradient(rgba(15, 39, 64, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 39, 64, 0.03) 1px, transparent 1px);
-  background-size: 46px 46px;
+.coverflow-stage {
+  height: 340px;
+  max-width: 900px;
+  perspective: 1500px;
+  transform-style: preserve-3d;
 }
+.coverflow-card {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 230px;
+  height: 310px;
+  margin-left: -115px;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s ease, filter 0.65s ease;
+  will-change: transform;
+}
+.coverflow-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid rgba(15, 39, 64, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f2740;
+  z-index: 40;
+}
+.coverflow-arrow:hover { background: #0f2740; color: #fff; }
 
 /* Respect users who prefer less motion */
 @media (prefers-reduced-motion: reduce) {
