@@ -188,21 +188,26 @@
   background-size: 42px 42px;
 }
 .coverflow-stage {
-  height: 340px;
-  max-width: 900px;
+  height: 380px;
+  max-width: 940px;
   perspective: 1500px;
   transform-style: preserve-3d;
+  touch-action: pan-y; /* allow vertical page scroll, we handle horizontal */
 }
 .coverflow-card {
   position: absolute;
   top: 10px;
   left: 50%;
-  width: 230px;
-  height: 310px;
-  margin-left: -115px;
+  width: 270px;
+  height: 360px;
+  margin-left: -135px;
   transform-style: preserve-3d;
   transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s ease, filter 0.65s ease;
   will-change: transform;
+}
+@media (min-width: 640px) {
+  .coverflow-stage { height: 440px; }
+  .coverflow-card { width: 320px; height: 420px; margin-left: -160px; }
 }
 .coverflow-arrow {
   position: absolute;
