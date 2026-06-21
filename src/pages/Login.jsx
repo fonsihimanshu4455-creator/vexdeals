@@ -114,18 +114,7 @@ export default function Login() {
         {/* Mobile OTP signup / signin */}
         <EmailOtpAuth onVerified={handleOtpVerified} askName cta="Send OTP" defaultChannel="phone" lockChannel />
 
-        <div className="space-y-3 mt-8 mb-8">
-          {[
-            { icon: '🔒', text: 'Fast OTP login — no password needed' },
-            { icon: '📦', text: 'Track all your orders in one place' },
-            { icon: '🎁', text: 'Get exclusive deals and promo codes' },
-          ].map(({ icon, text }) => (
-            <div key={text} className="flex items-center gap-3">
-              <span className="text-xl">{icon}</span>
-              <p className="text-sm text-gray-600">{text}</p>
-            </div>
-          ))}
-        </div>
+        <div className="mb-8" />
 
         <p className="text-center text-xs text-gray-400 leading-relaxed">
           By continuing you agree to VexDeals{' '}
