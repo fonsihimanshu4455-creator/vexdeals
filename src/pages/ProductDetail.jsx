@@ -14,7 +14,7 @@ import RecentlyViewed from '../components/RecentlyViewed';
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const { products } = useProducts();
+  const { products, visibleProducts } = useProducts();
   const product = products.find(p => p.id === Number(id));
   const { dispatch, items } = useCart();
   const { has, toggle } = useWishlist();
@@ -91,7 +91,7 @@ export default function ProductDetail() {
     );
   }
 
-  const related = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const related = visibleProducts.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
   const inCart = items.find(i => i.id === product.id);
 
