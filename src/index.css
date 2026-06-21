@@ -179,6 +179,21 @@
   opacity: 1;
 }
 
+/* ── Culture-Circle style graph-paper grid background ───────────────────── */
+.bg-grid {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(rgba(15, 39, 64, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 39, 64, 0.045) 1px, transparent 1px);
+  background-size: 46px 46px;
+}
+.bg-grid-soft {
+  background-image:
+    linear-gradient(rgba(15, 39, 64, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 39, 64, 0.03) 1px, transparent 1px);
+  background-size: 46px 46px;
+}
+
 /* Respect users who prefer less motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
