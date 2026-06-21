@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCustomerData } from '../context/CustomerDataContext';
 import { trackInitiateCheckout, trackPurchase } from '../utils/pixel';
 import { trackCheckoutHit, trackPurchaseHit } from '../utils/analytics';
+import { gaPurchase } from '../utils/ga';
 import EmailOtpAuth from '../components/EmailOtpAuth';
 import { buildOtpCustomer, saveCustomer } from '../lib/customers';
 
@@ -175,6 +176,7 @@ export default function Checkout() {
       contents: items.map((i) => ({ id: i.id, quantity: i.qty || 1 })),
     });
     trackPurchaseHit(total);
+    gaPurchase({ value: total, transactionId: savedOrder?.id || paymentId, items });
     setOrdered(true);
     clearCart();
     setTimeout(() => navigate(isCustomer && savedOrder ? '/account/orders' : '/'), 4000);

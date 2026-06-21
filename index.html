@@ -34,6 +34,17 @@
       fbq('track', 'PageView');
     </script>
     <!-- End Meta Pixel Code -->
+
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZFDBWRZ18X"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      // SPA: we send page_view manually on each route change
+      gtag('config', 'G-ZFDBWRZ18X', { send_page_view: false });
+    </script>
+    <!-- End Google Analytics -->
   </head>
   <body>
     <!-- Meta Pixel (noscript fallback) -->

@@ -8,6 +8,7 @@ import { CustomerDataProvider } from './context/CustomerDataContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { trackPageView } from './utils/pixel';
 import { trackVisit } from './utils/analytics';
+import { gaPageView } from './utils/ga';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -50,7 +51,8 @@ function PixelTracker() {
   useEffect(() => { trackVisit(); }, []);
   useEffect(() => {
     window.scrollTo(0, 0);
-    if (first.current) { first.current = false; return; } // index.html already fired the first PageView
+    gaPageView(location.pathname);                 // GA4 page view (every route, incl. first)
+    if (first.current) { first.current = false; return; } // index.html already fired the first Meta PageView
     trackPageView();
   }, [location.pathname]);
   return null;
