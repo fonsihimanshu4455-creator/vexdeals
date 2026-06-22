@@ -91,8 +91,8 @@ export default function Coverflow3D({ products = [], title = 'The Drops', subtit
             role="button"
             aria-label={p.name}
           >
-            <div className="w-full h-full rounded-3xl overflow-hidden bg-white shadow-2xl border border-ink-900/5">
-              <img src={p.image} alt={p.name} className="w-full h-full object-contain p-2.5" loading="lazy" draggable="false" />
+            <div className="w-full h-full rounded-3xl overflow-hidden bg-cream-100 shadow-2xl border border-ink-900/5">
+              <img src={p.image} alt={p.name} className="w-full h-full object-cover" loading="lazy" draggable="false" />
             </div>
           </div>
         ))}
