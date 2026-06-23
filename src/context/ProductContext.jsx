@@ -100,6 +100,7 @@ const normalizeProduct = (rawProduct, fallbackId, fallbackSortOrder) => {
     drops: Boolean(rawProduct.drops),
     dropsText: typeof rawProduct.dropsText === 'string' ? rawProduct.dropsText : '',
     dropsOrder: rawProduct.dropsOrder ?? '',
+    affiliateUrl: typeof rawProduct.affiliateUrl === 'string' ? rawProduct.affiliateUrl.trim() : '',
   };
 };
 

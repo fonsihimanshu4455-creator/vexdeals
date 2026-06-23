@@ -1,18 +1,22 @@
 import { Link } from 'react-router-dom';
-import { Star, Heart, Plus } from 'lucide-react';
+import { Star, Heart, Plus, ExternalLink } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { VexLogoMark } from './Logo';
 import { trackAddToCart } from '../utils/pixel';
 import { trackAddToCartHit } from '../utils/analytics';
+import { affiliateStore } from '../lib/affiliate';
 
 export default function ProductCard({ product, index = 0 }) {
   const { dispatch } = useCart();
   const { has, toggle } = useWishlist();
   const wished = has(product.id);
 
+  const isAffiliate = Boolean(product.affiliateUrl);
+
   const addToCart = (e) => {
     e.preventDefault();
+    if (isAffiliate) { window.open(product.affiliateUrl, '_blank', 'noopener,noreferrer'); return; }
     dispatch({ type: 'ADD_ITEM', payload: product });
     trackAddToCart({ id: product.id, name: product.name, value: product.price, currency: 'INR', quantity: 1 });
     trackAddToCartHit(product.id, product.name);
@@ -74,9 +78,9 @@ export default function ProductCard({ product, index = 0 }) {
         <button
           onClick={addToCart}
           className="absolute bottom-3 right-3 w-11 h-11 bg-ink-900 text-white rounded-full flex items-center justify-center shadow-lg translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-primary-600 transition-all duration-300"
-          aria-label="Add to cart"
+          aria-label={isAffiliate ? `Buy on ${affiliateStore(product.affiliateUrl)}` : 'Add to cart'}
         >
-          <Plus size={20} />
+          {isAffiliate ? <ExternalLink size={18} /> : <Plus size={20} />}
         </button>
       </div>
 
@@ -101,7 +105,9 @@ export default function ProductCard({ product, index = 0 }) {
           )}
         </div>
 
-        {product.stock > 0 && product.stock < 10 && (
+        {isAffiliate ? (
+          <p className="text-[11px] font-bold text-primary-600 flex items-center gap-1">Buy on {affiliateStore(product.affiliateUrl)} <ExternalLink size={11} /></p>
+        ) : product.stock > 0 && product.stock < 10 && (
           <p className="text-[11px] font-medium text-accent-600">Only {product.stock} left</p>
         )}
       </div>
