@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
+import { ShoppingCart, Heart, Share2, Star, Check, Minus, Plus, ArrowLeft, Truck, RotateCcw, Shield, Zap, ChevronLeft, ChevronRight, ZoomIn, X, ExternalLink } from 'lucide-react';
+import { affiliateStore } from '../lib/affiliate';
 import ProductCard from '../components/ProductCard';
 import ProductReviews from '../components/ProductReviews';
 import { VexLogoMark } from '../components/Logo';
@@ -383,19 +384,30 @@ export default function ProductDetail() {
 
               {/* Actions */}
               <div className="flex gap-3">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={product.stock === 0}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all ${
-                    added
-                      ? 'bg-emerald-600 text-white'
-                      : product.stock === 0
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-primary-600 text-white hover:bg-primary-700 active:scale-95'
-                  }`}
-                >
-                  {added ? <><Check size={18} /> Added to Cart!</> : <><ShoppingCart size={18} /> Add to Cart</>}
-                </button>
+                {product.affiliateUrl ? (
+                  <a
+                    href={product.affiliateUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm bg-ink-900 text-white hover:bg-primary-600 active:scale-95 transition-all"
+                  >
+                    Buy on {affiliateStore(product.affiliateUrl)} <ExternalLink size={17} />
+                  </a>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={product.stock === 0}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all ${
+                      added
+                        ? 'bg-emerald-600 text-white'
+                        : product.stock === 0
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-primary-600 text-white hover:bg-primary-700 active:scale-95'
+                    }`}
+                  >
+                    {added ? <><Check size={18} /> Added to Cart!</> : <><ShoppingCart size={18} /> Add to Cart</>}
+                  </button>
+                )}
                 <button
                   onClick={() => toggle(product.id)}
                   aria-label="Add to wishlist"
@@ -413,8 +425,8 @@ export default function ProductDetail() {
                 </button>
               </div>
 
-              {/* Buy now */}
-              {product.stock > 0 && (
+              {/* Buy now (hidden for affiliate products) */}
+              {!product.affiliateUrl && product.stock > 0 && (
                 <Link
                   to="/checkout"
                   onClick={handleAddToCart}

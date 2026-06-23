@@ -39,6 +39,7 @@ const createEmptyForm = (defaultCategory = 'Electronics') => ({
   sortOrder: '',
   images: [],
   video: '',
+  affiliateUrl: '',
   description: '',
   featured: true,
   isNew: false,
@@ -410,6 +411,7 @@ export default function AdminProducts() {
       flashOrder: product.flashOrder ?? '',
       images: product.images?.length ? product.images : (product.image ? [product.image] : []),
       video: product.video || '',
+      affiliateUrl: product.affiliateUrl || '',
     });
     setEditOpen(true);
     setEditError('');
@@ -1335,6 +1337,17 @@ export default function AdminProducts() {
               </div>
 
               <label className="sm:col-span-2 text-sm text-gray-700">
+                <span className="block mb-1 font-medium">Affiliate link <span className="text-gray-400 font-normal">(optional — Myntra/Amazon)</span></span>
+                <input
+                  value={addForm.affiliateUrl}
+                  onChange={(e) => setAddForm((current) => ({ ...current, affiliateUrl: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500"
+                  placeholder="https://cuelinks/myntra affiliate link…"
+                />
+                <span className="block text-xs text-gray-400 mt-1">Daloge to "Add to Cart" ki jagah <b>"Buy on Myntra/Amazon"</b> button aayega (naya tab me khulega).</span>
+              </label>
+
+              <label className="sm:col-span-2 text-sm text-gray-700">
                 <span className="block mb-1 font-medium">Description</span>
                 <textarea
                   rows={4}
@@ -1614,6 +1627,14 @@ export default function AdminProducts() {
                   )
                 )}
               </div>
+
+              <label className="sm:col-span-2 text-sm text-gray-700">
+                <span className="block mb-1 font-medium">Affiliate link <span className="text-gray-400 font-normal">(optional — Myntra/Amazon)</span></span>
+                <input value={editData.affiliateUrl || ''} onChange={e => setEditData(c => ({ ...c, affiliateUrl: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-primary-500"
+                  placeholder="https://… affiliate link" />
+                <span className="block text-xs text-gray-400 mt-1">Set karoge to "Buy on Myntra/Amazon" button aayega.</span>
+              </label>
 
               <label className="sm:col-span-2 text-sm text-gray-700">
                 <span className="block mb-1 font-medium">Description</span>
