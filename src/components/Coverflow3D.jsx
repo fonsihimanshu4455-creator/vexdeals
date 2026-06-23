@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import FlowField from './FlowField';
 
 // Culture-Circle style 3D product coverflow — cards float on a perspective grid,
 // center card faces front, neighbours rotate away. Auto-rotates; arrows + swipe.
@@ -71,13 +72,15 @@ export default function Coverflow3D({ products = [], title = 'The Drops', subtit
 
   return (
     <section className="coverflow-grid relative overflow-hidden py-12 sm:py-14 reveal">
-      <div className="text-center mb-7 px-4">
+      <FlowField className="absolute inset-0 z-0 opacity-70 pointer-events-none" />
+
+      <div className="relative z-10 text-center mb-7 px-4">
         <h2 className="font-display text-4xl sm:text-6xl font-black uppercase tracking-tight text-ink-900">{title}</h2>
         {subtitle && <p className="text-ink-700/60 mt-2 text-sm sm:text-base">{subtitle}</p>}
       </div>
 
       <div
-        className="coverflow-stage relative mx-auto select-none"
+        className="coverflow-stage relative z-10 mx-auto select-none"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -102,7 +105,7 @@ export default function Coverflow3D({ products = [], title = 'The Drops', subtit
       </div>
 
       {/* Active product info */}
-      <div className="max-w-md mx-auto mt-7 px-4">
+      <div className="relative z-10 max-w-md mx-auto mt-7 px-4">
         <div className="bg-white rounded-2xl shadow-card border border-ink-900/5 p-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
             {current.dropsText && <p className="text-[11px] font-bold uppercase tracking-wide text-primary-600 mb-0.5">{current.dropsText}</p>}
@@ -117,7 +120,7 @@ export default function Coverflow3D({ products = [], title = 'The Drops', subtit
       </div>
 
       {/* Dots */}
-      <div className="flex justify-center gap-1.5 mt-5">
+      <div className="relative z-10 flex justify-center gap-1.5 mt-5">
         {items.map((p, i) => (
           <button key={p.id} onClick={() => { clearInterval(timer.current); setActive(i); }}
             className={`h-1.5 rounded-full transition-all ${i === active ? 'w-6 bg-primary-600' : 'w-1.5 bg-ink-900/20'}`} aria-label={`Go to ${i + 1}`} />
