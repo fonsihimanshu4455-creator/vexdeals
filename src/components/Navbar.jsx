@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Search, User, Menu, X, LogOut, LayoutDashboard, CreditCard, MapPin, Package, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -20,6 +20,13 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen]       = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Live search suggestions
   const suggestions = searchQuery.trim().length >= 1
@@ -51,7 +58,7 @@ export default function Navbar() {
 
   return (
     <>
-    <header className="sticky top-0 z-50 glass border-b border-ink-900/5">
+    <header className={`sticky top-0 z-50 glass border-b transition-[box-shadow,border-color,background-color] duration-500 ${scrolled ? 'border-ink-900/10 shadow-[0_8px_30px_-12px_rgba(17,35,63,0.18)] bg-white/80' : 'border-ink-900/5'}`}>
       {/* Announcement — editable from Admin → Settings */}
       {settings.announcement && (
         <div className="bg-brand-gradient text-white text-center py-2 text-[11px] sm:text-xs font-medium px-3">
@@ -60,7 +67,7 @@ export default function Navbar() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className={`flex items-center justify-between gap-4 transition-[height] duration-500 ${scrolled ? 'h-14' : 'h-16'}`}>
           <Link to="/" className="shrink-0">
             <VexLogoInline size="lg" />
           </Link>

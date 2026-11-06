@@ -46,6 +46,7 @@ function Heading({ eyebrow, title, to, linkLabel = 'View all' }) {
       <div>
         <p className="eyebrow mb-2">{eyebrow}</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold text-ink-900">{title}</h2>
+        <span aria-hidden className="heading-line" />
       </div>
       {to && (
         <Link to={to} className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 px-4 py-2 rounded-full transition-colors">
@@ -99,7 +100,7 @@ export default function Home() {
       <InstagramReels />
 
       {/* ── Marquee ──────────────────────────────────────────────────────── */}
-      <div className="overflow-hidden bg-ink-900 py-3.5">
+      <div className="marquee-wrap overflow-hidden bg-ink-900 py-3.5">
         <div className="flex w-max animate-marquee">
           {[0, 1].map(copy => (
             <div key={copy} className="flex items-center shrink-0">
@@ -136,14 +137,16 @@ export default function Home() {
       {activeCategories.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 reveal">
           <Heading eyebrow="Browse" title="Shop by Category" to="/products" />
-          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-x-3 gap-y-5">
+          <div className="reveal-stagger grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-x-3 gap-y-5">
             {activeCategories.map(cat => (
               <Link key={cat.id} to={`/products?category=${encodeURIComponent(cat.name)}`}
                 className="group flex flex-col items-center gap-2 text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-brand-soft ring-1 ring-ink-900/5 flex items-center justify-center text-2xl sm:text-3xl group-hover:ring-2 group-hover:ring-primary-500 group-hover:-translate-y-1 transition-all duration-300">
-                  {cat.image
-                    ? <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
-                    : cat.icon}
+                <div className="cat-bubble rounded-full group-hover:-translate-y-1 transition-transform duration-300">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-brand-soft ring-2 ring-white flex items-center justify-center text-2xl sm:text-3xl">
+                    {cat.image
+                      ? <img src={cat.image} alt={cat.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      : cat.icon}
+                  </div>
                 </div>
                 <p className="text-xs sm:text-sm font-medium text-ink-800 line-clamp-1 group-hover:text-primary-600 transition-colors">{cat.name}</p>
               </Link>
@@ -166,7 +169,9 @@ export default function Home() {
       {saleProducts.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 reveal">
           <div className="relative overflow-hidden rounded-[2rem] bg-ink-900 bg-ink-mesh p-7 sm:p-10">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-8">
+            <span aria-hidden className="glow-blob w-64 h-64 -top-20 -right-10 bg-primary-500/30" />
+            <span aria-hidden className="glow-blob w-56 h-56 -bottom-24 left-10 bg-accent-500/20" style={{ animationDelay: '-7s' }} />
+            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-8">
               <div>
                 <span className="inline-flex items-center gap-2 glass-dark text-white text-xs font-semibold px-3 py-1.5 rounded-full">
                   <Sparkles size={13} /> Limited time
@@ -178,9 +183,9 @@ export default function Home() {
                 <Countdown />
               </div>
             </div>
-            <div className="flex gap-4 overflow-x-auto scrollbar-none pb-1 snap-x">
+            <div className="relative flex gap-4 overflow-x-auto scrollbar-none pb-1 snap-x">
               {saleProducts.map(p => (
-                <Link key={p.id} to={`/products/${p.id}`} className="group shrink-0 w-40 sm:w-52 snap-start bg-white rounded-2xl overflow-hidden shadow-card">
+                <Link key={p.id} to={`/products/${p.id}`} className="group shrink-0 w-40 sm:w-52 snap-start bg-white rounded-2xl overflow-hidden shadow-card hover:-translate-y-1.5 hover:shadow-glow transition-all duration-300">
                   <div className="relative aspect-square overflow-hidden">
                     <img src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     <span className="absolute top-2.5 left-2.5 bg-ink-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">−{p.discount}%</span>
@@ -205,14 +210,14 @@ export default function Home() {
 
       {/* ── Trust strip ──────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 reveal">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="reveal-stagger grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { Icon: ShieldCheck, ...(badges[0] || {}) },
             { Icon: Truck,       ...(badges[1] || {}) },
             { Icon: RefreshCw,   ...(badges[2] || {}) },
           ].filter(b => b.t || b.s).map(({ Icon, t, s }) => (
-            <div key={t} className="flex items-center gap-4 bg-white rounded-2xl border border-ink-900/5 shadow-soft p-5">
-              <div className="w-12 h-12 rounded-xl bg-brand-soft flex items-center justify-center shrink-0">
+            <div key={t} className="group flex items-center gap-4 bg-white rounded-2xl border border-ink-900/5 shadow-soft p-5 hover:-translate-y-1 hover:shadow-card-hover transition-all duration-300">
+              <div className="w-12 h-12 rounded-xl bg-brand-soft flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:rotate-[8deg] group-hover:scale-110">
                 <Icon size={22} className="text-primary-600" />
               </div>
               <div>

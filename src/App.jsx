@@ -14,6 +14,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartToast from './components/CartToast';
 import WhatsAppButton from './components/WhatsAppButton';
+import MotionLayer from './components/MotionLayer';
 import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
@@ -63,8 +64,9 @@ function CustomerLayout({ children }) {
   const location = useLocation();
   return (
     <div className="min-h-screen flex flex-col">
+      <MotionLayer />
       <Navbar />
-      <main key={location.pathname} className="flex-1 animate-fade-in">{children}</main>
+      <main key={location.pathname} className="flex-1 page-enter">{children}</main>
       <Footer />
       <CartToast />
       <WhatsAppButton />

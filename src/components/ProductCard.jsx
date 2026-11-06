@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Heart, Plus, ExternalLink } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -23,24 +24,61 @@ export default function ProductCard({ product, index = 0 }) {
   };
 
   const formatPrice = (p) => `₹${p.toLocaleString('en-IN')}`;
+  const altImage = (product.images || []).find((src) => src && src !== product.image);
+  // The second photo is only fetched after the first hover, so grids stay light.
+  const [wantAlt, setWantAlt] = useState(false);
+  const [altReady, setAltReady] = useState(false);
+
+  // Gentle 3D tilt that follows the mouse (desktop pointers only).
+  const onMove = (e) => {
+    if (e.pointerType !== 'mouse') return;
+    if (altImage && !wantAlt) setWantAlt(true);
+    const el = e.currentTarget;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    el.style.setProperty('--rx', `${(-y * 6).toFixed(2)}deg`);
+    el.style.setProperty('--ry', `${(x * 8).toFixed(2)}deg`);
+    el.style.setProperty('--mx', `${((x + 0.5) * 100).toFixed(1)}%`);
+    el.style.setProperty('--my', `${((y + 0.5) * 100).toFixed(1)}%`);
+  };
+  const onLeave = (e) => {
+    const el = e.currentTarget;
+    el.style.setProperty('--rx', '0deg');
+    el.style.setProperty('--ry', '0deg');
+  };
 
   return (
-    <div className="card-enter h-full" style={{ animationDelay: `${Math.min(index, 11) * 60}ms` }}>
+    <div className="card-enter h-full card-3d-wrap" style={{ animationDelay: `${Math.min(index, 11) * 70}ms` }}>
     <Link
       to={`/products/${product.id}`}
-      className="group h-full bg-white rounded-3xl border border-ink-900/5 shadow-soft hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300 flex flex-col overflow-hidden"
+      onPointerMove={onMove}
+      onPointerLeave={onLeave}
+      className="card-3d group relative h-full bg-white rounded-3xl border border-ink-900/5 shadow-soft hover:shadow-card-hover flex flex-col overflow-hidden"
     >
+      <span aria-hidden className="card-glare" />
       {/* Image */}
       <div className="relative overflow-hidden rounded-3xl m-2 bg-white aspect-square">
         <img
           src={product.image}
           alt={product.name}
-          className="img-fade w-full h-full object-contain p-2 transition-transform duration-700 ease-out group-hover:scale-105"
+          className={`img-fade w-full h-full object-contain p-2 transition-[transform,opacity] duration-700 ease-out group-hover:scale-105 ${altReady ? 'group-hover:!opacity-0' : ''}`}
           loading="lazy"
           decoding="async"
           onLoad={(e) => e.currentTarget.classList.add('loaded')}
           onError={(e) => e.currentTarget.classList.add('loaded')}
         />
+        {wantAlt && (
+          <img
+            src={altImage}
+            alt=""
+            aria-hidden
+            decoding="async"
+            onLoad={() => setAltReady(true)}
+            className={`absolute inset-0 w-full h-full object-contain p-2 opacity-0 scale-110 transition-[transform,opacity] duration-700 ease-out ${altReady ? 'group-hover:opacity-100 group-hover:scale-100' : ''}`}
+          />
+        )}
+        <span aria-hidden className="card-shine" />
 
         {/* Tags */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
