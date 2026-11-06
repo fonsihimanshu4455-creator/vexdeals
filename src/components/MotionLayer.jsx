@@ -67,18 +67,18 @@ export default function MotionLayer() {
 
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') {
-      document.querySelectorAll('.reveal, .reveal-stagger').forEach((el) => el.classList.add('in-view'));
+      document.querySelectorAll('.reveal, .reveal-stagger, .reveal-self').forEach((el) => el.classList.add('in-view'));
       return undefined;
     }
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
         if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); }
       }),
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
     );
     const seen = new WeakSet();
     const scan = () => document
-      .querySelectorAll('.reveal:not(.in-view), .reveal-stagger:not(.in-view)')
+      .querySelectorAll('.reveal:not(.in-view), .reveal-stagger:not(.in-view), .reveal-self:not(.in-view)')
       .forEach((el) => { if (!seen.has(el)) { seen.add(el); io.observe(el); } });
     scan();
     let pending = 0;

@@ -398,7 +398,7 @@ export default function ProductDetail() {
                   <button
                     onClick={handleAddToCart}
                     disabled={product.stock === 0}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all ${
+                    className={`shine flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
                       added
                         ? 'bg-emerald-600 text-white'
                         : product.stock === 0

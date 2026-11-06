@@ -50,7 +50,7 @@ export default function ProductCard({ product, index = 0 }) {
   };
 
   return (
-    <div className="card-enter h-full card-3d-wrap" style={{ animationDelay: `${Math.min(index, 11) * 70}ms` }}>
+    <div className="card-enter reveal-self h-full" style={{ animationDelay: `${(index % 4) * 90}ms` }}>
     <Link
       to={`/products/${product.id}`}
       onPointerMove={onMove}
@@ -84,7 +84,7 @@ export default function ProductCard({ product, index = 0 }) {
         {/* Tags */}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
           {product.discount > 0 && (
-            <span className="bg-accent-500 text-ink-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+            <span className="badge-pop bg-accent-500 text-ink-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
               {product.discount}% OFF
             </span>
           )}
