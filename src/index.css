@@ -46,7 +46,6 @@
 
 @layer components {
   /* Gradient primary CTA */
-  .btn-cognac,
   .btn-grad {
     @apply inline-flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-full px-7 py-3.5 shadow-glow transition-all duration-300 hover:-translate-y-0.5;
   }
@@ -61,9 +60,6 @@
   /* Eyebrow label */
   .eyebrow {
     @apply text-[11px] font-bold uppercase tracking-widest2 text-primary-600;
-  }
-  .card-modern {
-    @apply bg-white rounded-3xl border border-ink-900/5 shadow-soft transition-all duration-300;
   }
   .link-underline {
     @apply relative inline-block;
@@ -149,19 +145,6 @@
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
   animation: shimmer-slide 1.4s infinite;
 }
-
-/* ── Page loader (code-split routes) ────────────────────────────────────── */
-@keyframes loader-slide {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(220%); }
-}
-.animate-loader-slide { animation: loader-slide 1s ease-in-out infinite; }
-
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.55; transform: scale(0.9); }
-}
-.animate-pulse-slow { animation: pulse-slow 1.4s ease-in-out infinite; }
 
 /* ── Product cards slide + fade in (staggered) on mount ─────────────────── */
 @keyframes card-enter {
@@ -307,7 +290,7 @@ html.lenis, html.lenis body { height: auto; }
 .card-3d:hover .card-shine { transform: translateX(120%); transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* ── Buttons: tactile press ─────────────────────────────────────────────── */
-.btn-cognac:active, .btn-grad:active, .btn-ink:active, .btn-outline:active { transform: scale(0.96); }
+.btn-grad:active, .btn-ink:active, .btn-outline:active { transform: scale(0.96); }
 button:active:not(:disabled) { transition-duration: 0.08s; }
 
 /* ── Marquee pauses while hovered ───────────────────────────────────────── */
