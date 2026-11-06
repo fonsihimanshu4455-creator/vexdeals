@@ -88,16 +88,11 @@ export default {
           '0%':   { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%':      { transform: 'translateY(-12px)' },
-        },
       },
       animation: {
         'fade-up':  'fade-up 0.7s cubic-bezier(0.22,1,0.36,1) both',
         'fade-in':  'fade-in 0.6s ease-out both',
         marquee:    'marquee 26s linear infinite',
-        float:      'float 7s ease-in-out infinite',
       },
     },
   },

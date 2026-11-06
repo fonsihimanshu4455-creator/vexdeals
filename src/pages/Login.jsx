@@ -1,28 +1,11 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
 const EmailOtpAuth = lazy(() => import('../components/EmailOtpAuth'));
-import { buildOtpCustomer } from '../lib/customers';
+import { buildOtpCustomer, saveCustomer } from '../lib/customers';
 
-
-const saveCustomer = (user) => {
-  try {
-    const customers = JSON.parse(localStorage.getItem('vexdeals_customers') || '[]');
-    const idx = customers.findIndex(c => c.id === user.id);
-    if (idx === -1) customers.push({ ...user, firstLogin: new Date().toISOString() });
-    else customers[idx] = { ...customers[idx], ...user };
-    localStorage.setItem('vexdeals_customers', JSON.stringify(customers));
-    if (db) {
-      setDoc(doc(db, 'users', String(user.id)), {
-        ...user, updatedAt: new Date().toISOString(),
-      }, { merge: true }).catch(() => {});
-    }
-  } catch { /* ignore */ }
-};
 
 export default function Login() {
   const { login, user } = useAuth();

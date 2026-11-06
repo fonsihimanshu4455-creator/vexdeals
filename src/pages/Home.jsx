@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, ShieldCheck, Truck, RefreshCw, Sparkles } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
@@ -63,7 +63,6 @@ export default function Home() {
   const { visibleProducts: products } = useProducts();
   const { trustBadges: badges = [], marquee: marqueeRaw } = useSiteSettings();
   const marquee = (marqueeRaw && marqueeRaw.length) ? marqueeRaw : MARQUEE;
-  const containerRef = useRef(null);
 
   // Order each section by its admin-set number (lower = first; unset goes last)
   const orderBy = (key) => (a, b) => (Number(a[key]) > 0 ? Number(a[key]) : 9999) - (Number(b[key]) > 0 ? Number(b[key]) : 9999);
@@ -84,18 +83,8 @@ export default function Home() {
   useEffect(() => { const t = setTimeout(() => setBooted(true), 1200); return () => clearTimeout(t); }, []);
   const showSkeleton = products.length === 0 && !booted;
 
-  useEffect(() => {
-    const els = containerRef.current?.querySelectorAll('.reveal') || [];
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); } }),
-      { threshold: 0.12 }
-    );
-    els.forEach(el => io.observe(el));
-    return () => io.disconnect();
-  }, [products.length, activeCategories.length]);
-
   return (
-    <div ref={containerRef} className="bg-cream-100">
+    <div className="bg-cream-100">
 
       {/* ── Instagram reels (top of page) ────────────────────────────────── */}
       <InstagramReels />
