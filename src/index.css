@@ -227,6 +227,121 @@
 }
 .coverflow-arrow:hover { background: #0f2740; color: #fff; }
 
+/* ── Smooth scroll (Lenis) ──────────────────────────────────────────────── */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ── Route change: soft rise + un-blur ──────────────────────────────────── */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+.page-enter { animation: page-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Cards inside a scroll-reveal section wait until the section is on screen,
+   then cascade in one after another. */
+.reveal:not(.in-view) .card-enter { animation-play-state: paused; }
+
+/* Children of .reveal-stagger rise in one by one. */
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(18px) scale(0.98);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal-stagger.in-view > * { opacity: 1; transform: none; }
+.reveal-stagger.in-view > *:nth-child(1)  { transition-delay: 0ms; }
+.reveal-stagger.in-view > *:nth-child(2)  { transition-delay: 50ms; }
+.reveal-stagger.in-view > *:nth-child(3)  { transition-delay: 100ms; }
+.reveal-stagger.in-view > *:nth-child(4)  { transition-delay: 150ms; }
+.reveal-stagger.in-view > *:nth-child(5)  { transition-delay: 200ms; }
+.reveal-stagger.in-view > *:nth-child(6)  { transition-delay: 250ms; }
+.reveal-stagger.in-view > *:nth-child(7)  { transition-delay: 300ms; }
+.reveal-stagger.in-view > *:nth-child(8)  { transition-delay: 350ms; }
+.reveal-stagger.in-view > *:nth-child(n+9) { transition-delay: 400ms; }
+
+/* Section heading: accent line draws in when the section appears. */
+.heading-line {
+  display: block;
+  height: 3px;
+  width: 44px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #009fb7, #ffc107);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+}
+.in-view .heading-line { transform: scaleX(1); }
+
+/* ── Product card: 3D tilt, cursor glare, shine sweep ───────────────────── */
+.card-3d {
+  --rx: 0deg; --ry: 0deg; --ty: 0px; --mx: 50%; --my: 50%;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(var(--ty));
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease;
+  will-change: transform;
+}
+.card-3d:hover { --ty: -6px; transition: transform 0.15s ease-out, box-shadow 0.45s ease; }
+.card-3d:active { --ty: -2px; }
+.card-glare {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(420px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.35), transparent 45%);
+  mix-blend-mode: soft-light;
+}
+.card-3d:hover .card-glare { opacity: 1; }
+.card-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.card-3d:hover .card-shine { transform: translateX(120%); transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* ── Buttons: tactile press ─────────────────────────────────────────────── */
+.btn-cognac:active, .btn-grad:active, .btn-ink:active, .btn-outline:active { transform: scale(0.96); }
+button:active:not(:disabled) { transition-duration: 0.08s; }
+
+/* ── Marquee pauses while hovered ───────────────────────────────────────── */
+.marquee-wrap:hover .animate-marquee { animation-play-state: paused; }
+
+/* ── Category bubble: rotating gradient ring on hover ───────────────────── */
+.cat-bubble { position: relative; isolation: isolate; }
+.cat-bubble::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, #009fb7, #ffc107, #00b3cc, #009fb7);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  animation: cat-spin 3s linear infinite;
+}
+.group:hover .cat-bubble::before { opacity: 1; }
+@keyframes cat-spin { to { transform: rotate(360deg); } }
+
+/* ── Floating soft glow blobs behind sections ───────────────────────────── */
+@keyframes blob-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(30px, -20px) scale(1.08); }
+}
+.glow-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  pointer-events: none;
+  animation: blob-drift 14s ease-in-out infinite;
+}
+
 /* Respect users who prefer less motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -234,4 +349,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  .card-3d { transform: none !important; }
+  .reveal-stagger > * { opacity: 1; transform: none; }
 }

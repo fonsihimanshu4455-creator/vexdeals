@@ -1,5 +1,5 @@
 /* VexDeals service worker — network-first (always fresh online, cached fallback offline) */
-const CACHE = 'vexdeals-v4';
+const CACHE = 'vexdeals-v5';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
