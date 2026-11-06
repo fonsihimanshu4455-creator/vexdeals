@@ -34,6 +34,11 @@ const getSubAdmins = () => {
   }
 };
 
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(text || '')));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,25 +67,6 @@ export function AuthProvider({ children }) {
       localStorage.setItem('vexdeals_user', JSON.stringify(normalizedUser));
       return { success: true, user: normalizedUser };
     }
-    // Check static users (admin + customers)
-    const found = staticUsers.find(u => u.email === email && u.password === password);
-    if (found) {
-      const { password: _, ...safeUser } = found;
-      const normalizedUser = normalizeUser(safeUser);
-      setUser(normalizedUser);
-      localStorage.setItem('vexdeals_user', JSON.stringify(normalizedUser));
-      return { success: true, user: normalizedUser };
-    }
-    // Check dynamic sub-admins
-    const subAdmins = getSubAdmins();
-    const foundSub = subAdmins.find(u => u.email === email && u.password === password && u.active);
-    if (foundSub) {
-      const { password: _, ...safeSub } = foundSub;
-      const normalizedUser = normalizeUser(safeSub);
-      setUser(normalizedUser);
-      localStorage.setItem('vexdeals_user', JSON.stringify(normalizedUser));
-      return { success: true, user: normalizedUser };
-    }
     return { success: false, message: 'Invalid email or password' };
   };
 
@@ -91,10 +77,11 @@ export function AuthProvider({ children }) {
     const e = String(email || '').trim().toLowerCase();
 
     // 1) Static admins / sub-admins
-    const found = staticUsers.find(u => u.email?.toLowerCase() === e && u.password === password
+    const hash = await sha256(password);
+    const found = staticUsers.find(u => u.email?.toLowerCase() === e && u.passwordHash === hash
       && (u.role === 'admin' || u.role === 'subadmin'));
     if (found) {
-      const { password: _, ...safe } = found;
+      const { passwordHash: _, ...safe } = found;
       const normalized = normalizeUser(safe);
       setUser(normalized);
       localStorage.setItem('vexdeals_user', JSON.stringify(normalized));

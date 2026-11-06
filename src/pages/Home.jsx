@@ -14,33 +14,6 @@ import { useSiteSettings } from '../lib/settings';
 import { thumb } from '../lib/img';
 
 const MARQUEE = ['100% Authentic', 'Free Shipping ₹1000+', '7-Day Returns', 'Secure Payments', 'Hand-picked Edits'];
-function Countdown() {
-  const [t, setT] = useState({ h: 8, m: 24, s: 12 });
-  useEffect(() => {
-    const id = setInterval(() => {
-      setT(p => {
-        let { h, m, s } = p; s--;
-        if (s < 0) { s = 59; m--; }
-        if (m < 0) { m = 59; h--; }
-        if (h < 0) { h = 8; m = 24; s = 12; }
-        return { h, m, s };
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-  const pad = n => String(n).padStart(2, '0');
-  return (
-    <div className="flex items-center gap-1.5">
-      {[t.h, t.m, t.s].map((v, i) => (
-        <span key={i} className="flex items-center gap-1.5">
-          <span className="bg-white/15 backdrop-blur text-white font-bold text-lg sm:text-xl px-2.5 py-1.5 rounded-xl min-w-[44px] text-center tabular-nums">{pad(v)}</span>
-          {i < 2 && <span className="text-white/60 font-bold">:</span>}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function Heading({ eyebrow, title, to, linkLabel = 'View all' }) {
   return (
     <div className="flex items-end justify-between gap-4 mb-7">
@@ -167,10 +140,6 @@ export default function Home() {
                   <Sparkles size={13} /> Limited time
                 </span>
                 <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mt-3">Flash Sale</h2>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs uppercase tracking-widest2 text-white/70">Ends in</span>
-                <Countdown />
               </div>
             </div>
             <div className="relative flex gap-4 overflow-x-auto scrollbar-none pb-1 snap-x">

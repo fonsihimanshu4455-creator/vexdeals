@@ -407,7 +407,7 @@ export default function Checkout() {
                   <div className="mb-6 rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
                     <p className="font-semibold text-gray-800 text-sm mb-1">Login / Signup with mobile OTP</p>
                     <p className="text-xs text-gray-500 mb-3">Verify karo to order tracking mile — ya neeche form bhar ke <b>guest</b> bhi kharid sakte ho.</p>
-                    <Suspense fallback={<div className="skeleton h-28" />}><EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" compact defaultChannel="phone" lockChannel /></Suspense>
+                    <Suspense fallback={<div className="skeleton h-28" />}><EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" compact /></Suspense>
                   </div>
                 )}
 
