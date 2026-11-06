@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import FlowField from './FlowField';
+import { thumb } from '../lib/img';
 
 // Culture-Circle style 3D product coverflow — cards float on a perspective grid,
 // center card faces front, neighbours rotate away. Auto-rotates; arrows + swipe.
@@ -95,7 +96,7 @@ export default function Coverflow3D({ products = [], title = 'The Drops', subtit
             aria-label={p.name}
           >
             <div className="w-full h-full rounded-3xl overflow-hidden bg-cream-100 shadow-2xl border border-ink-900/5">
-              <img src={p.image} alt={p.name} className="w-full h-full object-cover" loading="lazy" draggable="false" />
+              <img src={thumb(p.image, 700)} alt={p.name} className="w-full h-full object-cover" loading="lazy" draggable="false" />
             </div>
           </div>
         ))}

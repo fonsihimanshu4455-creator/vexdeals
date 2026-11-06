@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Package, ShoppingBag, Check, Clock, Truck, PackageCheck, XCircle } from 'lucide-react';
 import CustomerAccountShell from '../../components/CustomerAccountShell';
 import { useCustomerData } from '../../context/CustomerDataContext';
+import { thumb } from '../../lib/img';
 
 const TIMELINE = [
   { key: 'ordered',   label: 'Ordered',   Icon: Clock },
@@ -112,7 +113,7 @@ export default function CustomerOrders() {
               <div className="mt-5 space-y-3">
                 {order.products.map((product) => (
                   <div key={`${order.id}-${product.productId}-${product.name}`} className="flex items-center gap-3 rounded-2xl bg-gray-50 p-3">
-                    <img src={product.image} alt={product.name} className="h-14 w-14 rounded-xl object-cover bg-white" />
+                    <img src={thumb(product.image, 160)} alt={product.name} className="h-14 w-14 rounded-xl object-cover bg-white" />
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-1 text-sm font-semibold text-gray-800">{product.name}</p>
                       <p className="text-xs text-gray-500">Qty: {product.qty}</p>

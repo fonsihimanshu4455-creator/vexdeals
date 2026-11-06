@@ -342,6 +342,18 @@ button:active:not(:disabled) { transition-duration: 0.08s; }
   animation: blob-drift 14s ease-in-out infinite;
 }
 
+/* ── Touch screens have no hover: keep card actions visible ──────────────── */
+@media (hover: none) {
+  .hover-reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* ── Visible keyboard focus everywhere ──────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #009fb7;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 /* Respect users who prefer less motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

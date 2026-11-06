@@ -193,6 +193,9 @@ export function ProductProvider({ children }) {
     };
 
     const handleFocus = () => {
+      let raw = null;
+      try { raw = localStorage.getItem(STORAGE_KEY); } catch { /* ignore */ }
+      if (raw === lastSnapshotRef.current) return;
       syncProducts(readStoredProducts());
     };
 
@@ -208,13 +211,11 @@ export function ProductProvider({ children }) {
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
     channelRef.current?.addEventListener('message', handleMessage);
-    const pollId = window.setInterval(handleFocus, 1000);
 
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
-      window.clearInterval(pollId);
       channelRef.current?.removeEventListener('message', handleMessage);
       channelRef.current?.close();
       channelRef.current = null;

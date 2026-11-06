@@ -7,6 +7,7 @@ import { VexLogoMark } from './Logo';
 import { trackAddToCart } from '../utils/pixel';
 import { trackAddToCartHit } from '../utils/analytics';
 import { affiliateStore } from '../lib/affiliate';
+import { thumb } from '../lib/img';
 
 export default function ProductCard({ product, index = 0 }) {
   const { dispatch } = useCart();
@@ -60,7 +61,7 @@ export default function ProductCard({ product, index = 0 }) {
       {/* Image */}
       <div className="relative overflow-hidden rounded-3xl m-2 bg-white aspect-square">
         <img
-          src={product.image}
+          src={thumb(product.image)}
           alt={product.name}
           className={`img-fade w-full h-full object-contain p-2 transition-[transform,opacity] duration-700 ease-out group-hover:scale-105 ${altReady ? 'group-hover:!opacity-0' : ''}`}
           loading="lazy"
@@ -70,7 +71,7 @@ export default function ProductCard({ product, index = 0 }) {
         />
         {wantAlt && (
           <img
-            src={altImage}
+            src={thumb(altImage)}
             alt=""
             aria-hidden
             decoding="async"
@@ -81,7 +82,7 @@ export default function ProductCard({ product, index = 0 }) {
         <span aria-hidden className="card-shine" />
 
         {/* Tags */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
           {product.discount > 0 && (
             <span className="bg-accent-500 text-ink-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
               {product.discount}% OFF
@@ -99,8 +100,8 @@ export default function ProductCard({ product, index = 0 }) {
         <button
           onClick={(e) => { e.preventDefault(); toggle(product.id); }}
           aria-label="Add to wishlist"
-          className={`absolute top-3 right-3 w-9 h-9 glass rounded-full flex items-center justify-center transition-all duration-300 ${
-            wished ? 'opacity-100 text-red-500' : 'text-ink-700 opacity-0 group-hover:opacity-100 hover:text-red-500'
+          className={`absolute top-2 right-2 w-10 h-10 glass rounded-full flex items-center justify-center transition-all duration-300 ${
+            wished ? 'opacity-100 text-red-500' : 'hover-reveal text-ink-700 opacity-0 group-hover:opacity-100 hover:text-red-500'
           }`}
         >
           <Heart size={15} className={wished ? 'fill-red-500' : ''} />
@@ -115,7 +116,7 @@ export default function ProductCard({ product, index = 0 }) {
         {/* Quick add */}
         <button
           onClick={addToCart}
-          className="absolute bottom-3 right-3 w-11 h-11 bg-ink-900 text-white rounded-full flex items-center justify-center shadow-lg translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-primary-600 transition-all duration-300"
+          className="hover-reveal absolute bottom-3 right-3 w-11 h-11 bg-ink-900 text-white rounded-full flex items-center justify-center shadow-lg translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-primary-600 transition-all duration-300"
           aria-label={isAffiliate ? `Buy on ${affiliateStore(product.affiliateUrl)}` : 'Add to cart'}
         >
           {isAffiliate ? <ExternalLink size={18} /> : <Plus size={20} />}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, Smartphone, RefreshCw, AlertTriangle, MapPin, Tag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -7,8 +7,9 @@ import { useCustomerData } from '../context/CustomerDataContext';
 import { trackInitiateCheckout, trackPurchase } from '../utils/pixel';
 import { trackCheckoutHit, trackPurchaseHit } from '../utils/analytics';
 import { gaPurchase } from '../utils/ga';
-import EmailOtpAuth from '../components/EmailOtpAuth';
+const EmailOtpAuth = lazy(() => import('../components/EmailOtpAuth'));
 import { buildOtpCustomer, saveCustomer } from '../lib/customers';
+import { thumb } from '../lib/img';
 
 // ── Load Razorpay script dynamically ────────────────────────────────────────
 const loadRazorpay = () =>
@@ -406,7 +407,7 @@ export default function Checkout() {
                   <div className="mb-6 rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
                     <p className="font-semibold text-gray-800 text-sm mb-1">Login / Signup with mobile OTP</p>
                     <p className="text-xs text-gray-500 mb-3">Verify karo to order tracking mile — ya neeche form bhar ke <b>guest</b> bhi kharid sakte ho.</p>
-                    <EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" compact defaultChannel="phone" lockChannel />
+                    <Suspense fallback={<div className="skeleton h-28" />}><EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" compact defaultChannel="phone" lockChannel /></Suspense>
                   </div>
                 )}
 
@@ -578,7 +579,7 @@ export default function Checkout() {
             <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
               {items.map(item => (
                 <div key={item.id} className="flex gap-3">
-                  <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover bg-gray-50 shrink-0" />
+                  <img src={thumb(item.image, 120)} alt={item.name} className="w-12 h-12 rounded-lg object-cover bg-gray-50 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-800 line-clamp-1">{item.name}</p>
                     <p className="text-xs text-gray-500">Qty: {item.qty}</p>

@@ -1,15 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { RefreshCw, CheckCircle } from 'lucide-react';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { CheckCircle } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { VexLogoFull } from '../components/Logo';
-import EmailOtpAuth from '../components/EmailOtpAuth';
+const EmailOtpAuth = lazy(() => import('../components/EmailOtpAuth'));
 import { buildOtpCustomer } from '../lib/customers';
 
-const googleProvider = new GoogleAuthProvider();
 
 const saveCustomer = (user) => {
   try {
@@ -30,50 +28,12 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (user?.role === 'customer') navigate('/');
   }, [user, navigate]);
-
-  const handleGoogleLogin = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const result   = await signInWithPopup(auth, googleProvider);
-      const gUser    = result.user;
-
-      const customer = {
-        id:          gUser.uid,
-        name:        gUser.displayName || 'Customer',
-        email:       gUser.email || '',
-        phone:       gUser.phoneNumber || '',
-        role:        'customer',
-        avatar:      gUser.photoURL ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(gUser.displayName || 'User')}&background=1e3a8a&color=fff`,
-        joinDate:    new Date().toISOString().split('T')[0],
-        totalOrders: 0,
-        totalSpent:  0,
-        status:      'Active',
-        provider:    'google',
-      };
-
-      saveCustomer(customer);
-      login(customer.email, null, customer);
-      setSuccess(true);
-      setTimeout(() => navigate('/'), 1000);
-    } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user')
-        setError('Sign-in cancelled. Please try again.');
-      else if (err.code === 'auth/popup-blocked')
-        setError('Popup blocked. Please allow popups for this site.');
-      else
-        setError('Sign-in failed. Please try again.');
-    }
-    setLoading(false);
-  };
 
   // Email/Mobile-OTP signup/signin — code verified, create/log in the customer.
   const handleOtpVerified = ({ email, phone, name }) => {
@@ -112,7 +72,7 @@ export default function Login() {
         )}
 
         {/* Mobile OTP signup / signin */}
-        <EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" defaultChannel="phone" lockChannel />
+        <Suspense fallback={<div className="skeleton h-28" />}><EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" defaultChannel="phone" lockChannel /></Suspense>
 
         <div className="mb-8" />
 

@@ -8,6 +8,7 @@ import { useProducts } from '../context/ProductContext';
 import { useWishlist } from '../context/WishlistContext';
 import { VexLogoInline } from './Logo';
 import { useSiteSettings } from '../lib/settings';
+import { thumb } from '../lib/img';
 
 export default function Navbar() {
   const { totalItems } = useCart();
@@ -92,7 +93,7 @@ export default function Navbar() {
                 {suggestions.map(p => (
                   <button key={p.id} onMouseDown={() => goToProduct(p.id)}
                     className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-cream-100 text-left">
-                    <img src={p.image} alt="" className="w-10 h-10 rounded-lg object-contain bg-cream-100 shrink-0" />
+                    <img src={thumb(p.image, 120)} alt="" className="w-10 h-10 rounded-lg object-contain bg-cream-100 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-ink-900 truncate">{p.name}</p>
                       <p className="text-xs text-ink-700/50">{p.category}</p>
