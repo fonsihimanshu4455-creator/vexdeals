@@ -73,12 +73,14 @@
   }
   .reveal {
     opacity: 0;
-    transform: translateY(26px);
-    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateY(48px) scale(0.97);
+    filter: blur(6px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), filter 0.9s ease;
   }
   .reveal.in-view {
     opacity: 1;
     transform: none;
+    filter: none;
   }
 }
 
@@ -148,10 +150,12 @@
 
 /* ── Product cards slide + fade in (staggered) on mount ─────────────────── */
 @keyframes card-enter {
-  from { opacity: 0; transform: translateY(26px); }
-  to   { opacity: 1; transform: none; }
+  0%   { opacity: 0; transform: perspective(800px) translateY(60px) rotateX(22deg) scale(0.92); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: none; }
 }
-.card-enter { animation: card-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.card-enter { animation: card-enter 0.85s cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: 50% 100%; }
+.reveal-self:not(.in-view) { animation-play-state: paused; }
 
 /* ── Images fade in smoothly once loaded (no harsh pop) ─────────────────── */
 .img-fade {
@@ -337,6 +341,61 @@ button:active:not(:disabled) { transition-duration: 0.08s; }
   border-radius: 6px;
 }
 
+/* ── Headline words rise one by one (ui-ux-pro-max "stagger" preset, CSS-only) ── */
+.split-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.6em) rotateX(-50deg);
+  transform-origin: 50% 100%;
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * 70ms + 120ms);
+}
+.in-view .split-word { opacity: 1; transform: none; }
+
+/* ── Offer posters: slow cinematic zoom ─────────────────────────────────── */
+@keyframes ken-burns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+.ken-burns { animation: ken-burns 9s ease-in-out infinite alternate; }
+
+/* ── CTA buttons: light sweep every few seconds ─────────────────────────── */
+@keyframes shine-loop {
+  0%, 70% { transform: translateX(-130%) skewX(-20deg); }
+  100%    { transform: translateX(230%) skewX(-20deg); }
+}
+.shine, .btn-grad { position: relative; overflow: hidden; isolation: isolate; }
+.shine::after, .btn-grad::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: shine-loop 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── Trust icons gently float ───────────────────────────────────────────── */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.bob { animation: bob 3s ease-in-out infinite; }
+
+/* ── Discount badge pops in ─────────────────────────────────────────────── */
+@keyframes badge-pop {
+  0%   { transform: scale(0) rotate(-12deg); }
+  70%  { transform: scale(1.15) rotate(3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.in-view .badge-pop { animation: badge-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both; }
+.reveal-self:not(.in-view) .badge-pop { transform: scale(0); }
+
+/* ── Touch press feedback on cards (phones) ─────────────────────────────── */
+@media (hover: none) {
+  .card-3d:active { transform: scale(0.97); transition-duration: 0.1s; }
+}
+
 /* Respect users who prefer less motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -345,5 +404,6 @@ button:active:not(:disabled) { transition-duration: 0.08s; }
     transition-duration: 0.01ms !important;
   }
   .card-3d { transform: none !important; }
+  .reveal, .split-word { opacity: 1 !important; transform: none !important; filter: none !important; }
   .reveal-stagger > * { opacity: 1; transform: none; }
 }

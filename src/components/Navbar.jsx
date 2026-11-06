@@ -171,7 +171,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <Link to="/login" className="flex items-center gap-2 bg-brand-gradient text-white px-4 sm:px-5 py-2.5 rounded-full text-sm font-semibold shadow-glow hover:-translate-y-0.5 transition-all">
+              <Link to="/login" className="shine flex items-center gap-2 bg-brand-gradient text-white px-4 sm:px-5 py-2.5 rounded-full text-sm font-semibold shadow-glow hover:-translate-y-0.5 transition-all">
                 <User size={15} />
                 <span className="hidden sm:block">Sign In</span>
               </Link>

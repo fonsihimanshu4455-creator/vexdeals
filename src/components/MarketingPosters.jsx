@@ -50,7 +50,7 @@ export default function MarketingPosters() {
             <img
               src={p.imageUrl}
               alt={p.title || 'Offer'}
-              className="w-full h-auto max-h-[440px] object-cover"
+              className="ken-burns w-full h-auto max-h-[440px] object-cover"
               loading="lazy"
             />
             {(p.title || p.caption) && (

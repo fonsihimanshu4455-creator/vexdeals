@@ -19,7 +19,11 @@ function Heading({ eyebrow, title, to, linkLabel = 'View all' }) {
     <div className="flex items-end justify-between gap-4 mb-7">
       <div>
         <p className="eyebrow mb-2">{eyebrow}</p>
-        <h2 className="font-display text-3xl sm:text-4xl font-bold text-ink-900">{title}</h2>
+        <h2 className="font-display text-3xl sm:text-4xl font-bold text-ink-900" style={{ perspective: 600 }} aria-label={title}>
+          {title.split(' ').map((w, i) => (
+            <span key={i} aria-hidden className="split-word" style={{ '--i': i }}>{w}{'\u00a0'}</span>
+          ))}
+        </h2>
         <span aria-hidden className="heading-line" />
       </div>
       {to && (
@@ -139,7 +143,7 @@ export default function Home() {
                 <span className="inline-flex items-center gap-2 glass-dark text-white text-xs font-semibold px-3 py-1.5 rounded-full">
                   <Sparkles size={13} /> Limited time
                 </span>
-                <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mt-3">Flash Sale</h2>
+                <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mt-3" aria-label="Flash Sale"><span aria-hidden className="split-word" style={{ '--i': 0 }}>Flash&nbsp;</span><span aria-hidden className="split-word" style={{ '--i': 1 }}>Sale</span></h2>
               </div>
             </div>
             <div className="relative flex gap-4 overflow-x-auto scrollbar-none pb-1 snap-x">
@@ -177,7 +181,7 @@ export default function Home() {
           ].filter(b => b.t || b.s).map(({ Icon, t, s }) => (
             <div key={t} className="group flex items-center gap-4 bg-white rounded-2xl border border-ink-900/5 shadow-soft p-5 hover:-translate-y-1 hover:shadow-card-hover transition-all duration-300">
               <div className="w-12 h-12 rounded-xl bg-brand-soft flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:rotate-[8deg] group-hover:scale-110">
-                <Icon size={22} className="text-primary-600" />
+                <Icon size={22} className="text-primary-600 bob" />
               </div>
               <div>
                 <p className="font-display font-semibold text-ink-900">{t}</p>
