@@ -55,7 +55,7 @@ export default function Login() {
         )}
 
         {/* Mobile OTP signup / signin */}
-        <Suspense fallback={<div className="skeleton h-28" />}><EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" defaultChannel="phone" lockChannel /></Suspense>
+        <Suspense fallback={<div className="skeleton h-28" />}><EmailOtpAuth onVerified={handleOtpVerified} askName={false} cta="Send OTP" /></Suspense>
 
         <div className="mb-8" />
 
