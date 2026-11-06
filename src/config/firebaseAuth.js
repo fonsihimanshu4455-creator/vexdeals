@@ -4,7 +4,6 @@
 // Firebase project's web-app config (public values — safe in client code).
 import { getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { auth as mainAuth } from './firebase';
 
 // Public Firebase web config for the dedicated "vexdeals-fc0a1" auth project
 // (these are not secrets — they're meant to ship in the client). Env vars
@@ -25,7 +24,5 @@ if (ready) {
   authApp = getApps().find((a) => a.name === NAME) || initializeApp(cfg, NAME);
 }
 
-// Falls back to the main auth if the dedicated project isn't configured yet
-// (so the app never crashes — phone OTP just won't work until env vars are set).
-export const phoneAuth = authApp ? getAuth(authApp) : mainAuth;
+export const phoneAuth = authApp ? getAuth(authApp) : null;
 export const phoneAuthReady = ready;

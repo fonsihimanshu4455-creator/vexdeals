@@ -11,6 +11,7 @@ import { VexLogoMark } from '../components/Logo';
 import { useCategories } from '../context/CategoryContext';
 import { useProducts } from '../context/ProductContext';
 import { useSiteSettings } from '../lib/settings';
+import { thumb } from '../lib/img';
 
 const MARQUEE = ['100% Authentic', 'Free Shipping ₹1000+', '7-Day Returns', 'Secure Payments', 'Hand-picked Edits'];
 function Countdown() {
@@ -144,7 +145,7 @@ export default function Home() {
                 <div className="cat-bubble rounded-full group-hover:-translate-y-1 transition-transform duration-300">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-brand-soft ring-2 ring-white flex items-center justify-center text-2xl sm:text-3xl">
                     {cat.image
-                      ? <img src={cat.image} alt={cat.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      ? <img src={thumb(cat.image, 200)} alt={cat.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                       : cat.icon}
                   </div>
                 </div>
@@ -187,7 +188,7 @@ export default function Home() {
               {saleProducts.map(p => (
                 <Link key={p.id} to={`/products/${p.id}`} className="group shrink-0 w-40 sm:w-52 snap-start bg-white rounded-2xl overflow-hidden shadow-card hover:-translate-y-1.5 hover:shadow-glow transition-all duration-300">
                   <div className="relative aspect-square overflow-hidden">
-                    <img src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <img src={thumb(p.image, 420)} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     <span className="absolute top-2.5 left-2.5 bg-ink-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">−{p.discount}%</span>
                     <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-white/75 backdrop-blur-sm rounded-full pl-1 pr-2 py-0.5 shadow-sm pointer-events-none">
                       <VexLogoMark size={13} />

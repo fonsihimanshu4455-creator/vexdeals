@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { thumb } from '../lib/img';
 
 export default function CartToast() {
   const { lastAdded, lastAddedAt } = useCart();
@@ -23,7 +24,7 @@ export default function CartToast() {
       }`}
     >
       <div className="flex items-center gap-3 bg-white shadow-card rounded-2xl border border-ink-900/5 p-2.5 pr-3 w-[88vw] max-w-sm">
-        <img src={lastAdded.image} alt="" className="w-12 h-12 rounded-xl object-contain bg-cream-100 shrink-0" />
+        <img src={thumb(lastAdded.image, 120)} alt="" className="w-12 h-12 rounded-xl object-contain bg-cream-100 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="flex items-center gap-1 text-[11px] font-bold text-emerald-600"><Check size={13} /> Added to cart</p>
           <p className="text-sm font-medium text-ink-900 truncate">{lastAdded.name}</p>

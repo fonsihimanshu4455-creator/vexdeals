@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Tag, Truck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { thumb } from '../lib/img';
 
 export default function Cart() {
   const {
@@ -70,7 +71,7 @@ export default function Cart() {
               <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex gap-4">
                 <Link to={`/products/${item.id}`} className="shrink-0">
                   <img
-                    src={item.image}
+                    src={thumb(item.image, 240)}
                     alt={item.name}
                     className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl bg-gray-50"
                   />

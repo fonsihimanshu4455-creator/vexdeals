@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
@@ -22,28 +22,28 @@ import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import Checkout from './pages/Checkout';
 import Login from './pages/Login';
-import AdminLogin from './pages/AdminLogin';
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 import About from './pages/About';
-import CustomerOrders from './pages/customer/CustomerOrders';
-import CustomerTransactions from './pages/customer/CustomerTransactions';
-import CustomerAddresses from './pages/customer/CustomerAddresses';
-import CustomerProfile from './pages/customer/CustomerProfile';
+const CustomerOrders = lazy(() => import('./pages/customer/CustomerOrders'));
+const CustomerTransactions = lazy(() => import('./pages/customer/CustomerTransactions'));
+const CustomerAddresses = lazy(() => import('./pages/customer/CustomerAddresses'));
+const CustomerProfile = lazy(() => import('./pages/customer/CustomerProfile'));
 
-import AdminLayout from './pages/admin/AdminLayout';
-import Dashboard from './pages/admin/Dashboard';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminCategories from './pages/admin/AdminCategories';
-import AdminSubAdmins from './pages/admin/AdminSubAdmins';
-import AdminMarketing from './pages/admin/AdminMarketing';
-import AdminDrops from './pages/admin/AdminDrops';
-import AdminProfile from './pages/admin/AdminProfile';
-import AdminReviews from './pages/admin/AdminReviews';
-import AdminAbout from './pages/admin/AdminAbout';
-import AdminTracking from './pages/admin/AdminTracking';
-import AdminSettings from './pages/admin/AdminSettings';
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
+const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
+const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'));
+const AdminSubAdmins = lazy(() => import('./pages/admin/AdminSubAdmins'));
+const AdminMarketing = lazy(() => import('./pages/admin/AdminMarketing'));
+const AdminDrops = lazy(() => import('./pages/admin/AdminDrops'));
+const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'));
+const AdminReviews = lazy(() => import('./pages/admin/AdminReviews'));
+const AdminAbout = lazy(() => import('./pages/admin/AdminAbout'));
+const AdminTracking = lazy(() => import('./pages/admin/AdminTracking'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 
 // Fires Meta Pixel PageView (for SPA route changes) + scrolls to top.
 // The initial PageView + pixel init happen in index.html.
@@ -84,6 +84,7 @@ export default function App() {
               <CartProvider>
                 <WishlistProvider>
                 <PixelTracker />
+                <Suspense fallback={<div className="min-h-[60vh]" />}>
                 <Routes>
                   {/* Admin portal login — desktop accessible */}
                   <Route path="/admin-login" element={<AdminLogin />} />
@@ -122,6 +123,7 @@ export default function App() {
                   <Route path="/account/profile"      element={<CustomerLayout><CustomerProfile /></CustomerLayout>} />
                   <Route path="/wishlist"             element={<CustomerLayout><Wishlist /></CustomerLayout>} />
                 </Routes>
+                </Suspense>
                 </WishlistProvider>
               </CartProvider>
             </CategoryProvider>

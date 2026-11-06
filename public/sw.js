@@ -1,9 +1,9 @@
-/* VexDeals service worker — network-first (always fresh online, cached fallback offline) */
-const CACHE = 'vexdeals-v5';
+/* VexDeals service worker: hashed /assets/ files are cache-first (they never change),
+   pages are network-first (always fresh online, cached fallback offline).
+   Other origins (images, Firestore) are left to the browser. */
+const CACHE = 'vexdeals-v6';
 
-self.addEventListener('install', () => {
-  self.skipWaiting();
-});
+self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
@@ -16,19 +16,27 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith((async () => {
+      const cached = await caches.match(req);
+      if (cached) return cached;
+      const fresh = await fetch(req);
+      if (fresh.ok) (await caches.open(CACHE)).put(req, fresh.clone()).catch(() => {});
+      return fresh;
+    })());
+    return;
+  }
 
   event.respondWith((async () => {
     try {
       const fresh = await fetch(req);
-      // Cache same-origin successful responses for offline fallback
-      if (fresh && fresh.ok && new URL(req.url).origin === self.location.origin) {
-        const cache = await caches.open(CACHE);
-        cache.put(req, fresh.clone()).catch(() => {});
-      }
+      if (fresh.ok) (await caches.open(CACHE)).put(req, fresh.clone()).catch(() => {});
       return fresh;
     } catch {
-      const cached = await caches.match(req);
-      return cached || caches.match('/');
+      return (await caches.match(req)) || caches.match('/');
     }
   })());
 });
